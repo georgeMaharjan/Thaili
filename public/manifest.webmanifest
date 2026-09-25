@@ -1,0 +1,9 @@
+{
+  "name": "Thaili",
+  "short_name": "Thaili",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF8EC",
+  "theme_color": "#FDF8EC",
+  "icons": []
+}
