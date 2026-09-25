@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The design theme tokens canvas and brand, from src/app/globals.css. -->
+    <color name="thailiCanvas">#FDF8EC</color>
+    <color name="thailiBrand">#E8383C</color>
+</resources>

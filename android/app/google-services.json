@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "575067345543",
+    "project_id": "thaili-b79a2",
+    "storage_bucket": "thaili-b79a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:575067345543:android:d96b1c145a42f5c6fb1e22",
+        "android_client_info": {
+          "package_name": "com.george.thaili"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_QPclstE7_qb6igutBKYSYFMRsmeJT30"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

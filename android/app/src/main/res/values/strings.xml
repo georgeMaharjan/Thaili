@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Thaili</string>
+    <string name="title_activity_main">Thaili</string>
+    <string name="package_name">com.george.thaili</string>
+    <string name="custom_url_scheme">com.george.thaili</string>
+</resources>
