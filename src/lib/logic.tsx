@@ -21,6 +21,11 @@ import { BS_EN, BS_NP, bsOf, daysInBsMonth, monthKey, monthName, npDigits, dated
 
 const fmt = n => Math.round(Math.abs(n)).toLocaleString("en-IN");
 const rs = n => "Rs " + fmt(n);
+// fmt/rs drop the sign (callers word it: "over", "more than expected"). A balance can
+// really be below zero — an overdrawn account, cash spent past its opening — so keep it.
+const signed = n => (Math.round(n) < 0 ? "−" : "");
+const balFmt = n => signed(n) + fmt(n);
+const balRs = n => signed(n) + rs(n);
 
 const CATS = [
   { key: "food", label: "Eating out", limit: 12000 },
@@ -744,12 +749,12 @@ export class ThailiLogic extends React.Component {
         : (np ? "सिङ्क बन्द — यो थैली यही फोनमा मात्र छ" : "Sync is off — this pouch lives only on this phone"),
       settingsBack: () => this.go(s.settingsFrom || "home"),
       goalsBack: () => this.go(s.goalsFrom || "home"),
-      totalBal: fmt(s.sources.reduce((a, x) => a + this.balance(x.key), 0)),
-      totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + rs(savingsPot) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
+      totalBal: balFmt(s.sources.reduce((a, x) => a + this.balance(x.key), 0)),
+      totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + balRs(savingsPot) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
       acctRows: s.sources.map(x => Object.assign(acctLook(x, [IC.bank, "var(--tintR)", "var(--action)"]), {
         name: x.name,
         meta: x.type.split(" · ")[0] + ((s.roles[x.key] || "") !== "spending" ? " · savings" : ""),
-        balance: rs(this.balance(x.key)),
+        balance: balRs(this.balance(x.key)),
         tap: () => this.go("source-detail", { srcKey: x.key, srcFrom: "accounts" })
       })),
       mergeBack: toAuthEmail,
@@ -1132,7 +1137,7 @@ export class ThailiLogic extends React.Component {
       goalLabel: surplus > 0 ? rs(surplus) + " free" : floorPct + "%",
       goalWidth: surplus > 0 ? Math.round(claimed / Math.max(surplus, 1) * 100) + "%" : floorPct + "%",
       goalNote: surplus <= 0
-        ? rs(savingsPot) + " of " + rs(s.savingsGoal) + " saved · " + rs(floorShort) + " to go before goals start funding"
+        ? balRs(savingsPot) + " of " + rs(s.savingsGoal) + " saved · " + rs(floorShort) + " to go before goals start funding"
         : s.goals.length === 0
         ? rs(surplus) + " sitting free above your " + rs(s.savingsGoal) + " floor, unclaimed"
         : fundedCount + " of " + s.goals.length + " goals covered" + (unallocated > 0 ? " · " + rs(unallocated) + " still free" : " · fully claimed"),
@@ -1171,7 +1176,7 @@ export class ThailiLogic extends React.Component {
         tap: () => this.setState({ splitMode: m })
       })),
       savingsFrom: "From " + savingsSources.map(x => x.short).join(", "),
-      savingsPotLabel: rs(savingsPot),
+      savingsPotLabel: balRs(savingsPot),
       savingsGoalLabel: rs(s.savingsGoal),
       floorWidth: floorPct + "%",
       floorBar: surplus > 0 ? "var(--pos)" : "var(--warn)",
@@ -1319,7 +1324,7 @@ export class ThailiLogic extends React.Component {
       week1Cta: review.length ? "Work through them" : "Skip ahead",
       weekClose: () => this.go("home"),
       computedFor: wk.name,
-      computedBal: rs(this.balance(wk.key)),
+      computedBal: balRs(this.balance(wk.key)),
       typedBal: fmt(typedBal),
       balType: e => { const n = parseInt(String(e.target.value).replace(/[^0-9]/g, ""), 10) || 0; this.setState({ balNudge: n - this.balance(wk.key), gapState: null }); },
       hasGap: gap !== 0 && !s.gapState,
@@ -1521,12 +1526,12 @@ export class ThailiLogic extends React.Component {
       srcDeleteLabel: "Remove " + s.newSrcName + " and everything read from it",
 
       sourceRows: s.sources.map(x => Object.assign(acctLook(x, [IC.bank, "var(--tintN)", "var(--navy)"]), {
-        name: x.name, meta: x.type.split(" · ")[0], dot: x.dot, balance: rs(this.balance(x.key)),
+        name: x.name, meta: x.type.split(" · ")[0], dot: x.dot, balance: balRs(this.balance(x.key)),
         tap: () => this.go("source-detail", { srcKey: x.key, srcFrom: "insights" })
       })),
 
       srcName: shownSrc.name,
-      srcBalance: rs(this.balance(s.srcKey)),
+      srcBalance: balRs(this.balance(s.srcKey)),
       srcMeta: shownSrc.type,
       srcAcctLine: isManualSrc(shownSrc) ? "Manual account · no number to match" : shownSrc.acct ? (/Wallet/.test(shownSrc.type) ? "Mobile ending " : "A/C ending ") + shownSrc.acct.slice(-4) : "Last 4 digits not set",
       srcAcctFg: isManualSrc(shownSrc) || shownSrc.acct ? "var(--ink3)" : "var(--warnInk)",
