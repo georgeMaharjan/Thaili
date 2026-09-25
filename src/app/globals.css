@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Theme tokens, switched by data-theme on the app root. */
+:root {
+  --canvas: #FDF8EC; --surface: #FFFFFF; --surface2: #F6EEDE; --line: #E7DDC9;
+  --ink: #221E19; --ink2: #5C5346; --ink3: #6B6153;
+  --brand: #E8383C; --action: #D02A2E; --onAction: #FFFFFF;
+  --navy: #2B3A4A; --pos: #1E7A5E; --warn: #B4721F;
+  --tintR: #FBEAE6; --tintG: #E6F1EB; --tintN: #ECEFF3; --tintW: #FAF0DC; --warnInk: #8A5710;
+  --barTrack: #EFE6D4; --barDim: #D8CDB8; --shadow: 0 1px 2px rgba(64,48,24,.05), 0 8px 24px rgba(64,48,24,.06);
+  --toastBg: #221E19; --toastFg: #FDF8EC; --toastAccent: #FF9A80; --bezel: #2B3A4A;
+}
+[data-theme="dark"] {
+  --canvas: #0F1318; --surface: #19202A; --surface2: #212A35; --line: #2C3743;
+  --ink: #F2ECE0; --ink2: #C2C9D2; --ink3: #9AA4B0;
+  --brand: #FF5C5F; --action: #FF5C5F; --onAction: #14191F;
+  --navy: #9FB4CA; --pos: #4FB58C; --warn: #E0A64A;
+  --tintR: #2B1E20; --tintG: #17271F; --tintN: #1B222B; --tintW: #2A2418; --warnInk: #E0A64A;
+  --barTrack: #262F3A; --barDim: #3A4452; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --toastBg: #F2ECE0; --toastFg: #14191F; --toastAccent: #C42B2F; --bezel: #050709;
+}
+body {
+  margin: 0;
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+body:has([data-theme="dark"]) { background: #0F1318; }
+
+/* Tailwind names for the tokens: bg-surface, text-ink-2, border-line, rounded-card, font-display… */
+@theme inline {
+  --font-sans: Mukta, system-ui, sans-serif;
+  --font-display: "Baloo 2", system-ui;
+  --color-canvas: var(--canvas); --color-surface: var(--surface); --color-surface-2: var(--surface2); --color-line: var(--line);
+  --color-ink: var(--ink); --color-ink-2: var(--ink2); --color-ink-3: var(--ink3);
+  --color-brand: var(--brand); --color-action: var(--action); --color-on-action: var(--onAction);
+  --color-navy: var(--navy); --color-pos: var(--pos); --color-warn: var(--warn); --color-warn-ink: var(--warnInk);
+  --color-tint-r: var(--tintR); --color-tint-g: var(--tintG); --color-tint-n: var(--tintN); --color-tint-w: var(--tintW);
+  --color-bar-track: var(--barTrack); --color-bar-dim: var(--barDim);
+  --color-toast-bg: var(--toastBg); --color-toast-fg: var(--toastFg); --color-toast-accent: var(--toastAccent);
+  --radius-card: 20px;
+  --shadow-card: var(--shadow);
+}
+@keyframes thaili-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+
+/* ---- Native feel: none of the tells that give away a web page. ---- */
+html, body { overscroll-behavior: none; }           /* no page bounce / pull-to-refresh */
+* { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+input, textarea { user-select: text; -webkit-user-select: text; }
+img { -webkit-user-drag: none; }
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Pressed state for tappable elements; also marks them for the haptic tick (logic.tsx render). */
+.press, .press-bg { cursor: pointer; transition: opacity .12s, background-color .12s; }
+.press:active { opacity: .72; }
+.press-bg:active { background: var(--surface2) !important; }
+
+/* Screen changes: push slides in from the right, back from the left, tabs cross-fade. */
+@keyframes scr-fwd { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes scr-back { from { transform: translateX(-28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes scr-fade { from { opacity: 0; } to { opacity: 1; } }
+.scr { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+.scr-fwd { animation: scr-fwd .22s cubic-bezier(.2, .8, .2, 1); }
+.scr-back { animation: scr-back .22s cubic-bezier(.2, .8, .2, 1); }
+.scr-fade { animation: scr-fade .15s ease-out; }
+@media (prefers-reduced-motion: reduce) { .scr-fwd, .scr-back, .scr-fade { animation: none; } }
