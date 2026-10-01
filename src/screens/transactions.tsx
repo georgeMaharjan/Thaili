@@ -1,18 +1,17 @@
 // The transaction list, one transaction, and the auto-filing rules.
-import { Amount, Btn, CARD, Chips, Icon, IconBtn, ItemRow, P, Seg, TopBar, cx, type V } from "@/components/ui";
+import { Btn, CARD, Chips, Icon, IconBtn, P, Seg, TopBar, TxLine, cx, type V } from "@/components/ui";
 
 export function Txns({ v }: { v: V }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex flex-none flex-col gap-3 px-5 pt-2 pb-3">
-        <div className="font-display text-[28px] font-bold tracking-[-0.015em]">{v.t.txns}</div>
-        <Seg items={v.txTabs} itemClass="flex-1 rounded-[9px] p-2.5 text-center text-[13px]" />
+      <div className="flex flex-none flex-col gap-3.5 px-5 pt-2 pb-2.5">
+        <span className="font-display text-[28px] font-bold tracking-[-0.015em]">{v.t.txns}</span>
+        <Seg items={v.txTabs} itemClass="flex h-9.5 flex-1 items-center justify-center rounded-[9px] text-[14px]" />
       </div>
-      <div className="flex-1 overflow-auto pb-24">
+      <div className="flex-1 overflow-auto px-5 pb-26">
         {v.txRows.map((r: V, i: number) => r.isHeader
-          ? <div key={i} className="px-5 pt-3.75 pb-1.5 text-[13px] font-semibold text-ink-3">{r.label}</div>
-          : <ItemRow key={i} look={r} title={r.title} sub={r.cat} subFg={r.catFg} onClick={r.tap}
-              className="border-b border-line px-5 py-3" right={<Amount fg={r.fg} className="text-[15.5px]">{r.amount}</Amount>} />)}
+          ? <div key={i} className="sticky top-0 z-1 -mx-5 bg-canvas px-5 pt-5.5 pb-1.5 text-[15px] font-bold text-ink-2">{r.label}</div>
+          : <TxLine key={i} r={r} className="min-h-16" />)}
       </div>
     </div>
   );
@@ -56,33 +55,55 @@ export function Detail({ v }: { v: V }) {
               <Icon d="M20 6L9 17l-5-5" size={15} sw={2.2} />Filed by a rule
             </span>
             <span className="text-pretty text-[13px] leading-[1.55] text-ink-2">{v.detailAutoLine}</span>
-            <span onClick={v.detailAutoDrop} className="cursor-pointer text-[12.5px] font-semibold text-action">Stop filing this automatically</span>
+            <button onClick={v.detailAutoDrop} className="text-[12.5px] font-semibold text-action">Stop filing this automatically</button>
+          </div>
+        )}
+
+        {v.remarkOpen && (
+          <div className="flex flex-col gap-3 rounded-card border border-action bg-surface px-4.5 py-4">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[13px] font-semibold text-action">{v.remarkTitle}</span>
+              <span className="text-[12px] text-ink-3">{v.remarkCount}</span>
+            </div>
+            <div className="flex min-h-13 items-center gap-1 rounded-[14px] bg-surface-2 pr-1 pl-3.5">
+              <input autoFocus value={v.remarkDraft} onChange={v.remarkType} onKeyDown={v.remarkKey} placeholder="What was this for?" enterKeyHint="done"
+                className="min-w-0 flex-1 bg-transparent py-3 text-[15px] text-ink outline-none placeholder:text-ink-3" />
+              {v.remarkDraft && <IconBtn d={P.close} label="Clear" onClick={v.remarkClear} size={18} sw={2.2} className="text-ink-3" />}
+            </div>
+            <span className="text-pretty text-[12.5px] leading-normal text-ink-3">The bank&apos;s original message stays as it was.</span>
+            <div className="flex gap-2">
+              <Btn onClick={v.remarkSave} className="flex-1">Save</Btn>
+              <Btn kind="secondary" onClick={v.remarkCancel} className="flex-none">Cancel</Btn>
+            </div>
           </div>
         )}
 
         <div className={cx(CARD, "px-4.5 py-1")}>
-          {v.detailFields.map((f: V, i: number) => (
-            <div key={i} onClick={f.tap} className={cx("flex min-h-12 items-center justify-between gap-3.5 border-b border-line", f.tap && "cursor-pointer")}>
-              <span className="text-[13px] text-ink-3">{f.label}</span>
-              <span className="flex items-center gap-2.5">
-                <span className="text-right text-[13.5px] font-medium" style={{ color: f.fg }}>{f.value}</span>
-                <span className="text-[13px] font-semibold text-action">{f.action}</span>
-              </span>
-            </div>
-          ))}
+          {v.detailFields.map((f: V, i: number) => {
+            const Row = f.tap ? "button" : "div"; // Category and Remarks are tappable
+            return (
+              <Row key={i} onClick={f.tap} className="flex min-h-12 w-full items-center justify-between gap-3.5 border-b border-line">
+                <span className="text-[13px] text-ink-3">{f.label}</span>
+                <span className="flex items-center gap-2.5">
+                  <span className="text-right text-[13.5px] font-medium" style={{ color: f.fg }}>{f.value}</span>
+                  <span className="text-[13px] font-semibold text-action">{f.action}</span>
+                </span>
+              </Row>
+            );
+          })}
         </div>
 
-        <div onClick={v.toggleRaw} className={cx(CARD, "flex cursor-pointer flex-col gap-2.5 px-4.5 py-4")}>
+        <button onClick={v.toggleRaw} className={cx(CARD, "flex flex-col gap-2.5 px-4.5 py-4")}>
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-semibold text-ink-2">Original message</span>
             <Icon d={P.expand} size={20} sw={2.2} className={cx("text-ink-3 transition-transform duration-200", v.rawOpen && "rotate-180")} />
           </div>
           {v.rawOpen && <div className="rounded-xl bg-surface-2 p-3.5 font-mono text-[12.5px] leading-[1.65] text-ink-2">{v.detailRaw}</div>}
-        </div>
+        </button>
 
-        <div onClick={v.askDelete} className="press flex min-h-13 cursor-pointer items-center justify-center rounded-2xl text-[15px] font-semibold text-action">
+        <button onClick={v.askDelete} className="press flex min-h-13 items-center justify-center rounded-2xl text-[15px] font-semibold text-action">
           Delete transaction
-        </div>
+        </button>
       </div>
     </div>
   );
