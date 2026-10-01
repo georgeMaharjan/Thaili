@@ -1,18 +1,18 @@
 // Home, the Needs-review card stack, the weekly review and quick add.
 import {
-  Amount, AmountEntry, Bar, Btn, CARD, Chip, Chips, Cta, GoalCard, HeaderActions, Icon, IconBtn, ItemRow, Keypad,
-  LABEL, P, Tile, TopBar, cx, type V,
+  AmountEntry, Bar, Btn, CARD, Chip, Chips, Cta, HeadLink, HeaderActions, Icon, IconBtn, Keypad,
+  LABEL, P, Section, TopBar, TxLine, cx, type V,
 } from "@/components/ui";
 
-const PILL = "flex h-7.5 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.75 text-[13px] font-semibold";
-
 export function Home({ v }: { v: V }) {
+  const big = "font-display font-extrabold tabular-nums";
+  const strip = "press flex min-h-14 items-center gap-3 rounded-2xl pr-3.5 pl-4 text-left";
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex min-h-13 flex-none items-center justify-between py-1 pr-2 pl-5">
         <div className="flex items-center gap-2.25">
           <span className="flex size-7 flex-none items-center justify-center rounded-[9px] bg-brand">
-            <img src="./thaili-mark-cream.png" alt="Thaili" className="block h-4.25 w-4 object-contain" />
+            <img src="./thaili-mark-line.png" alt="Thaili" className="block h-5.25 w-4 object-contain" />
           </span>
           <div className="flex flex-col">
             <span className="font-display text-[17px] font-bold leading-[1.15]">{v.bsMonth}</span>
@@ -22,71 +22,95 @@ export function Home({ v }: { v: V }) {
         <HeaderActions v={v} />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 overflow-auto px-4 pb-24">
-        <div className="flex flex-col gap-1.5 px-1.5 pt-5.5 pb-1.5">
-          <span className={LABEL}>{v.allowLabel}</span>
-          <div className="flex items-baseline gap-2.25" style={{ color: v.allowFg }}>
-            <span className="font-display text-[27px] font-bold">Rs</span>
-            <span className="font-display text-[78px] font-extrabold leading-[.88] tracking-[-0.035em]">{v.allowAmount}</span>
-          </div>
-          <div className="flex flex-wrap gap-2 pt-2">
-            <span className={cx(PILL, "bg-surface-2 text-ink-2")}><Icon d={P.calendar} size={15} />{v.daysChip}</span>
-            <span className={PILL} style={{ background: v.remainBg, color: v.remainFg }}><Icon d={P.wallet} size={15} />{v.remainShort}</span>
-          </div>
-        </div>
+      <div className="flex flex-1 flex-col gap-8 overflow-auto px-5 pt-1 pb-26">
+        <div className="flex flex-col gap-7 pt-4.5">
+          <button onClick={v.toAccounts} className="press flex flex-col gap-1.5 text-left">
+            <span className="text-[15px] font-semibold text-ink-2">{v.haveLabel}</span>
+            <span className="flex items-baseline gap-2">
+              <span className="font-display text-[30px] font-bold">Rs</span>
+              <span className={cx(big, "text-[78px] leading-[.9] tracking-[-0.035em]")}>{v.totalBal}</span>
+            </span>
+            <span className="text-[14px] leading-normal text-ink-3">{v.haveMeta}</span>
+          </button>
 
-        {v.hasReview && (
-          <div onClick={v.toReviewStack} className="press flex cursor-pointer items-center justify-between gap-3 rounded-card border border-warn bg-tint-w px-4.5 py-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex size-8.5 flex-none items-center justify-center rounded-xl bg-warn-ink font-display text-[16px] font-bold text-canvas">{v.reviewCount}</span>
-              <span className="min-w-0 truncate text-[14.5px] font-semibold leading-[1.35]">{v.reviewLine}</span>
+          <div className="flex flex-col gap-3.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-[15px] font-bold text-ink-2">{v.budgetTitle}</span>
+              <span className="whitespace-nowrap text-[13px] text-ink-3">{v.dayOfLine}</span>
             </div>
-            <Icon d={P.next} size={18} sw={2.2} className="text-warn-ink" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[13px] text-ink-3">{v.spentWord}</span>
+                <span className={cx(big, "truncate text-[30px] leading-[1.1] tracking-[-0.01em]")}>{v.homeSpent}</span>
+              </div>
+              <div className="flex min-w-0 flex-col items-end gap-0.5">
+                <span className="text-[13px] text-ink-3">{v.leftWord}</span>
+                <span className={cx(big, "max-w-full truncate text-[30px] leading-[1.1] tracking-[-0.01em]")} style={{ color: v.leftFg }}>{v.homeLeft}</span>
+              </div>
+            </div>
+            <Bar width={v.targetWidth} color={v.budgetBar} className="h-2.5 rounded-[5px]" />
+            <span className="text-[14px] leading-[1.45] text-ink-2">{v.budgetLine}</span>
           </div>
-        )}
 
-        <div className={cx(CARD, "flex flex-col gap-3.25 px-5 py-4.5 shadow-card")}>
-          <div className="flex items-baseline justify-between">
-            <span className="text-[14.5px] font-semibold">{v.t.roomToSpend}</span>
-            <span className="text-[12px] font-semibold" style={{ color: v.targetFg }}>{v.targetPct}</span>
-          </div>
-          <Bar width={v.targetWidth} color={v.targetBar} className="h-2.5 rounded-[5px]" />
-          <div className="flex items-center justify-between gap-3 text-[13px] text-ink-2">
-            <span className="min-w-0 truncate font-display font-semibold tabular-nums">{v.spentOfTarget}</span>
-            <span className="flex flex-none items-center gap-1.25 whitespace-nowrap text-ink-3">
-              <Icon d="M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16ZM12 8v4l3 2" size={15} />{v.paceShort}
+          <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3.5">
+            <Icon d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3Z" sw={1.9} style={{ color: v.allowFg }} />
+            <span className="min-w-0 flex-1 text-[15px] leading-[1.45]">
+              {v.suggestLead}<span className="font-display text-[20px] font-extrabold" style={{ color: v.allowFg }}>{v.suggestAmt}</span>{v.suggestTail}
             </span>
           </div>
         </div>
 
-        <div className={cx(CARD, "flex flex-col gap-0.5 px-5 py-4.5")}>
-          <div className="flex items-baseline justify-between">
-            <span className="text-[14.5px] font-semibold">{v.t.recent}</span>
-            <span onClick={v.toTxns} className="-my-3 flex cursor-pointer items-center gap-0.5 py-3 pl-3 text-[12.5px] font-semibold text-action">
-              {v.t.seeAll}<Icon d={P.next} size={16} />
-            </span>
+        {(v.hasReview || v.weeklyDue) && <div className="-mt-2 flex flex-col gap-3">
+            {v.hasReview && (
+              <button onClick={v.toReviewStack} className={cx(strip, "bg-tint-w")}>
+                <span className="flex h-6 min-w-6 flex-none items-center justify-center rounded-xl bg-warn-ink px-1.75 font-display text-[13px] font-bold text-canvas">{v.reviewCount}</span>
+                <span className="min-w-0 flex-1 text-[15px] font-semibold leading-[1.35]">{v.homeReviewLine}</span>
+                <Icon d={P.next} size={18} sw={2.2} className="text-warn-ink" />
+              </button>
+            )}
+            {v.weeklyDue && (
+              <button onClick={v.toWeekly} className={cx(strip, "bg-tint-n")}>
+                <Icon d="M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4" size={20} sw={1.9} className="text-navy" />
+                <span className="flex min-w-0 flex-1 flex-col gap-px">
+                  <span className="text-[15px] font-semibold leading-[1.35]">{v.weeklyLine}</span>
+                  {v.weeklyMeta && <span className="text-[13px] leading-[1.35] text-ink-3">{v.weeklyMeta}</span>}
+                </span>
+                <Icon d={P.next} size={18} sw={2.2} className="text-navy" />
+              </button>
+            )}
+          </div>}
+
+        <Section title={v.t.goals} action={<HeadLink onClick={v.toGoal}>{v.goalsManage}</HeadLink>} className="gap-2.5">
+          {v.floorPending && <span className="-mt-1.5 text-pretty text-[13px] leading-normal text-ink-2">{v.floorLine}</span>}
+          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pt-0.5 pb-1.5 [scrollbar-width:none]">
+            {v.homeGoals.map((g: V, i: number) => (
+              <button key={i} onClick={g.tap} className="press flex w-47 flex-none items-center gap-2.5 rounded-[14px] border border-line bg-surface py-2.5 pr-3.5 pl-2.5 text-left">
+                <span className="flex size-9 flex-none items-center justify-center rounded-full" style={{ background: g.ring }}>
+                  <span className="flex size-7.25 items-center justify-center rounded-full bg-surface font-display text-[11px] font-bold" style={{ color: g.pctFg }}>{g.pct}</span>
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[14px] font-semibold leading-[1.3]">{g.name}</span>
+                  <span className="truncate text-[13px] leading-[1.35] text-ink-3"><span className="font-display text-[15px] font-bold text-ink">{g.got}</span> / {g.target}</span>
+                </span>
+              </button>
+            ))}
+            <button onClick={v.toGoalNew} aria-label="New goal" className="press flex min-h-14 w-14.5 flex-none items-center justify-center rounded-[14px] border-[1.5px] border-dashed border-bar-dim text-action">
+              <Icon d={P.plus} size={20} />
+            </button>
           </div>
-          {v.recent.map((t: V, i: number) => (
-            <ItemRow key={i} look={t} title={t.title} sub={t.cat} subFg={t.catFg} onClick={t.tap}
-              className="min-h-14 border-t border-line" right={<Amount fg={t.fg} className="text-[15.5px]">{t.amount}</Amount>} />
-          ))}
-        </div>
+        </Section>
 
-        <GoalCard v={v} />
-
-        <div onClick={v.toWeekly} className={cx(CARD, "press flex cursor-pointer items-center gap-3 px-4 pt-4 pb-3.75")}>
-          <Tile d="M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4" className="size-9 bg-tint-n text-navy" />
-          <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-[1.35]">{v.t.weekly}</span>
-          <Icon d={P.next} size={16} sw={2.2} className="text-ink-3" />
-        </div>
+        <Section title={v.t.recent} action={<HeadLink onClick={v.toTxns}>{v.t.seeAll}</HeadLink>}>
+          {v.recent.map((t: V, i: number) => <TxLine key={i} r={t} />)}
+        </Section>
       </div>
     </div>
   );
 }
 
 export function Stack({ v }: { v: V }) {
-  const action = "flex cursor-pointer items-center gap-1.5 px-1 py-3 text-[13px] font-semibold";
-  const tool = "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-surface-2 p-3.25 text-[13px] text-ink-2";
+  const action = "flex items-center gap-1.5 px-1 py-3 text-[13px] font-semibold";
+  const tool = "flex flex-1 items-center justify-center gap-2 rounded-xl border border-line bg-surface-2 p-3.25 text-[13px] text-ink-2";
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <TopBar onBack={v.stackExit} icon={P.close} label="Close" title={v.t.review}>
@@ -102,13 +126,13 @@ export function Stack({ v }: { v: V }) {
             </div>
             <Chips items={v.cardCats} className="" />
             <div className="flex gap-2.5">
-              <span onClick={v.cardNote} className={cx(tool, "min-w-0")}><Icon d={P.note} size={18} /><span className="truncate">{v.cardNoteLabel}</span></span>
-              <span onClick={v.cardReceipt} className={tool}><Icon d={P.camera} size={18} />Receipt</span>
+              <button onClick={v.cardNote} className={cx(tool, "min-w-0")}><Icon d={P.note} size={18} /><span className="truncate">{v.cardNoteLabel}</span></button>
+              <button onClick={v.cardReceipt} className={tool}><Icon d={P.camera} size={18} />Receipt</button>
             </div>
           </div>
           <div className="flex items-center justify-between px-1.5">
-            <span onClick={v.cardSkip} className={cx(action, "text-ink-3")}>Skip<Icon d="M5 12h14M13 6l6 6-6 6" size={16} /></span>
-            <span onClick={v.cardOpen} className={cx(action, "text-action")}><Icon d="M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17ZM12 11v5M12 7.8h.01" size={17} />Details</span>
+            <button onClick={v.cardSkip} className={cx(action, "text-ink-3")}>Skip<Icon d="M5 12h14M13 6l6 6-6 6" size={16} /></button>
+            <button onClick={v.cardOpen} className={cx(action, "text-action")}><Icon d="M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17ZM12 11v5M12 7.8h.01" size={17} />Details</button>
           </div>
         </div>
       )}
@@ -190,7 +214,7 @@ export function Weekly({ v }: { v: V }) {
       </div>
 
       <div className="flex flex-none items-center justify-between border-t border-line bg-canvas px-5 pt-3.5 pb-6">
-        <span onClick={v.weekBack} className="cursor-pointer px-1 py-2.5 text-[13px] font-semibold text-ink-2">{v.weekBackLabel}</span>
+        <button onClick={v.weekBack} className="px-1 py-2.5 text-[13px] font-semibold text-ink-2">{v.weekBackLabel}</button>
         <Btn kind="navy" onClick={v.weekNext}>{v.weekNextLabel}</Btn>
       </div>
     </div>
@@ -203,10 +227,10 @@ export function Add({ v }: { v: V }) {
       <TopBar onBack={v.addCancel} icon={P.close} label="Cancel" title={v.t.quickAdd} />
       <AmountEntry value={v.addEntry} fg={v.addFg} className="text-[58px]" caret="h-10.5" />
       <Chips items={v.addCats} className="px-4 pt-3" />
-      <div onClick={v.toggleMore} className="flex cursor-pointer items-center justify-between px-5 pt-3.25">
+      <button onClick={v.toggleMore} className="flex items-center justify-between px-5 pt-3.25">
         <span className="text-[12.5px] text-ink-2">{v.addMoreLine}</span>
         <Icon d={P.expand} size={20} sw={2.2} className={cx("text-action transition-transform duration-200", v.addMoreOpen && "rotate-180")} />
-      </div>
+      </button>
       {v.addMoreOpen && (
         <div className="flex flex-wrap gap-2 px-4 pt-3">
           {v.addSources.map((c: V, i: number) => <Chip key={i} c={c} check={false} className="px-3.5 py-2.5 text-[12.5px]" />)}
