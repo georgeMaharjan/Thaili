@@ -7,7 +7,7 @@ import { dated } from "./bs";
 
 // Small preferences kept as one JSON row. Adding a key here is all it takes.
 const PREF_KEYS = ["picked", "customCats", "ess", "saveTarget", "savingsGoal", "theme", "lang",
-  "splitMode", "syncCell", "syncRaw", "syncAlert", "appLock", "notifMode", "quiet", "smsSince"] as const;
+  "splitMode", "syncCell", "syncRaw", "syncAlert", "appLock", "notifMode", "quiet", "smsSince", "weeklyDone"] as const;
 
 const txFromRow = (r: any) => dated({
   id: r.id, m: r.merchant, amt: Number(r.amount), dir: r.dir, src: r.src, to: r.to_src,
