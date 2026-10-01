@@ -1,7 +1,7 @@
 // The savings floor, the goals it funds, and the new-goal form.
 import { AmountEntry, Bar, Btn, CARD, Chips, Cta, Icon, IconBtn, Keypad, LABEL, P, Seg, Stepper, TopBar, cx, type V } from "@/components/ui";
 
-const SQUARE = "flex size-11 flex-none cursor-pointer items-center justify-center rounded-xl border border-line bg-surface-2";
+const SQUARE = "flex size-11 flex-none items-center justify-center rounded-xl border border-line bg-surface-2";
 
 export function Goals({ v }: { v: V }) {
   return (
@@ -69,9 +69,9 @@ export function Goals({ v }: { v: V }) {
               <span className="flex-none whitespace-nowrap text-right">{g.need}</span>
             </div>
             <div className="flex items-center gap-2 pt-0.5">
-              <span onClick={g.up} aria-label="Move up" className={SQUARE} style={{ color: g.upFg }}><Icon d={P.arrowUp} size={19} /></span>
-              <span onClick={g.down} aria-label="Move down" className={SQUARE} style={{ color: g.downFg }}><Icon d={P.arrowDown} size={19} /></span>
-              <span onClick={g.remove} aria-label="Delete goal" className={cx(SQUARE, "ml-auto text-action")}><Icon d={P.trash} size={19} /></span>
+              <button onClick={g.up} aria-label="Move up" className={SQUARE} style={{ color: g.upFg }}><Icon d={P.arrowUp} size={19} /></button>
+              <button onClick={g.down} aria-label="Move down" className={SQUARE} style={{ color: g.downFg }}><Icon d={P.arrowDown} size={19} /></button>
+              <button onClick={g.remove} aria-label="Delete goal" className={cx(SQUARE, "ml-auto text-action")}><Icon d={P.trash} size={19} /></button>
             </div>
           </div>
         ))}

@@ -2,7 +2,7 @@
 // ponytail: these screens still run on the design's prototype data in logic.tsx (no real sync backend).
 import { Amount, Btn, CARD, Cta, Icon, IconBtn, Includes, LABEL, P, Seg, StepHead, TextLink, Toggle, TopBar, cx, type V } from "@/components/ui";
 
-const SMALL_BTN = "flex min-h-11 cursor-pointer items-center gap-1.75 rounded-xl border border-line bg-surface px-3.5 text-[12.5px] font-semibold";
+const SMALL_BTN = "flex min-h-11 items-center gap-1.75 rounded-xl border border-line bg-surface px-3.5 text-[12.5px] font-semibold";
 const SUB13 = "text-pretty text-[13px] leading-[1.6] text-ink-2";
 
 export function Signup({ v }: { v: V }) {
@@ -33,9 +33,9 @@ export function Signup({ v }: { v: V }) {
             </div>
             <span className="text-[12.5px] leading-[1.6] text-ink-2">{v.authCodeNote}</span>
             <div className="flex flex-wrap gap-2">
-              <span onClick={v.authPaste} className={cx(SMALL_BTN, "text-ink-2")}><Icon d="M8 4h8v3H8ZM6 5.5H5v15h14v-15h-1" size={16} />{v.t.paste}</span>
-              <span onClick={v.authResend} className={SMALL_BTN} style={{ color: v.authResendFg }}><Icon d={P.refresh} size={16} />{v.authResendLabel}</span>
-              <span onClick={v.authEditPhone} className={cx(SMALL_BTN, "text-ink-2")}><Icon d={P.edit} size={16} />{v.t.email}</span>
+              <button onClick={v.authPaste} className={cx(SMALL_BTN, "text-ink-2")}><Icon d="M8 4h8v3H8ZM6 5.5H5v15h14v-15h-1" size={16} />{v.t.paste}</button>
+              <button onClick={v.authResend} className={SMALL_BTN} style={{ color: v.authResendFg }}><Icon d={P.refresh} size={16} />{v.authResendLabel}</button>
+              <button onClick={v.authEditPhone} className={cx(SMALL_BTN, "text-ink-2")}><Icon d={P.edit} size={16} />{v.t.email}</button>
             </div>
           </div>
         )}
@@ -114,13 +114,13 @@ export function Merge({ v }: { v: V }) {
           <span className="text-[13px] font-semibold text-warn-ink">{v.t.balDiffers}</span>
           <span className="text-pretty text-[12.5px] leading-[1.55] text-ink-2">{v.mergeBalLine}</span>
           {v.mergeBalOpts.map((o: V, i: number) => (
-            <div key={i} onClick={o.tap} className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-[1.5px] px-3.75 py-3" style={{ borderColor: o.border, background: o.bg }}>
+            <button key={i} onClick={o.tap} className="flex items-center justify-between gap-3 rounded-2xl border-[1.5px] px-3.75 py-3" style={{ borderColor: o.border, background: o.bg }}>
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-[13.5px] font-semibold">{o.label}</span>
                 <span className="text-[12.5px] text-ink-3">{o.meta}</span>
               </div>
               <span className="flex-none font-display text-[16px] font-bold">{o.amount}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -170,19 +170,19 @@ export function Sync({ v }: { v: V }) {
             </div>
             <div className={cx(CARD, "flex flex-col gap-3 px-4.5 py-3.5")}>
               {v.syncToggles.map((t: V, i: number) => (
-                <div key={i} onClick={t.tap} className="flex cursor-pointer items-center justify-between gap-3">
+                <button key={i} onClick={t.tap} className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-[13.5px] font-semibold">{t.label}</span>
                     <span className="truncate text-[12.5px] leading-[1.5] text-ink-3">{t.meta}</span>
                   </div>
                   <Toggle t={t} small />
-                </div>
+                </button>
               ))}
             </div>
             <Includes v={v} title="Kept in your account" className="p-4.5" />
-            <div onClick={v.askStopSync} className="flex cursor-pointer items-center justify-center gap-2 rounded-card border border-line p-3.75 text-[13px] font-semibold text-action">
+            <button onClick={v.askStopSync} className="flex items-center justify-center gap-2 rounded-card border border-line p-3.75 text-[13px] font-semibold text-action">
               <Icon d={P.cloudOff} size={17} />{v.t.stopSync}
-            </div>
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -191,7 +191,7 @@ export function Sync({ v }: { v: V }) {
               <span className="text-pretty text-[12.5px] leading-[1.6] text-ink-2">{v.acctCardLine}</span>
               <Btn onClick={v.startCreate} className="mt-1">{v.t.turnOnSync}</Btn>
             </div>
-            <div onClick={v.startRestore} className="cursor-pointer rounded-card border border-line p-3.75 text-center text-[13px] font-semibold text-ink-2">{v.t.joinOther}</div>
+            <button onClick={v.startRestore} className="rounded-card border border-line p-3.75 text-center text-[13px] font-semibold text-ink-2">{v.t.joinOther}</button>
           </div>
         )}
       </div>
