@@ -1,16 +1,16 @@
-// Accounts tab, one account, and the add/edit account form.
+// Accounts, one account, and the add/edit account form.
 import {
-  Amount, CARD, Chevron, Chips, Cta, GoalCard, HeaderActions, Icon, IconBtn, ItemRow, Keypad, LABEL, P, Seg, Tile, TopBar, cx, type V,
+  Amount, CARD, Chevron, Chips, Cta, GoalCard, Icon, IconBtn, ItemRow, Keypad, LABEL, P, Seg, Tile, TopBar, cx, type V,
 } from "@/components/ui";
 
 export function Accounts({ v }: { v: V }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-13 flex-none items-center py-1 pr-2 pl-5">
-        <span className="flex-1 font-display text-[28px] font-bold tracking-[-0.015em]">{v.t.accounts}</span>
-        <HeaderActions v={v} />
-      </div>
-      <div className="flex flex-1 flex-col gap-3 overflow-auto px-4 pb-24">
+      <TopBar onBack={v.accountsBack} title={v.t.accounts}>
+        <IconBtn d={v.syncIconD} label="Sync" onClick={v.toSync} sw={1.9} className="" style={{ color: v.syncIconFg }} />
+      </TopBar>
+      <div className="flex flex-1 flex-col gap-3 overflow-auto px-4 pb-7">
+        <GoalCard v={v} />
         <div className="flex flex-col gap-1.5 px-1.5 pt-2 pb-1.5">
           <span className={LABEL}>{v.t.totalAcross}</span>
           <div className="flex items-baseline gap-2.25">
@@ -20,31 +20,53 @@ export function Accounts({ v }: { v: V }) {
           <span className="truncate text-[13px] leading-[1.5] text-ink-2">{v.totalMeta}</span>
         </div>
 
-        <div onClick={v.toSync} className="flex cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-3" style={{ background: v.syncStripBg }}>
+        <button onClick={v.toSync} className="flex items-center gap-2.5 rounded-2xl px-3.5 py-3" style={{ background: v.syncStripBg }}>
           <Icon d={v.syncIconD} size={20} style={{ color: v.syncIconFg }} />
           <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold leading-[1.45] text-ink-2">{v.syncStripLine}</span>
           <Chevron />
-        </div>
+        </button>
 
-        <div className={cx(CARD, "px-4 py-0.5")}>
-          {v.acctRows.map((a: V, i: number) => (
-            <div key={i} onClick={a.tap} className="flex cursor-pointer items-center gap-3 border-b border-line py-3.25">
-              <Tile d={a.icon} tint={a.tint} fg={a.ifg} className="size-9.5" size={20} />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-[14px] font-semibold leading-[1.35]">{a.name}</span>
-                <span className="truncate text-[12.5px] leading-[1.4] text-ink-3">{a.meta}</span>
-              </div>
-              <Amount>{a.balance}</Amount>
-              <Chevron />
-            </div>
-          ))}
-          <div onClick={v.toSrcNew} className="flex cursor-pointer items-center gap-3 py-3 text-action">
-            <span className="flex size-9.5 flex-none items-center justify-center rounded-xl border-[1.5px] border-dashed border-bar-dim"><Icon d={P.plus} size={19} /></span>
-            <span className="text-[14px] font-semibold">{v.t.addAccount}</span>
+        <div className="flex flex-col gap-2.5 px-1 pb-1">
+          <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-[5px] bg-bar-track">
+            {v.acctSplit.map((g: V, i: number) => <div key={i} className="h-full" style={{ width: g.width, background: g.color }} />)}
+          </div>
+          <div className="flex flex-wrap gap-x-4.5 gap-y-1.5">
+            {v.acctSplit.map((g: V, i: number) => (
+              <span key={i} className="flex items-center gap-1.75 whitespace-nowrap text-[13px] text-ink-2">
+                <span className="size-2 flex-none rounded-full" style={{ background: g.color }} />{g.label}<span className="font-semibold text-ink">{g.pct}</span>
+              </span>
+            ))}
           </div>
         </div>
 
-        <GoalCard v={v} />
+        {v.acctGroups.map((grp: V) => (
+          <div key={grp.key} className="flex flex-col gap-1.5 pt-2">
+            <div className="flex items-center gap-2 px-1">
+              <span className="flex h-6 items-center gap-1.5 rounded-xl px-2.5 text-[12.5px] font-bold" style={{ background: grp.tint, color: grp.fg }}>
+                <Icon d={grp.icon} size={14} sw={2.2} />{grp.label}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-3">{grp.hint}</span>
+              <Amount className="text-[15px] font-bold">{grp.total}</Amount>
+            </div>
+            <div className="rounded-2xl border border-line bg-surface px-4">
+              {grp.rows.map((a: V, i: number) => (
+                <button key={i} onClick={a.tap} className={cx("flex min-h-15.5 w-full items-center gap-3 text-left", i > 0 && "border-t border-line")}>
+                  <Tile d={a.icon} tint={grp.tint} fg={grp.fg} size={19} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[15px] font-medium leading-[1.3]">{a.name}</span>
+                    <span className="truncate text-[13px] leading-[1.35] text-ink-3">{a.meta}</span>
+                  </div>
+                  <Amount className="text-[16px]">{a.balance}</Amount>
+                  <Chevron />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <button onClick={v.toSrcNew} className="mt-1 flex min-h-13 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-bar-dim text-action">
+          <Icon d={P.plus} size={18} /><span className="text-[14px] font-semibold">{v.t.addAccount}</span>
+        </button>
       </div>
     </div>
   );
@@ -63,7 +85,7 @@ export function SourceDetail({ v }: { v: V }) {
           <span className="min-w-0 truncate font-display text-[22px] font-bold tracking-[-0.01em]">{v.srcName}</span>
           <span className="font-display text-[46px] font-extrabold leading-[1.05] tracking-[-0.03em]">{v.srcBalance}</span>
           <span className="text-[12px] text-ink-3">{v.srcMeta}</span>
-          <span onClick={v.srcEdit} className="w-fit cursor-pointer text-[12px] font-semibold" style={{ color: v.srcAcctFg }}>{v.srcAcctLine}</span>
+          <button onClick={v.srcEdit} className="w-fit text-[12px] font-semibold" style={{ color: v.srcAcctFg }}>{v.srcAcctLine}</button>
         </div>
         <div className="flex gap-2.5">
           <div className={cx(flow, "bg-tint-g text-pos")}>
@@ -93,13 +115,13 @@ function Field({ onClick, border, label, value, valueClass, fg, hint, hintFg }: 
   onClick: () => void; border: string; label: string; value: string; valueClass: string; fg: string; hint: string; hintFg: string;
 }) {
   return (
-    <div onClick={onClick} className="mx-5 mt-2.5 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border bg-surface px-3.75 py-3.25" style={{ borderColor: border }}>
+    <button onClick={onClick} className="mx-5 mt-2.5 flex items-center justify-between gap-3 rounded-2xl border bg-surface px-3.75 py-3.25" style={{ borderColor: border }}>
       <div className="flex min-w-0 flex-col gap-0.75">
         <span className={LABEL}>{label}</span>
         <span className={cx("font-display", valueClass)} style={{ color: fg }}>{value}</span>
       </div>
       <span className="flex-none text-[12.5px] font-semibold" style={{ color: hintFg }}>{hint}</span>
-    </div>
+    </button>
   );
 }
 
@@ -125,9 +147,9 @@ export function SrcNew({ v }: { v: V }) {
         <div className="px-5 pt-2.25"><Seg items={v.newSrcRoles} itemClass={seg} /></div>
         <div className="text-pretty px-5 pt-3 pb-2 text-[12.5px] leading-[1.6] text-ink-2">{v.newSrcFeedNote}</div>
         {v.isEditSrc && (
-          <div onClick={v.srcDelete} className="mx-5 mt-1 mb-2.5 cursor-pointer rounded-2xl border border-line px-4 py-3.5 text-center text-[12.5px] font-semibold text-action">
+          <button onClick={v.srcDelete} className="mx-5 mt-1 mb-2.5 rounded-2xl border border-line px-4 py-3.5 text-center text-[12.5px] font-semibold text-action">
             {v.srcDeleteLabel}
-          </div>
+          </button>
         )}
       </div>
       <Keypad keys={v.newSrcKeys} />
