@@ -11,20 +11,20 @@
   --toastBg: #221E19; --toastFg: #FDF8EC; --toastAccent: #FF9A80; --bezel: #2B3A4A;
 }
 [data-theme="dark"] {
-  --canvas: #0F1318; --surface: #19202A; --surface2: #212A35; --line: #2C3743;
-  --ink: #F2ECE0; --ink2: #C2C9D2; --ink3: #9AA4B0;
-  --brand: #FF5C5F; --action: #FF5C5F; --onAction: #14191F;
-  --navy: #9FB4CA; --pos: #4FB58C; --warn: #E0A64A;
-  --tintR: #2B1E20; --tintG: #17271F; --tintN: #1B222B; --tintW: #2A2418; --warnInk: #E0A64A;
-  --barTrack: #262F3A; --barDim: #3A4452; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-  --toastBg: #F2ECE0; --toastFg: #14191F; --toastAccent: #C42B2F; --bezel: #050709;
+  --canvas: #1C2330; --surface: #242C3A; --surface2: #2C3545; --line: #364152;
+  --ink: #E6E0D5; --ink2: #B6BDC7; --ink3: #959EAA;
+  --brand: #EE7B7C; --action: #E7797A; --onAction: #1C2330;
+  --navy: #AABBCD; --pos: #72BE9F; --warn: #D6A862;
+  --tintR: #3A2C33; --tintG: #233631; --tintN: #283241; --tintW: #373127; --warnInk: #D6A862;
+  --barTrack: #2F3949; --barDim: #465266; --shadow: 0 1px 2px rgba(8,12,20,.25), 0 8px 24px rgba(8,12,20,.22);
+  --toastBg: #E6E0D5; --toastFg: #1C2330; --toastAccent: #B5403F; --bezel: #10141B;
 }
 body {
   margin: 0;
   background: var(--canvas);
   -webkit-font-smoothing: antialiased;
 }
-body:has([data-theme="dark"]) { background: #0F1318; }
+body:has([data-theme="dark"]) { background: #1C2330; }
 
 /* Tailwind names for the tokens: bg-surface, text-ink-2, border-line, rounded-card, font-display… */
 @theme inline {
@@ -41,6 +41,11 @@ body:has([data-theme="dark"]) { background: #0F1318; }
   --shadow-card: var(--shadow);
 }
 @keyframes thaili-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@keyframes thaili-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes thaili-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.thaili-draw { stroke-dashoffset: 1; animation: thaili-draw 1.5s cubic-bezier(.55, .1, .35, 1) forwards; }
+.thaili-rise { opacity: 0; animation: thaili-rise .5s ease-out 1.1s forwards; }
+.thaili-intro { opacity: 0; animation: thaili-rise .65s cubic-bezier(.22, 1, .36, 1) forwards; }
 
 /* ---- Native feel: none of the tells that give away a web page. ---- */
 html, body { overscroll-behavior: none; }           /* no page bounce / pull-to-refresh */
@@ -49,6 +54,9 @@ body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none
 input, textarea { user-select: text; -webkit-user-select: text; }
 img { -webkit-user-drag: none; }
 ::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Tappable things are <button>s; lay them out like the blocks they sit among. */
+@layer base { button { text-align: inherit; cursor: pointer; } }
 
 /* Pressed state for tappable elements; also marks them for the haptic tick (logic.tsx render). */
 .press, .press-bg { cursor: pointer; transition: opacity .12s, background-color .12s; }
@@ -63,4 +71,4 @@ img { -webkit-user-drag: none; }
 .scr-fwd { animation: scr-fwd .22s cubic-bezier(.2, .8, .2, 1); }
 .scr-back { animation: scr-back .22s cubic-bezier(.2, .8, .2, 1); }
 .scr-fade { animation: scr-fade .15s ease-out; }
-@media (prefers-reduced-motion: reduce) { .scr-fwd, .scr-back, .scr-fade { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .scr-fwd, .scr-back, .scr-fade, .thaili-draw, .thaili-rise, .thaili-intro { animation: none; stroke-dashoffset: 0; opacity: 1; } }
