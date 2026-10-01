@@ -11,8 +11,10 @@
 import React from "react";
 import { SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
-import { TABS, nextStack } from "./nav";
+import { TABS, nextStack, weeklyDue } from "./nav";
 import Screens from "@/screens";
+import { P } from "@/components/ui";
+import { Splash } from "@/screens/onboarding";
 import { registerPush } from "./notifications";
 import { load, save, markAllDirty } from "./store";
 import { permStatus, requestSms, openNotificationAccess, openAppSettings, installedApps, isDevice, authenticate, readSms, hapticTap } from "./device";
@@ -155,11 +157,8 @@ const CI = {
 const SI = {
   inA: "M12 5v14M6 13l6 6 6-6", outA: "M12 19V5M6 11l6-6 6 6", xfer: "M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4",
   ask: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17ZM9.6 9.5a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 3.5M12 17h.01",
-  shield: "M12 3.5 5 6v5.5c0 4.3 3 7.6 7 9 4-1.4 7-4.7 7-9V6Z", drop: "M12 3.5c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-10Z",
   up: "M7 17 17 7M9 7h8v8", down: "M7 7l10 10M17 9v8H9", flat: "M5 12h14",
-  cal: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4", calCheck: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4",
-  receipt: "M5 3.5h14v17l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6L5 20.5ZM8.5 8h7M8.5 12h7",
-  grid: "M4 4h7v7H4ZM13 4h7v7h-7ZM4 13h7v7H4ZM13 13h7v7h-7Z", pie: "M11 4a8 8 0 1 0 9 9h-9ZM14 3.5a7 7 0 0 1 6.5 6.5H14Z"
+  calCheck: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4",
 };
 const kfmt = n => { const a = Math.abs(n); return a >= 100000 ? (Math.round(a / 10000) / 10) + "L" : a >= 10000 ? Math.round(a / 1000) + "k" : a.toLocaleString("en-IN"); };
 const MERGE_PAIRS = [
@@ -171,7 +170,7 @@ const L = {
     home: "Home", txns: "Transactions", insights: "Insights", accounts: "Accounts", settings: "Settings", sync: "Sync", goals: "Goals",
     quickAdd: "Quick add", newGoal: "New goal", rules: "Auto-filing rules", review: "Needs review", combine: "Combine pouches",
     tagline: "Every rupee that moves — bank, wallet, sahakari, cash — in one pouch, so you can see where it leaks.",
-    welcomeSub: "No bank login. Thaili reads your bank messages and spots the money apps already on this phone, so there is almost nothing to type.",
+    w1: "No bank login", w2: "Reads bank SMS", w3: "Finds your apps",
     getStarted: "Get started", otherPhone: "I use Thaili on another phone",
     step1: "Step 1 of 6 · messages", step2: "Step 2 of 6 · this phone", step3: "Step 3 of 6 · accounts", step4: "Step 4 of 6 · history",
     step5: "Step 5 of 6 · categories", step6: "Step 6 of 6 · sync, optional", editCats: "Categories", joinLabel: "Join sync",
@@ -180,7 +179,7 @@ const L = {
     srcTitle: "Two things per account",
     srcSub: "The last four digits — the only part a bank SMS prints, so Thaili can tell your accounts apart — and the opening balance every figure is counted from.",
     catsTitle: "Pick three to six", catsSub: "Flat list, no sub-categories — one tap has to finish the job. Add more any time.",
-    perDay: "Per day left", lastDay: "Left for the last day", roomToSpend: "Room to spend", recent: "Recent", seeAll: "See all",
+    recent: "Recent", seeAll: "See all",
     inL: "In", outL: "Out", savedL: "Saved", weekly: "Weekly review",
     appearance: "Appearance", appearanceMeta: "Cream by day, navy by night", light: "Light", dark: "Dark", langMeta: "English",
     notifications: "Notifications", quiet: "Quiet hours", appLock: "App lock", exportAll: "Export everything",
@@ -194,13 +193,13 @@ const L = {
     stopTitle: "Stop syncing?", stopThis: "Stop on this phone", stopThisMeta: "Everything stays here. Your other phones keep their copy.",
     delSynced: "Delete the synced copy", delSyncedMeta: "Removed from the server for good. Each phone keeps what it already has.",
     cancel: "Cancel", paste: "Paste", email: "Email",
-    all: "All", daily: "Daily", weeklyR: "Weekly", monthly: "Monthly", brief: "Overview", where: "Categories", leaks: "Leaks", done: "Done"
+    all: "All", daily: "Daily", weeklyR: "Weekly", monthly: "Monthly", leaks: "Leaks", done: "Done"
   },
   NP: {
     home: "गृह", txns: "कारोबार", insights: "विश्लेषण", accounts: "खाताहरू", settings: "सेटिङ", sync: "सिङ्क", goals: "लक्ष्य",
     quickAdd: "छिटो थप्नुहोस्", newGoal: "नयाँ लक्ष्य", rules: "स्वतः वर्गीकरण नियम", review: "समीक्षा बाँकी", combine: "थैली मिलाउनुहोस्",
     tagline: "बैंक, वालेट, सहकारी, नगद — चल्ने हरेक रुपैयाँ एउटै थैलीमा, ताकि कहाँ चुहिन्छ देखियोस्।",
-    welcomeSub: "बैंक लगइन चाहिँदैन। Thaili ले बैंकका सन्देश पढ्छ र यो फोनमा भएका पैसाका एप आफैँ चिन्छ — टाइप गर्नुपर्ने लगभग केही छैन।",
+    w1: "बैंक लगइन छैन", w2: "बैंक SMS पढ्छ", w3: "एप आफैँ भेट्छ",
     getStarted: "सुरु गरौँ", otherPhone: "म अर्को फोनमा Thaili चलाउँछु",
     step1: "चरण १ / ६ · सन्देश", step2: "चरण २ / ६ · यो फोन", step3: "चरण ३ / ६ · खाता", step4: "चरण ४ / ६ · इतिहास",
     step5: "चरण ५ / ६ · वर्ग", step6: "चरण ६ / ६ · सिङ्क, ऐच्छिक", editCats: "वर्गहरू", joinLabel: "सिङ्क जोड्नुहोस्",
@@ -209,7 +208,7 @@ const L = {
     srcTitle: "हरेक खाताका दुई कुरा",
     srcSub: "अन्तिम चार अङ्क — बैंकको SMS मा छापिने यही मात्र हो, जसले खाता छुट्याउँछ — र सुरुको मौज्दात, जहाँबाट हरेक हिसाब गनिन्छ।",
     catsTitle: "तीनदेखि छवटा छान्नुहोस्", catsSub: "सिधा सूची, उप-वर्ग छैन — एक ट्यापमै काम सकियोस्। पछि जति पनि थप्न सकिन्छ।",
-    perDay: "दैनिक बाँकी", lastDay: "अन्तिम दिनका लागि बाँकी", roomToSpend: "खर्च गर्न मिल्ने", recent: "हालैका", seeAll: "सबै",
+    recent: "हालैका", seeAll: "सबै",
     inL: "आम्दानी", outL: "खर्च", savedL: "बचत", weekly: "साप्ताहिक समीक्षा",
     appearance: "रूप", appearanceMeta: "दिनमा क्रिम, रातमा नीलो", light: "उज्यालो", dark: "अँध्यारो", langMeta: "नेपाली",
     notifications: "सूचना", quiet: "शान्त समय", appLock: "एप लक", exportAll: "सबै निर्यात",
@@ -223,18 +222,18 @@ const L = {
     stopTitle: "सिङ्क रोक्ने?", stopThis: "यो फोनमा रोक्नुहोस्", stopThisMeta: "सबै यहीँ रहन्छ। अरू फोनमा आफ्नै प्रति रहन्छ।",
     delSynced: "सिङ्क भएको प्रति मेटाउनुहोस्", delSyncedMeta: "सर्भरबाट सधैँका लागि हट्छ। हरेक फोनमा भएको रहन्छ।",
     cancel: "रद्द", paste: "टाँस्नुहोस्", email: "इमेल",
-    all: "सबै", daily: "दैनिक", weeklyR: "साप्ताहिक", monthly: "मासिक", brief: "सारांश", where: "वर्ग", leaks: "चुहावट", done: "भयो"
+    all: "सबै", daily: "दैनिक", weeklyR: "साप्ताहिक", monthly: "मासिक", leaks: "चुहावट", done: "भयो"
   }
 };
 
 
 export class ThailiLogic extends React.Component {
   state = {
-    loaded: false, screen: "welcome", tx: [],
+    loaded: false, splash: true, screen: "welcome", tx: [],
     picked: ["food", "transport", "grocery", "bills", "shopping", "health"],
     saveTarget: 10000, ess: {}, stackIdx: 0, detailId: null, from: "txns", srcFrom: "insights",
     rawOpen: false, editing: false, deleting: false, weekStep: 1, balNudge: 0, gapState: null,
-    range: "Monthly", insTab: "Brief", addEntry: "", addCat: "food", addSrc: "cash", addMore: false,
+    range: "Monthly", insCatsAll: false, addEntry: "", addCat: "food", addSrc: "cash", addMore: false,
     srcKey: null, toast: null, undoState: null, perms: [false, false], // real device state; see refreshPerms()
     appLock: false, locked: false, notifMode: "All", quiet: "10pm–7am",
     detTails: {}, scanTx: [], scanOrphans: 0, smsSince: null,
@@ -250,8 +249,8 @@ export class ThailiLogic extends React.Component {
     roles: {},
     goals: [],
     goalName: "Emergency fund", goalAmt: "", goalPos: "bottom",
-    catsMode: "setup", catsFrom: "settings", goalsFrom: "home", settingsFrom: "home", syncFrom: "settings",
-    mergePick: {}, mergeBal: null, stopSheet: false, syncAlert: true, resendLeft: 0
+    catsMode: "setup", catsFrom: "settings", goalsFrom: "home", accountsFrom: "settings", syncFrom: "settings",
+    mergePick: {}, mergeBal: null, stopSheet: false, syncAlert: true, resendLeft: 0, remarkDraft: null, weeklyDone: null
   };
 
   /* Spec §11 pipeline for bank SMS: parse → match an account → drop duplicates → auto-file.
@@ -292,7 +291,7 @@ export class ThailiLogic extends React.Component {
     const s = this.state;
     if (s.locked) return false;
     // Sheets and edit modes close before the screen does.
-    for (const [k, off] of [["deleting", false], ["stopSheet", false], ["rulePrompt", null], ["editing", false]]) {
+    for (const [k, off] of [["deleting", false], ["stopSheet", false], ["rulePrompt", null], ["remarkDraft", null], ["editing", false]]) {
       if (s[k]) { this.setState({ [k]: off }); return true; }
     }
     while (this.stack.length) {
@@ -332,6 +331,7 @@ export class ThailiLogic extends React.Component {
   componentDidMount() {
     registerPush();
     this.paintBars();
+    this._s = setTimeout(() => this.setState({ splash: false }), 2200); // let the mark finish drawing
     if (isDevice) this.backSub = CapApp.addListener("backButton", () => { if (!this.back()) CapApp.minimizeApp(); });
     this.refreshPerms();
     document.addEventListener("visibilitychange", this.onVisible);
@@ -361,7 +361,7 @@ export class ThailiLogic extends React.Component {
     this.stack = nextStack(this.stack, prev.screen, to);
   }
 
-  componentWillUnmount() { this.backSub?.then(h => h.remove()); document.removeEventListener("visibilitychange", this.onVisible); clearTimeout(this._t); clearInterval(this._r); }
+  componentWillUnmount() { this.backSub?.then(h => h.remove()); document.removeEventListener("visibilitychange", this.onVisible); clearTimeout(this._t); clearTimeout(this._s); clearInterval(this._r); }
 
   startResend() {
     clearInterval(this._r);
@@ -387,7 +387,16 @@ export class ThailiLogic extends React.Component {
   go(screen, extra) { clearTimeout(this._t); this.setState(Object.assign({ screen: screen, toast: null, undoState: null }, extra)); }
 
   openDetail(id, from, raw) {
-    this.go("detail", { detailId: id, from: from, rawOpen: !!raw, editing: false });
+    this.go("detail", { detailId: id, from: from, rawOpen: !!raw, editing: false, remarkDraft: null });
+  }
+
+  // Remarks are the user's own note; the bank's original message is never touched.
+  saveRemark(id) {
+    const s = this.state, v = (s.remarkDraft || "").trim(), prev = s.tx;
+    const cur = (prev.filter(t => t.id === id)[0] || {}).rem || null;
+    if ((v || null) === cur) { this.setState({ remarkDraft: null }); return; }
+    this.setState({ tx: prev.map(t => t.id === id ? Object.assign({}, t, { rem: v || null }) : t), remarkDraft: null });
+    this.flash(v ? (cur ? "Remark updated" : "Remark added") : "Remark removed", { tx: prev });
   }
 
   moveGoal(i, dir) {
@@ -527,6 +536,22 @@ export class ThailiLogic extends React.Component {
       return { icon: l[0], tint: l[1], ifg: l[2] };
     };
     const amtFg = t => t.dir === "credit" ? "var(--pos)" : t.dir === "transfer" ? "var(--navy)" : "var(--ink)";
+    // Accounts by role, as the store saves it: savings, or else spending.
+    const acctGrand = Math.max(1, s.sources.reduce((a, x) => a + Math.max(0, this.balance(x.key)), 0));
+    const acctGroups = [
+      { key: "spending", label: np ? "खर्च" : "Spending", hint: np ? "दैनिक खर्च यहीँबाट" : "Day-to-day money", color: "var(--navy)", tint: "var(--tintN)", fg: "var(--navy)", icon: IC.wallet },
+      { key: "savings", label: np ? "बचत" : "Savings", hint: np ? "बचत आधार र लक्ष्य" : "Counts toward floor & goals", color: "var(--pos)", tint: "var(--tintG)", fg: "var(--pos)", icon: IC.vault }
+    ].map(g => {
+      const list = s.sources.filter(x => (s.roles[x.key] === "savings" ? "savings" : "spending") === g.key);
+      const sum = list.reduce((a, x) => a + this.balance(x.key), 0);
+      return Object.assign(g, {
+        sum: sum, total: balRs(sum),
+        rows: list.map(x => ({
+          name: x.name, icon: acctLook(x, [IC.bank]).icon, meta: x.type.split(" · ")[0], balance: balRs(this.balance(x.key)),
+          tap: () => this.go("source-detail", { srcKey: x.key, srcFrom: "accounts" })
+        }))
+      });
+    }).filter(g => g.rows.length);
 
     const chip = (label, on, tap) => ({
       label: label, tap: tap,
@@ -605,9 +630,24 @@ export class ThailiLogic extends React.Component {
       const d = pctDelta(now, was);
       return { icon: d > 0 ? SI.up : d < 0 ? SI.down : SI.flat, text: Math.abs(d) + "%", fg: d === 0 ? "var(--ink3)" : d < 0 ? "var(--pos)" : "var(--warnInk)", bg: d === 0 ? "var(--surface2)" : d < 0 ? "var(--tintG)" : "var(--surface)" };
     };
-    const catLook = k => ({ icon: CI[k] || IC.tag, tint: isEss(k) ? "var(--tintN)" : "var(--tintW)", ifg: isEss(k) ? "var(--navy)" : "var(--warnInk)" });
     const catAmts = cats.map(c => ({ k: c.key, label: c.label, amt: catIn(c.key), prev: catPrev(c.key), limit: c.limit }));
-    const catTop = catAmts.filter(x => x.amt > 0).sort((a, b) => b.amt - a.amt);
+    const catRows = catAmts.filter(c => c.amt || c.prev).map(c => {
+      const ceiling = s.range === "Monthly" ? c.limit : Math.max.apply(null, catAmts.map(x => x.amt).concat([1]));
+      const pct = Math.min(100, c.amt / Math.max(ceiling || 1, 1) * 100);
+      const d = deltaChip(c.amt, c.prev);
+      return {
+        label: c.label, amount: rs(c.amt), width: pct + "%",
+        color: s.range !== "Monthly" ? "var(--navy)" : pct >= 100 ? "var(--warnInk)" : pct >= 70 ? "var(--warn)" : "var(--pos)",
+        dWord: c.prev && d.text !== "0%" ? (c.amt > c.prev ? "↑ " : "↓ ") + d.text : "", dFg: c.prev ? d.fg : "var(--ink3)"
+      };
+    });
+    // "12% more than last week" — the comparison as a sentence.
+    const prevWord = { Daily: np ? "हिजो" : "yesterday", Weekly: np ? "गत हप्ता" : "last week", Monthly: PREV_MONTH_EN }[s.range];
+    const vsSentence = (now, was) => {
+      const d = pctDelta(now, was);
+      return !was ? "" : d === 0 ? (np ? prevWord + " जत्तिकै" : "Same as " + prevWord)
+        : np ? prevWord + " भन्दा " + Math.abs(d) + "% " + (d > 0 ? "बढी" : "कम") : Math.abs(d) + "% " + (d > 0 ? "more" : "less") + " than " + prevWord;
+    };
     const perDiv = s.range === "Daily" ? 1 : s.range === "Weekly" ? 7 : DAY_OF_MONTH;
 
     const amt = parseInt(s.addEntry || "0", 10);
@@ -747,16 +787,16 @@ export class ThailiLogic extends React.Component {
       syncStripLine: s.account
         ? (np ? "सिङ्क भयो " : "Synced ") + s.lastSync + " · " + s.devices.length + (np ? " फोन" : s.devices.length === 1 ? " phone" : " phones")
         : (np ? "सिङ्क बन्द — यो थैली यही फोनमा मात्र छ" : "Sync is off — this pouch lives only on this phone"),
-      settingsBack: () => this.go(s.settingsFrom || "home"),
+      accountsBack: () => this.go(s.accountsFrom || "settings"),
+      toAccounts: () => this.go("accounts", { accountsFrom: s.screen === "accounts" ? s.accountsFrom : s.screen }),
       goalsBack: () => this.go(s.goalsFrom || "home"),
       totalBal: balFmt(s.sources.reduce((a, x) => a + this.balance(x.key), 0)),
       totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + balRs(savingsPot) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
-      acctRows: s.sources.map(x => Object.assign(acctLook(x, [IC.bank, "var(--tintR)", "var(--action)"]), {
-        name: x.name,
-        meta: x.type.split(" · ")[0] + ((s.roles[x.key] || "") !== "spending" ? " · savings" : ""),
-        balance: balRs(this.balance(x.key)),
-        tap: () => this.go("source-detail", { srcKey: x.key, srcFrom: "accounts" })
-      })),
+      acctGroups: acctGroups,
+      acctSplit: acctGroups.map(g => {
+        const pct = Math.round(Math.max(0, g.sum) / acctGrand * 100) + "%";
+        return { label: g.label, color: g.color, width: pct, pct: pct };
+      }),
       mergeBack: toAuthEmail,
       mergeTitle: np ? "दुवैतिर कारोबार छन्" : "Both sides have entries",
       mergeSub: np ? "केही फालिँदैन। हुबहु उस्तै सन्देश आफैँ मिल्छन्; उस्तै मात्र देखिने र हरेक हिसाब बदल्ने कुरा तपाईंलाई सोधिन्छ।"
@@ -1003,7 +1043,6 @@ export class ThailiLogic extends React.Component {
         this.go("cats");
       },
       toTxns: () => this.go("txns", { txFilter: "all" }),
-      toSettings: () => this.go("settings", { settingsFrom: s.screen === "settings" ? s.settingsFrom : s.screen }),
       toAdd: () => this.go("add", { addEntry: "", addMore: false }),
       toGoal: () => this.go("goals", { goalsFrom: s.screen }),
       toReviewStack: () => this.go("stack", { stackIdx: 0 }),
@@ -1117,21 +1156,40 @@ export class ThailiLogic extends React.Component {
 
       bsMonth: np ? MONTH_NP + " " + npDigits(TODAY_BS.y) : MONTH_EN + " " + TODAY_BS.y,
       adRange: (np ? "दिन " + DAY_OF_MONTH + " / " : "Day " + DAY_OF_MONTH + " of ") + DAYS_IN_MONTH + " · " + adLabel(0),
-      allowLabel: lastDay ? T.lastDay : T.perDay,
       allowAmount: fmt(allowance),
       allowFg: remaining <= 0 ? "var(--warnInk)" : "var(--ink)",
       daysLeftShort: lastDay ? "last day" : daysLeft + " days",
-      daysChip: lastDay ? (np ? "अन्तिम दिन" : "Last day") : np ? daysLeft + " दिन बाँकी" : daysLeft + " days left",
-      remainShort: remaining > 0 ? rs(remaining) + (np ? " बाँकी" : " free") : rs(Math.abs(remaining)) + (np ? " बढी" : " over"),
-      remainBg: remaining > 0 ? "var(--surface2)" : "var(--tintW)",
-      remainFg: remaining > 0 ? "var(--ink2)" : "var(--warnInk)",
-      paceShort: (targetPctNum > pacePctNum ? "+" : "−") + Math.abs(targetPctNum - pacePctNum) + (np ? "% गति" : "% vs pace"),
-
-      targetPct: targetPctNum + "% used",
+      haveLabel: np ? "तपाईंसँग छ" : "You have",
+      haveMeta: np ? s.sources.length + " खाताको जम्मा" : "Across " + s.sources.length + (s.sources.length === 1 ? " account" : " accounts"),
+      budgetTitle: np ? MONTH_NP + "मा खर्च गर्न मिल्ने" : "Spendable in " + MONTH_EN,
+      dayOfLine: np ? "दिन " + DAY_OF_MONTH + " / " + DAYS_IN_MONTH : "Day " + DAY_OF_MONTH + " of " + DAYS_IN_MONTH,
+      spentWord: np ? "खर्च भयो" : "Spent",
+      homeSpent: rs(spent),
+      leftWord: remaining >= 0 ? (np ? "खर्च गर्न बाँकी" : "Left to spend") : (np ? "बढी खर्च" : "Over by"),
+      homeLeft: rs(Math.abs(remaining)),
+      leftFg: remaining > 0 ? "var(--pos)" : "var(--warnInk)",
       targetWidth: Math.min(100, targetPctNum) + "%",
-      targetBar: targetPctNum >= 100 ? "var(--warnInk)" : targetPctNum > pacePctNum + 8 ? "var(--warn)" : "var(--pos)",
-      targetFg: targetPctNum >= 100 ? "var(--warnInk)" : targetPctNum > pacePctNum + 8 ? "var(--warn)" : "var(--pos)",
-      spentOfTarget: rs(spent) + " / " + fmt(freeToSpend),
+      budgetBar: targetPctNum >= 100 ? "var(--warnInk)" : targetPctNum > pacePctNum + 8 ? "var(--warn)" : "var(--navy)",
+      budgetLine: np ? rs(freeToSpend) + " को " + targetPctNum + "% खर्च भयो" : targetPctNum + "% of " + rs(freeToSpend) + " used",
+      suggestLead: remaining <= 0 ? (np ? "यो महिना खर्च गर्न मिल्ने सकियो — " : "You're past what was free to spend — ") : lastDay ? (np ? "आज " : "Keep today under ") : (np ? "दिनको " : "Try to keep each day under "),
+      suggestAmt: remaining <= 0 ? (np ? "बचत जोगाउनुहोस्" : "hold off where you can") : rs(allowance),
+      suggestTail: remaining <= 0 ? "" : np ? " भित्र राख्नुहोस्" : lastDay ? "" : " to stay on track",
+      weeklyDue: weeklyDue(new Date(), s.weeklyDone),
+      weeklyLine: np ? "साप्ताहिक समीक्षा तयार छ" : "Your weekly review is ready",
+      weeklyMeta: s.weeklyDone ? (np ? "पछिल्लो पटक " : "Last done ") + bsLabel(Math.round((new Date().setHours(0, 0, 0, 0) - new Date(s.weeklyDone).setHours(0, 0, 0, 0)) / 86400000)).replace(/ \d+$/, "") : "",
+      goalsManage: np ? "व्यवस्थापन" : "Manage",
+      floorPending: floorShort > 0,
+      floorLine: np ? "बचत आधार " + rs(s.savingsGoal) + " पुगेपछि लक्ष्य भरिन थाल्छन् · " + rs(floorShort) + " बाँकी"
+        : "Goals start filling once savings clear the " + rs(s.savingsGoal) + " floor · " + rs(floorShort) + " to go",
+      homeGoals: alloc.map(a => {
+        const pct = Math.min(100, Math.round(a.got / Math.max(a.g.target, 1) * 100));
+        return {
+          name: a.g.name, got: rs(a.got), target: fmt(a.g.target), pct: pct + "%",
+          ring: "conic-gradient(var(--pos) " + pct + "%, var(--barTrack) 0)",
+          pctFg: a.short === 0 ? "var(--pos)" : "var(--ink)",
+          tap: () => this.go("goals", { goalsFrom: "home" })
+        };
+      }),
 
       goalName: surplus > 0 ? "Surplus above your floor" : "Savings floor",
       goalLabel: surplus > 0 ? rs(surplus) + " free" : floorPct + "%",
@@ -1222,7 +1280,7 @@ export class ThailiLogic extends React.Component {
 
       hasReview: review.length > 0,
       reviewCount: review.length,
-      reviewLine: np ? review.length + " कारोबार समीक्षा बाँकी" : review.length + " to review",
+      homeReviewLine: np ? review.length + " खर्चलाई वर्ग चाहिन्छ" : review.length + (review.length === 1 ? " spend needs a category" : " spends need a category"),
       reviewCountBig: review.length + (review.length === 1 ? " item" : " items"),
 
       toWeekly: () => this.go("weekly", { weekStep: 1 }),
@@ -1240,8 +1298,9 @@ export class ThailiLogic extends React.Component {
         { key: "review", label: T.review + " " + review.length }
       ].map(t => ({
         label: t.label,
-        bg: s.txFilter === t.key ? "var(--action)" : "transparent",
-        fg: s.txFilter === t.key ? "var(--onAction)" : "var(--ink2)",
+        bg: s.txFilter === t.key ? "var(--surface)" : "transparent",
+        fg: s.txFilter === t.key ? "var(--ink)" : "var(--ink3)",
+        shadow: s.txFilter === t.key ? "0 1px 2px rgba(0,0,0,.08)" : "none",
         tap: () => this.setState({ txFilter: t.key, toast: null })
       })),
       txRows: rows,
@@ -1300,10 +1359,21 @@ export class ThailiLogic extends React.Component {
         { label: "Source", value: srcOf(detail.src).name, fg: "var(--ink)" },
         { label: "Date", value: bsLabel(detail.off) + " · " + detail.time, fg: "var(--ink)" },
         { label: "Gregorian", value: adLabel(detail.off) + " · " + WD_FULL[dayOf(detail.off).getDay()], fg: "var(--ink3)" },
-        { label: "Remarks", value: detail.rem || "None", fg: detail.rem ? "var(--ink)" : "var(--ink3)" },
+        { label: "Remarks", value: detail.rem || "None", fg: detail.rem ? "var(--ink)" : "var(--ink3)",
+          action: s.remarkDraft != null ? "" : detail.rem ? "Edit" : "Add",
+          tap: () => { if (s.remarkDraft == null) this.setState({ remarkDraft: detail.rem || "", toast: null }); } },
         { label: "Captured by", value: detail.ch, fg: "var(--ink3)" },
         { label: "Receipt", value: "None attached", fg: "var(--ink3)" }
       ],
+      remarkOpen: s.remarkDraft != null,
+      remarkDraft: s.remarkDraft || "",
+      remarkTitle: detail.rem ? "Edit the remark" : "Add a remark",
+      remarkCount: (s.remarkDraft || "").length + " / 80",
+      remarkType: e => this.setState({ remarkDraft: e.target.value.slice(0, 80) }),
+      remarkKey: e => { if (e.key === "Enter") this.saveRemark(detail.id); if (e.key === "Escape") this.setState({ remarkDraft: null }); },
+      remarkSave: () => this.saveRemark(detail.id),
+      remarkCancel: () => this.setState({ remarkDraft: null }),
+      remarkClear: () => this.setState({ remarkDraft: "" }),
       rawOpen: s.rawOpen,
       toggleRaw: () => this.setState({ rawOpen: !s.rawOpen }),
       detailRaw: detail.raw,
@@ -1355,75 +1425,50 @@ export class ThailiLogic extends React.Component {
       weekBack: () => s.weekStep === 1 ? this.go("home") : this.setState({ weekStep: s.weekStep - 1, toast: null }),
       weekNextLabel: s.weekStep === 3 ? "Finish" : "Next",
       weekNext: () => {
-        if (s.weekStep === 3) { this.setState({ screen: "home", weekStep: 1 }); this.flash("Weekly review done"); }
+        if (s.weekStep === 3) { this.setState({ screen: "home", weekStep: 1, weeklyDone: Date.now() }); this.flash("Weekly review done"); }
         else this.setState({ weekStep: s.weekStep + 1, toast: null });
       },
 
       ranges: ["Daily", "Weekly", "Monthly"].map(r => ({
-        label: { Daily: T.daily, Weekly: T.weeklyR, Monthly: T.monthly }[r], bg: s.range === r ? "var(--action)" : "transparent", fg: s.range === r ? "var(--onAction)" : "var(--ink2)",
+        label: { Daily: T.daily, Weekly: T.weeklyR, Monthly: T.monthly }[r], bg: s.range === r ? "var(--surface)" : "transparent", fg: s.range === r ? "var(--ink)" : "var(--ink3)", shadow: s.range === r ? "0 1px 2px rgba(0,0,0,.08)" : "none",
         tap: () => this.setState({ range: r })
       })),
       spentHeadLabel: (np ? "खर्च · " : "Spent · ") + (s.range === "Monthly" ? (np ? MONTH_NP : MONTH_EN) : s.range === "Weekly" ? (np ? "यो हप्ता" : "this week") : (np ? "आज" : "today")),
       spentBig: fmt(periodOut),
       spentChip: deltaChip(periodOut, prevTotal),
-      vsLabel: "vs " + prevName,
+      spentSentence: vsSentence(periodOut, prevTotal),
       insTrio: [
-        { label: T.inL, value: kfmt(periodIn), icon: SI.inA, tint: "var(--tintG)", ifg: "var(--pos)" },
-        { label: net >= 0 ? T.savedL : (np ? "बढी" : "Over"), value: kfmt(net), icon: SI.shield, tint: net >= 0 ? "var(--tintN)" : "var(--tintW)", ifg: net >= 0 ? "var(--navy)" : "var(--warnInk)" },
-        { label: T.leaks, value: kfmt(leakOut), icon: SI.drop, tint: "var(--tintW)", ifg: "var(--warnInk)" }
+        { vfg: "var(--pos)", label: T.inL, value: kfmt(periodIn) },
+        { vfg: net >= 0 ? "var(--ink)" : "var(--warnInk)", label: net >= 0 ? T.savedL : (np ? "बढी" : "Over"), value: kfmt(net) },
+        { vfg: "var(--warnInk)", label: T.leaks, value: kfmt(leakOut) }
       ],
       trendAvgShort: (np ? "औसत " : "Avg ") + kfmt(trendAvg),
-      topCatsTitle: np ? "मुख्य वर्ग" : "Top categories",
-      catsTitle: np ? "वर्ग अनुसार" : "By category",
-      splitTitle: np ? "आवश्यक र चुहावट" : "Essential vs leaks",
+      whereTitle: np ? "पैसा कहाँ गयो" : "Where it went",
       biggestTitle: np ? "ठूला खर्च" : "Biggest spends",
-      toWhere: () => this.setState({ insTab: "Where" }),
-      topCats4: catTop.slice(0, 4).map(c => Object.assign(catLook(c.k), {
-        label: c.label, amount: rs(c.amt),
-        width: Math.round(c.amt / Math.max(catTop[0].amt, 1) * 100) + "%",
-        color: isEss(c.k) ? "var(--navy)" : "var(--warn)"
-      })),
       splitRows: [
-        { label: np ? "आवश्यक" : "Essential", amt: essOut, icon: SI.shield, ifg: "var(--navy)", color: "var(--navy)" },
-        { label: T.leaks, amt: leakOut, icon: SI.drop, ifg: "var(--warnInk)", color: "var(--warn)" },
-        { label: np ? "वर्ग छैन" : "Not filed", amt: unfiled, icon: SI.ask, ifg: "var(--ink3)", color: "var(--barDim)" }
+        { label: np ? "आवश्यक" : "Essential", amt: essOut, color: "var(--navy)" },
+        { label: T.leaks, amt: leakOut, color: "var(--warn)" },
+        { label: np ? "वर्ग छैन" : "Not filed", amt: unfiled, color: "var(--barDim)" }
       ].filter((g, i) => i < 2 || g.amt > 0).map(g => Object.assign(g, {
-        amount: rs(g.amt), pct: Math.round(g.amt / Math.max(periodOut, 1) * 100) + "%",
+        pct: Math.round(g.amt / Math.max(periodOut, 1) * 100) + "%",
         width: Math.round(g.amt / Math.max(periodOut, 1) * 100) + "%"
       })),
-      catRows: catAmts.filter(c => c.amt || c.prev).map(c => {
-        const ceiling = s.range === "Monthly" ? c.limit : Math.max.apply(null, catAmts.map(x => x.amt).concat([1]));
-        const pct = Math.min(100, c.amt / Math.max(ceiling || 1, 1) * 100);
-        const d = deltaChip(c.amt, c.prev);
-        return Object.assign(catLook(c.k), {
-          label: c.label, amount: rs(c.amt), width: pct + "%",
-          color: s.range !== "Monthly" ? "var(--navy)" : pct >= 100 ? "var(--warnInk)" : pct >= 70 ? "var(--warn)" : "var(--pos)",
-          dIcon: c.prev ? d.icon : SI.flat, dText: c.prev ? d.text : "", dFg: c.prev ? d.fg : "var(--ink3)"
-        });
-      }),
-      leakIcon: SI.drop, pieIcon: SI.pie,
-      leakHeadLabel: T.leaks + " · " + (s.range === "Monthly" ? (np ? MONTH_NP : MONTH_EN) : s.range === "Weekly" ? (np ? "यो हप्ता" : "this week") : (np ? "आज" : "today")),
+      catRowsShown: s.insCatsAll ? catRows : catRows.slice(0, 5),
+      catMore: catRows.length > 5,
+      catMoreLabel: s.insCatsAll ? (np ? "कम देखाउनुहोस्" : "Show fewer") : (np ? "सबै " + catRows.length + " वर्ग" : "Show all " + catRows.length + " categories"),
+      toggleCatsAll: () => this.setState({ insCatsAll: !s.insCatsAll }),
       leakBig: fmt(leakOut),
-      leakChip: deltaChip(leakOut, prevLeak),
-      leakShareLabel: leakShare + "%",
+      leakSentence: (np ? "कुल खर्चको " + leakShare + "%" : leakShare + "% of what you spent") + (vsSentence(leakOut, prevLeak) && pctDelta(leakOut, prevLeak) !== 0 ? " · " + vsSentence(leakOut, prevLeak) : ""),
+      leakEditLabel: np ? "के चुहावट हो?" : "What counts",
       leaksNoneLabel: np ? "कुनै चुहावट छैन" : "No leaks this period",
-      leakRows2: leakCats.filter(x => x.amt > 0).map(x => Object.assign(catLook(x.c.key), {
+      leakRowsTop: leakCats.filter(x => x.amt > 0).slice(0, 3).map(x => ({
         label: x.c.label, amount: rs(x.amt), per: kfmt(Math.round(x.amt / perDiv)) + (np ? "/दिन" : "/day"),
-        width: Math.round(x.amt / Math.max(leakCats[0].amt, 1) * 100) + "%", color: "var(--warn)"
+        width: Math.round(x.amt / Math.max(leakCats[0].amt, 1) * 100) + "%"
       })),
       leakStats: [
-        { icon: SI.cal, tint: "var(--tintN)", ifg: "var(--navy)", value: heaviest[0] + " · " + kfmt(heaviest[1]), label: np ? "सबैभन्दा महँगो दिन" : "Heaviest day" },
-        { icon: SI.receipt, tint: "var(--tintN)", ifg: "var(--navy)", value: rs(median), label: np ? "सामान्य खर्च" : "Typical spend" }
+        { value: heaviest[0] + " · " + kfmt(heaviest[1]), label: np ? "सबैभन्दा महँगो दिन" : "Heaviest day" },
+        { value: rs(median), label: np ? "सामान्य खर्च" : "Typical spend" }
       ],
-      insTabs: ["Brief", "Where", "Leaks"].map(t => ({
-        label: { Brief: T.brief, Where: T.where, Leaks: T.leaks }[t],
-        icon: { Brief: SI.grid, Where: SI.pie, Leaks: SI.drop }[t],
-        bg: s.insTab === t ? "var(--surface)" : "transparent",
-        fg: s.insTab === t ? "var(--ink)" : "var(--ink2)",
-        shadow: s.insTab === t ? "0 1px 3px rgba(43,58,74,.14)" : "none",
-        tap: () => this.setState({ insTab: t })
-      })),
-      insBrief: s.insTab === "Brief", insSpend: s.insTab === "Where", insLeaks: s.insTab === "Leaks",
 
 
       leaksNone: leakCats.filter(x => x.amt > 0).length === 0,
@@ -1431,7 +1476,7 @@ export class ThailiLogic extends React.Component {
 
 
 
-      topSpends: s.tx.filter(t => t.dir === "debit").sort((a, b) => b.amt - a.amt).slice(0, 4).map(t => Object.assign(txLook(t), {
+      topSpends: s.tx.filter(t => t.dir === "debit").sort((a, b) => b.amt - a.amt).slice(0, 3).map(t => Object.assign(txLook(t), {
         title: t.m, meta: dayLabel(t.off) + " · " + (t.cat ? clabel(t.cat) : "Uncategorised"),
         amount: "−" + fmt(t.amt), tap: () => this.openDetail(t.id, "insights")
       })),
@@ -1525,10 +1570,6 @@ export class ThailiLogic extends React.Component {
       },
       srcDeleteLabel: "Remove " + s.newSrcName + " and everything read from it",
 
-      sourceRows: s.sources.map(x => Object.assign(acctLook(x, [IC.bank, "var(--tintN)", "var(--navy)"]), {
-        name: x.name, meta: x.type.split(" · ")[0], dot: x.dot, balance: balRs(this.balance(x.key)),
-        tap: () => this.go("source-detail", { srcKey: x.key, srcFrom: "insights" })
-      })),
 
       srcName: shownSrc.name,
       srcBalance: balRs(this.balance(s.srcKey)),
@@ -1581,6 +1622,9 @@ export class ThailiLogic extends React.Component {
       },
 
       settingRows: [
+        { icon: P.wallet, label: T.accounts, meta: s.sources.length + (s.sources.length === 1 ? " account · " : " accounts · ") + "balances and roles",
+          value: "Rs " + balFmt(s.sources.reduce((a, x) => a + this.balance(x.key), 0)),
+          tap: () => this.go("accounts", { accountsFrom: "settings" }) },
         /* Notifications and quiet hours are saved now and apply once capture sends spend prompts. */
         { icon: IC.bell, label: T.notifications,
           meta: s.notifMode === "All" ? "Ask for a purpose after each spend" : s.notifMode === "Off" ? "No prompts — review from the app" : "Only spends that need a category",
@@ -1617,8 +1661,8 @@ export class ThailiLogic extends React.Component {
   }
 
   render() {
-    // Blank canvas while the pouch loads, so a returning user never flashes the welcome screen.
-    const v = this.state.loaded ? this.renderVals() : null;
+    // Splash while the pouch loads, so a returning user never flashes the welcome screen.
+    const v = this.state.loaded && !this.state.splash ? this.renderVals() : null;
     // Transition for this screen change: back slides from the left, tab to tab fades, else push.
     const scr = this.state.screen;
     if (scr !== this.shownScreen) {
@@ -1629,15 +1673,15 @@ export class ThailiLogic extends React.Component {
     return (
       <div data-theme={this.state.theme} onClickCapture={e => { if (e.target.closest(".press, .press-bg, button")) hapticTap(); }}
         className="relative mx-auto flex h-dvh max-w-[430px] flex-col overflow-hidden bg-canvas text-ink pt-[var(--safe-area-inset-top,env(safe-area-inset-top))] pb-[var(--safe-area-inset-bottom,env(safe-area-inset-bottom))]">
-        {this.state.locked ? (
+        {!v ? <Splash /> : this.state.locked ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-5">
             <div className="flex size-18 items-center justify-center rounded-[22px] bg-brand">
-              <img src="./thaili-mark-cream.png" alt="Thaili" className="h-10.75 w-10 object-contain" />
+              <img src="./thaili-mark-line.png" alt="Thaili" className="h-12.5 w-9 object-contain" />
             </div>
             <div className="text-[15px] text-ink-2">Thaili is locked</div>
             <button onClick={this.unlock} className="rounded-[14px] bg-action px-9 py-3.5 text-[15px] font-semibold text-on-action">Unlock</button>
           </div>
-        ) : v && <div key={scr} className={"scr " + this.anim}><Screens v={v} /></div>}
+        ) : <div key={scr} className={"scr " + this.anim}><Screens v={v} /></div>}
       </div>
     );
   }
