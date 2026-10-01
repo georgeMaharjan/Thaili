@@ -27,7 +27,7 @@ export default function Screens({ v }: { v: V }) {
     {v.hasToast && (
       <div className="absolute inset-x-4 flex items-center justify-between gap-3 rounded-[15px] bg-toast-bg px-4.5 py-3.5 text-toast-fg shadow-[0_10px_26px_rgba(0,0,0,.28)]" style={{ bottom: v.toastBottom }}>
         <span className="text-[13px] leading-[1.45]">{v.toast}</span>
-        {v.canUndo && <span onClick={v.undo} className="flex-none cursor-pointer text-[12.5px] font-bold text-toast-accent">Undo</span>}
+        {v.canUndo && <button onClick={v.undo} className="flex-none text-[12.5px] font-bold text-toast-accent">Undo</button>}
       </div>
     )}
   </>);
@@ -37,20 +37,20 @@ const TABS = [
   { key: "home", label: "home", d: "M3.5 10.5 12 3.8l8.5 6.7V20a1 1 0 0 1-1 1h-4v-6h-7v6h-4a1 1 0 0 1-1-1Z" },
   { key: "txns", label: "txns", d: "M5 3.5h14v17l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6L7.4 19 5 20.5ZM9 9h6M9 13h4" },
   { key: "insights", label: "insights", d: "M5 20v-6M12 20V7M19 20v-9" },
-  { key: "accounts", label: "accounts", d: P.wallet },
+  { key: "settings", label: "settings", d: P.gear },
 ];
 
 function TabBar({ v }: { v: V }) {
   const tab = (t: (typeof TABS)[number]) => {
     const on = v.screen === t.key;
     return (
-      <div key={t.key} onClick={() => v.goTab(t.key)} className={cx("relative flex h-14.5 flex-1 cursor-pointer flex-col items-center justify-center gap-1", on ? "text-action" : "text-ink-3")}>
+      <button key={t.key} onClick={() => v.goTab(t.key)} className={cx("relative flex h-14.5 flex-1 flex-col items-center justify-center gap-1", on ? "text-action" : "text-ink-3")}>
         <Icon d={t.d} sw={on ? 2.4 : 1.7} />
         <span className="text-[12.5px] font-semibold">{v.t[t.label]}</span>
         {t.key === "txns" && v.hasReview && (
           <span className="absolute -top-0.5 right-3.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-[9px] bg-action px-1.25 text-[12px] font-bold text-on-action">{v.reviewCount}</span>
         )}
-      </div>
+      </button>
     );
   };
   return (
@@ -58,9 +58,9 @@ function TabBar({ v }: { v: V }) {
       {TABS.slice(0, 2).map(tab)}
       <div className="w-15.5 flex-none" />
       {TABS.slice(2).map(tab)}
-      <div onClick={v.toAdd} aria-label="Quick add" className="press absolute -top-4.75 left-1/2 flex size-14 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-3 border-surface bg-action text-on-action shadow-[0_3px_8px_rgba(64,48,24,.16)]">
+      <button onClick={v.toAdd} aria-label="Quick add" className="press absolute -top-4.75 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full border-3 border-surface bg-action text-on-action shadow-[0_3px_8px_rgba(64,48,24,.16)]">
         <Icon d="M12 5.5v13M5.5 12h13" size={26} sw={2.6} />
-      </div>
+      </button>
     </div>
   );
 }
@@ -79,7 +79,7 @@ function DeleteSheet({ v }: { v: V }) {
         Your fingerprint or screen lock. The entry moves to Archive and can be brought back for 30 days — on every synced phone.
       </span>
       <div className="flex gap-2.5 pt-1">
-        <span onClick={v.cancelDelete} className="flex-1 cursor-pointer rounded-xl border border-line bg-surface-2 p-3.5 text-center text-[13.5px] font-semibold text-ink-2">Cancel</span>
+        <button onClick={v.cancelDelete} className="flex-1 rounded-xl border border-line bg-surface-2 p-3.5 text-center text-[13.5px] font-semibold text-ink-2">Cancel</button>
         <Btn onClick={v.confirmDelete} className="flex-1">Use fingerprint</Btn>
       </div>
     </Sheet>
@@ -87,25 +87,25 @@ function DeleteSheet({ v }: { v: V }) {
 }
 
 function StopSheet({ v }: { v: V }) {
-  const option = "flex cursor-pointer items-center gap-3 rounded-2xl border p-3.5";
+  const option = "flex items-center gap-3 rounded-2xl border p-3.5";
   return (
     <Sheet onClose={v.cancelStop} className="gap-2.5 px-4.5 pt-6 pb-2.5">
       <span className="px-1 font-display text-[23px] font-bold">{v.t.stopTitle}</span>
-      <div onClick={v.stopThis} className={cx(option, "border-line")}>
+      <button onClick={v.stopThis} className={cx(option, "border-line")}>
         <Tile d={P.cloudOff} className="size-9 bg-surface-2 text-ink-2" />
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[14px] font-semibold">{v.t.stopThis}</span>
           <span className="text-[12.5px] leading-[1.45] text-ink-3">{v.t.stopThisMeta}</span>
         </div>
-      </div>
-      <div onClick={v.deleteSynced} className={cx(option, "border-action")}>
+      </button>
+      <button onClick={v.deleteSynced} className={cx(option, "border-action")}>
         <Tile d={P.trash} className="size-9 bg-tint-r text-action" />
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[14px] font-semibold text-action">{v.t.delSynced}</span>
           <span className="text-[12.5px] leading-[1.45] text-ink-3">{v.t.delSyncedMeta}</span>
         </div>
-      </div>
-      <span onClick={v.cancelStop} className="cursor-pointer p-3.5 text-center text-[13.5px] font-semibold text-ink-2">{v.t.cancel}</span>
+      </button>
+      <button onClick={v.cancelStop} className="p-3.5 text-center text-[13.5px] font-semibold text-ink-2">{v.t.cancel}</button>
     </Sheet>
   );
 }
