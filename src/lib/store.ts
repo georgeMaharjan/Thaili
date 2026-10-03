@@ -7,7 +7,7 @@ import { dated } from "./bs";
 
 // Small preferences kept as one JSON row. Adding a key here is all it takes.
 const PREF_KEYS = ["picked", "customCats", "ess", "saveTarget", "savingsGoal", "theme", "lang",
-  "splitMode", "syncCell", "syncRaw", "syncAlert", "appLock", "notifMode", "quiet", "smsSince", "weeklyDone"] as const;
+  "splitMode", "syncCell", "syncRaw", "syncAlert", "appLock", "notifMode", "smsSince", "weeklyDone"] as const;
 
 const txFromRow = (r: any) => dated({
   id: r.id, m: r.merchant, amt: Number(r.amount), dir: r.dir, src: r.src, to: r.to_src,
@@ -22,7 +22,7 @@ const txToRow = (t: any, keepRaw: boolean) => ({
 });
 const srcToRow = (x: any, i: number, roles: any) => ({
   key: x.key, name: x.name, base: x.base || x.name, short: x.short || x.name, type: x.type, dot: x.dot,
-  opening: x.opening || 0, acct: x.acct ? String(x.acct).slice(-4) : null,
+  opening: x.opening || 0, opening_at: x.openedAt || new Date().toISOString(), acct: x.acct ? String(x.acct).slice(-4) : null,
   role: roles[x.key] === "savings" ? "savings" : "spending", sort: i,
 });
 
@@ -50,7 +50,7 @@ export async function load() {
     isNew: sources.length === 0,
     sources: sources.map((x: any) => ({
       key: x.key, name: x.name, base: x.base, short: x.short, type: x.type, dot: x.dot,
-      opening: Number(x.opening), acct: x.acct,
+      opening: Number(x.opening), openedAt: x.opening_at, acct: x.acct,
     })),
     roles,
     tx: tx.map(txFromRow),
