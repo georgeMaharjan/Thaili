@@ -30,8 +30,8 @@ export function Splash() {
 
 export function Welcome({ v }: { v: V }) {
   const lang = [
-    { label: "EN", tap: v.setEn, bg: v.enBg, fg: v.enFg },
-    { label: "नेपाली", tap: v.setNp, bg: v.npBg, fg: v.npFg },
+    { label: "EN", tap: v.setEn, bg: v.enBg, fg: v.enFg, shadow: v.enSh },
+    { label: "नेपाली", tap: v.setNp, bg: v.npBg, fg: v.npFg, shadow: v.npSh },
   ];
   const chips = [
     { label: v.t.w1, icon: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 7.5-2M4 4l16 16" /></> },

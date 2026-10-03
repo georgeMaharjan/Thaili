@@ -1,7 +1,7 @@
 // Home, the Needs-review card stack, the weekly review and quick add.
 import {
-  AmountEntry, Bar, Btn, CARD, Chip, Chips, Cta, HeadLink, HeaderActions, Icon, IconBtn, Keypad,
-  LABEL, P, Section, TopBar, TxLine, cx, type V,
+  AmountEntry, Bar, Btn, CARD, Chevron, Chip, Chips, Cta, HeadLink, HeaderActions, Hero, Icon, IconBtn, Keypad,
+  LABEL, P, Pull, Section, TopBar, TxCard, cx, type V,
 } from "@/components/ui";
 
 export function Home({ v }: { v: V }) {
@@ -22,35 +22,33 @@ export function Home({ v }: { v: V }) {
         <HeaderActions v={v} />
       </div>
 
-      <div className="flex flex-1 flex-col gap-8 overflow-auto px-5 pt-1 pb-26">
+      <Pull onRefresh={v.syncPull} className="flex-1">
+      <div className="flex flex-col gap-8 px-5 pt-1 pb-26">
         <div className="flex flex-col gap-7 pt-4.5">
           <button onClick={v.toAccounts} className="press flex flex-col gap-1.5 text-left">
-            <span className="text-[15px] font-semibold text-ink-2">{v.haveLabel}</span>
-            <span className="flex items-baseline gap-2">
-              <span className="font-display text-[30px] font-bold">Rs</span>
-              <span className={cx(big, "text-[78px] leading-[.9] tracking-[-0.035em]")}>{v.totalBal}</span>
-            </span>
+            <span className="flex items-center justify-between gap-3 text-[15px] font-semibold text-ink-2">{v.haveLabel}<Chevron /></span>
+            <Hero value={v.totalBal} fs={v.balFs} />
             <span className="text-[14px] leading-normal text-ink-3">{v.haveMeta}</span>
           </button>
 
-          <div className="flex flex-col gap-3.5">
+          <button onClick={v.toAccounts} className="press flex flex-col gap-3.5 text-left">
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-[15px] font-bold text-ink-2">{v.budgetTitle}</span>
-              <span className="whitespace-nowrap text-[13px] text-ink-3">{v.dayOfLine}</span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-[13px] text-ink-3">{v.dayOfLine}<Chevron /></span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-[13px] text-ink-3">{v.spentWord}</span>
-                <span className={cx(big, "truncate text-[30px] leading-[1.1] tracking-[-0.01em]")}>{v.homeSpent}</span>
+                <span className={cx(big, "whitespace-nowrap leading-[1.1] tracking-[-0.01em]")} style={{ fontSize: v.budgetFs }}>{v.homeSpent}</span>
               </div>
               <div className="flex min-w-0 flex-col items-end gap-0.5">
                 <span className="text-[13px] text-ink-3">{v.leftWord}</span>
-                <span className={cx(big, "max-w-full truncate text-[30px] leading-[1.1] tracking-[-0.01em]")} style={{ color: v.leftFg }}>{v.homeLeft}</span>
+                <span className={cx(big, "whitespace-nowrap leading-[1.1] tracking-[-0.01em]")} style={{ color: v.leftFg, fontSize: v.budgetFs }}>{v.homeLeft}</span>
               </div>
             </div>
             <Bar width={v.targetWidth} color={v.budgetBar} className="h-2.5 rounded-[5px]" />
             <span className="text-[14px] leading-[1.45] text-ink-2">{v.budgetLine}</span>
-          </div>
+          </button>
 
           <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3.5">
             <Icon d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3Z" sw={1.9} style={{ color: v.allowFg }} />
@@ -62,10 +60,10 @@ export function Home({ v }: { v: V }) {
 
         {(v.hasReview || v.weeklyDue) && <div className="-mt-2 flex flex-col gap-3">
             {v.hasReview && (
-              <button onClick={v.toReviewStack} className={cx(strip, "bg-tint-w")}>
-                <span className="flex h-6 min-w-6 flex-none items-center justify-center rounded-xl bg-warn-ink px-1.75 font-display text-[13px] font-bold text-canvas">{v.reviewCount}</span>
+              <button onClick={v.toReviewStack} className={cx(strip, "bg-tint-u")}>
+                <span className="flex h-6 min-w-6 flex-none items-center justify-center rounded-xl bg-uncat px-1.75 font-display text-[13px] font-bold text-canvas">{v.reviewCount}</span>
                 <span className="min-w-0 flex-1 text-[15px] font-semibold leading-[1.35]">{v.homeReviewLine}</span>
-                <Icon d={P.next} size={18} sw={2.2} className="text-warn-ink" />
+                <Icon d={P.next} size={16} sw={2.2} className="text-uncat" />
               </button>
             )}
             {v.weeklyDue && (
@@ -101,9 +99,10 @@ export function Home({ v }: { v: V }) {
         </Section>
 
         <Section title={v.t.recent} action={<HeadLink onClick={v.toTxns}>{v.t.seeAll}</HeadLink>}>
-          {v.recent.map((t: V, i: number) => <TxLine key={i} r={t} />)}
+          {v.recent.map((t: V, i: number) => <TxCard key={i} r={t} />)}
         </Section>
       </div>
+      </Pull>
     </div>
   );
 }
@@ -180,7 +179,7 @@ export function Weekly({ v }: { v: V }) {
             <div className={LABEL}>What does your bank app say?</div>
             <div className="flex items-center gap-2 rounded-2xl border-[1.5px] border-action bg-surface px-4 py-3.5">
               <span className="font-display text-[17px] font-semibold text-ink-3">Rs</span>
-              <input inputMode="numeric" aria-label="Balance in your bank app" value={v.typedBal} onChange={v.balType}
+              <input inputMode="decimal" aria-label="Balance in your bank app" value={v.typedBal} onChange={v.balType}
                 className="min-w-0 flex-1 bg-transparent p-0 font-display text-[32px] font-bold tracking-[-0.025em] text-ink outline-none" />
             </div>
           </div>

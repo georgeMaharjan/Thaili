@@ -4,7 +4,7 @@ import { Btn, Icon, P, Tile, cx, type V } from "@/components/ui";
 import { Accounts, SourceDetail, SrcNew } from "./accounts";
 import { GoalNew, Goals } from "./goals";
 import { Add, Home, Stack, Weekly } from "./home";
-import { Insights } from "./insights";
+import { Baseline, Flow, Insights, Leaks } from "./insights";
 import { Cats, Detect, Permission, Scan, Source, Welcome } from "./onboarding";
 import { Settings } from "./settings";
 import { Merge, Restore, Signup, Sync } from "./sync";
@@ -13,7 +13,7 @@ import { Detail, Rules, Txns } from "./transactions";
 const SCREENS: Record<string, ComponentType<{ v: V }>> = {
   welcome: Welcome, permission: Permission, detect: Detect, source: Source, "src-new": SrcNew, scan: Scan, cats: Cats,
   signup: Signup, restore: Restore, merge: Merge, sync: Sync,
-  home: Home, txns: Txns, stack: Stack, detail: Detail, weekly: Weekly, insights: Insights, add: Add, rules: Rules,
+  home: Home, txns: Txns, stack: Stack, detail: Detail, weekly: Weekly, insights: Insights, flow: Flow, leaks: Leaks, baseline: Baseline, add: Add, rules: Rules,
   accounts: Accounts, "source-detail": SourceDetail, goals: Goals, "goal-new": GoalNew, settings: Settings,
 };
 
@@ -56,9 +56,9 @@ function TabBar({ v }: { v: V }) {
   return (
     <div className="relative flex h-18 flex-none items-center border-t border-line bg-surface px-2 shadow-[0_-8px_20px_rgba(64,48,24,.06)]">
       {TABS.slice(0, 2).map(tab)}
-      <div className="w-15.5 flex-none" />
+      <div className="w-17 flex-none" />
       {TABS.slice(2).map(tab)}
-      <button onClick={v.toAdd} aria-label="Quick add" className="press absolute -top-4.75 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full border-3 border-surface bg-action text-on-action shadow-[0_3px_8px_rgba(64,48,24,.16)]">
+      <button onClick={v.toAdd} aria-label="Quick add" className="press absolute top-1/2 left-1/2 z-2 flex size-14.5 -translate-x-1/2 -translate-y-[82%] items-center justify-center rounded-[20px] border-4 border-canvas bg-action text-on-action shadow-[0_10px_24px_rgba(64,48,24,.28),0_2px_6px_rgba(64,48,24,.16)]">
         <Icon d="M12 5.5v13M5.5 12h13" size={26} sw={2.6} />
       </button>
     </div>

@@ -15,13 +15,18 @@ import { TABS, nextStack, weeklyDue } from "./nav";
 import Screens from "@/screens";
 import { P } from "@/components/ui";
 import { Splash } from "@/screens/onboarding";
-import { registerPush } from "./notifications";
+import { weeklyReminder, onWeeklyTap } from "./notifications";
 import { load, save, markAllDirty } from "./store";
-import { permStatus, requestSms, openNotificationAccess, openAppSettings, installedApps, isDevice, authenticate, readSms, hapticTap } from "./device";
-import { parseSms, sourceFor, isDuplicate, tailsByBank } from "./sms";
-import { BS_EN, BS_NP, bsOf, daysInBsMonth, monthKey, monthName, npDigits, dated } from "./bs";
+import { permStatus, requestSms, openNotificationAccess, openAppSettings, installedApps, isDevice, authenticate, readSms, setCapture, onOpen, readNotifications, hapticTap } from "./device";
+import { parseSms, sourceFor, isDuplicate, tailsByBank, transferTo, pairTransfers, nativeRules } from "./sms";
+import { BS_EN, BS_NP, adOf, bsOf, daysInBsMonth, monthKey, monthName, npDigits, dated } from "./bs";
 
-const fmt = n => Math.round(Math.abs(n)).toLocaleString("en-IN");
+// Paisa show only when there are any: "1,500", "1,500.50", "1,500.75".
+const fmt = n => { const a = Math.round(Math.abs(n) * 100) / 100; return a.toLocaleString("en-IN", { minimumFractionDigits: a % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
+// Headline figures (78px hero, big totals) in whole rupees: paisa there only gets truncated.
+const whole = n => Math.round(Math.abs(n)).toLocaleString("en-IN");
+// An amount mid-typing ("1500.", "1500.5") keeps its dot and digits; only the whole part gets commas.
+const fmtTyped = v => { const [w, f] = String(v).split("."); return fmt(Number(w) || 0) + (f === undefined ? "" : "." + f); };
 const rs = n => "Rs " + fmt(n);
 // fmt/rs drop the sign (callers word it: "over", "more than expected"). A balance can
 // really be below zero — an overdrawn account, cash spent past its opening — so keep it.
@@ -46,6 +51,12 @@ const EXTRA_CATS = [
    Every one of these is the user's to flip — the default is just a starting point. */
 const ESS_DEFAULT = { food: false, going: false, shopping: false, gifts: false };
 const ALL_CATS = CATS.concat(EXTRA_CATS);
+/* Money in has its own list — never mixed with spending categories. */
+const INCOME_CATS = [
+  { key: "salary", label: "Salary" }, { key: "business", label: "Business & freelance" },
+  { key: "interest", label: "Interest" }, { key: "giftin", label: "Gift received" },
+  { key: "refund", label: "Refund" }, { key: "otherin", label: "Other income" }
+];
 
 /* Auto-filing. Every feed line carries a remark; a rule is a word seen in that
    remark plus the category it means. Built-ins cover the obvious national ones,
@@ -56,10 +67,14 @@ const SEED_RULES = [
   { id: 3, kw: "FOODMANDU", cat: "food", own: false },
   { id: 4, kw: "NEA BILL", cat: "bills", own: false }
 ];
-const hay = t => (t.m + " " + (t.rem || "") + " " + (t.raw || "")).toUpperCase();
-/* FONEPAY, POS, QR — the merchant field is a payment rail, not a shop. In those
-   cases the remark is the only thing worth learning from. */
-const kwFor = t => /FONEPAY|POS |QR|MPAY/i.test(t.m) && t.rem ? t.rem.toUpperCase() : t.m.toUpperCase();
+/* Rules match words, not punctuation: "QR PAYMENT-4547, PARA SHOPPING" and a rule
+   "PARA SHOPPING" line up once both are upper-cased with symbols turned into spaces. */
+const words = v => String(v || "").toUpperCase().replace(/[^A-Z0-9&]+/g, " ").trim();
+const hay = t => words(t.m + " " + (t.rem || "") + " " + (t.raw || ""));
+/* What a rule learns from a spend: the remark's words minus payment rails (FONEPAY, MPAY, QR…)
+   and reference numbers, which differ every time. "MPAY FPQR,123456" leaves nothing to learn. */
+const RAILS = /^(FONEPAY|FPQR|MPAY|QR|PAYMENT|POS|CIPS|IPS|IBFT|FPY|TRANSACTION|MONEY|OUT|IN)$/;
+const kwFor = t => words(t.rem || t.m).split(" ").filter(w => w && !/\d/.test(w) && !RAILS.test(w)).join(" ") || null;
 
 
 /* The scan asks Android which of these apps are installed — nothing inside them is
@@ -109,12 +124,11 @@ const WD_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Sa
 
 const dayOf = off => new Date(AD_TODAY.getTime() - off * 86400000);
 const bsLabel = off => { const b = bsOf(dayOf(off)); return b.d + " " + BS_EN[b.m] + " " + b.y; };
+const bsDay = off => bsLabel(off).replace(/ \d+$/, ""); // "16 Asoj", no year
 const dayLabel = off => { const b = bsOf(dayOf(off));
   return off === 0 ? "Today · " + b.d + " " + BS_EN[b.m] : off === 1 ? "Yesterday · " + b.d + " " + BS_EN[b.m] : bsLabel(off); };
 const newId = () => crypto.randomUUID();
-const NOTIF_MODES = ["All", "Needs review", "Off"];
 /* Native navigation rules live in ./nav; back on Home backgrounds the app. */
-const QUIET_HOURS = ["10pm–7am", "11pm–6am", "Off"];
 const now = () => new Date().toISOString();
 /* Placeholders so an empty pouch (first launch) renders instead of crashing. */
 const NO_SRC = { key: "", name: "", base: "", short: "", type: "", dot: "var(--line)", opening: 0, acct: null };
@@ -160,7 +174,7 @@ const SI = {
   up: "M7 17 17 7M9 7h8v8", down: "M7 7l10 10M17 9v8H9", flat: "M5 12h14",
   calCheck: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4",
 };
-const kfmt = n => { const a = Math.abs(n); return a >= 100000 ? (Math.round(a / 10000) / 10) + "L" : a >= 10000 ? Math.round(a / 1000) + "k" : a.toLocaleString("en-IN"); };
+const kfmt = n => { const a = Math.abs(n); return a >= 100000 ? (Math.round(a / 10000) / 10) + "L" : a >= 10000 ? Math.round(a / 1000) + "k" : fmt(a); };
 const MERGE_PAIRS = [
   { id: "a", title: "FONEPAY · NIC Asia ••4821", meta: "This phone 1:12 pm · Redmi 1:14 pm · same wording", amt: 1500 },
   { id: "b", title: "eSewa QR payment", meta: "This phone 4:48 pm · Redmi 4:51 pm · different wording", amt: 450 }
@@ -182,7 +196,7 @@ const L = {
     recent: "Recent", seeAll: "See all",
     inL: "In", outL: "Out", savedL: "Saved", weekly: "Weekly review",
     appearance: "Appearance", appearanceMeta: "Cream by day, navy by night", light: "Light", dark: "Dark", langMeta: "English",
-    notifications: "Notifications", quiet: "Quiet hours", appLock: "App lock", exportAll: "Export everything",
+    notifications: "Notifications", appLock: "App lock", exportAll: "Export everything",
     archive: "Archive", categories: "Categories", totalAcross: "Across all accounts", addAccount: "Add an account",
     syncOn: "Sync on", syncOffTitle: "Sync is off", turnOnSync: "Turn on sync", joinOther: "I sync on another phone — join it",
     stopSync: "Stop syncing", thisPhone: "This phone", synced: "Synced",
@@ -193,7 +207,7 @@ const L = {
     stopTitle: "Stop syncing?", stopThis: "Stop on this phone", stopThisMeta: "Everything stays here. Your other phones keep their copy.",
     delSynced: "Delete the synced copy", delSyncedMeta: "Removed from the server for good. Each phone keeps what it already has.",
     cancel: "Cancel", paste: "Paste", email: "Email",
-    all: "All", daily: "Daily", weeklyR: "Weekly", monthly: "Monthly", leaks: "Leaks", done: "Done"
+    all: "All", daily: "Today", weeklyR: "Week", monthly: "Month", leaks: "Leaks", done: "Done"
   },
   NP: {
     home: "गृह", txns: "कारोबार", insights: "विश्लेषण", accounts: "खाताहरू", settings: "सेटिङ", sync: "सिङ्क", goals: "लक्ष्य",
@@ -211,7 +225,7 @@ const L = {
     recent: "हालैका", seeAll: "सबै",
     inL: "आम्दानी", outL: "खर्च", savedL: "बचत", weekly: "साप्ताहिक समीक्षा",
     appearance: "रूप", appearanceMeta: "दिनमा क्रिम, रातमा नीलो", light: "उज्यालो", dark: "अँध्यारो", langMeta: "नेपाली",
-    notifications: "सूचना", quiet: "शान्त समय", appLock: "एप लक", exportAll: "सबै निर्यात",
+    notifications: "सूचना", appLock: "एप लक", exportAll: "सबै निर्यात",
     archive: "संग्रह", categories: "वर्गहरू", totalAcross: "सबै खाताको जम्मा", addAccount: "खाता थप्नुहोस्",
     syncOn: "सिङ्क चालु", syncOffTitle: "सिङ्क बन्द छ", turnOnSync: "सिङ्क खोल्नुहोस्", joinOther: "अर्को फोनमा सिङ्क छ — जोड्नुहोस्",
     stopSync: "सिङ्क रोक्नुहोस्", thisPhone: "यो फोन", synced: "सिङ्क भएको",
@@ -222,7 +236,7 @@ const L = {
     stopTitle: "सिङ्क रोक्ने?", stopThis: "यो फोनमा रोक्नुहोस्", stopThisMeta: "सबै यहीँ रहन्छ। अरू फोनमा आफ्नै प्रति रहन्छ।",
     delSynced: "सिङ्क भएको प्रति मेटाउनुहोस्", delSyncedMeta: "सर्भरबाट सधैँका लागि हट्छ। हरेक फोनमा भएको रहन्छ।",
     cancel: "रद्द", paste: "टाँस्नुहोस्", email: "इमेल",
-    all: "सबै", daily: "दैनिक", weeklyR: "साप्ताहिक", monthly: "मासिक", leaks: "चुहावट", done: "भयो"
+    all: "सबै", daily: "आज", weeklyR: "हप्ता", monthly: "महिना", leaks: "चुहावट", done: "भयो"
   }
 };
 
@@ -232,10 +246,10 @@ export class ThailiLogic extends React.Component {
     loaded: false, splash: true, screen: "welcome", tx: [],
     picked: ["food", "transport", "grocery", "bills", "shopping", "health"],
     saveTarget: 10000, ess: {}, stackIdx: 0, detailId: null, from: "txns", srcFrom: "insights",
-    rawOpen: false, editing: false, deleting: false, weekStep: 1, balNudge: 0, gapState: null,
-    range: "Monthly", insCatsAll: false, addEntry: "", addCat: "food", addSrc: "cash", addMore: false,
+    rawOpen: false, editing: false, deleting: false, weekStep: 1, balNudge: 0, balDraft: null, gapState: null,
+    range: "Monthly", insCatsAll: false, ruleKw: "", ruleCat: null, addEntry: "", addCat: "food", addSrc: "cash", addMore: false,
     srcKey: null, toast: null, undoState: null, perms: [false, false], // real device state; see refreshPerms()
-    appLock: false, locked: false, notifMode: "All", quiet: "10pm–7am",
+    appLock: false, locked: false, notifMode: "On",
     detTails: {}, scanTx: [], scanOrphans: 0, smsSince: null,
     theme: "light", lang: "EN", txFilter: "all",
     savingsGoal: 200000, splitMode: "Queue",
@@ -245,12 +259,14 @@ export class ThailiLogic extends React.Component {
     newSrcAcct: "", newSrcField: "acct",
     detState: "done", detOn: {}, detFound: [],
     account: null, authMode: "create", authStep: "email", authEmail: "", authCode: "", authFrom: "cats",
-    devices: DEVICES, syncCell: true, syncRaw: false, lastSync: "2 minutes ago",
+    devices: DEVICES, syncCell: true, syncRaw: true, lastSync: "2 minutes ago",
     roles: {},
     goals: [],
     goalName: "Emergency fund", goalAmt: "", goalPos: "bottom",
     catsMode: "setup", catsFrom: "settings", goalsFrom: "home", accountsFrom: "settings", syncFrom: "settings",
-    mergePick: {}, mergeBal: null, stopSheet: false, syncAlert: true, resendLeft: 0, remarkDraft: null, weeklyDone: null
+    mergePick: {}, mergeBal: null, stopSheet: false, syncAlert: true, resendLeft: 0, remarkDraft: null, weeklyDone: null,
+    txQuery: "", txRange: "month", txFrom: null, txTo: null, calOpen: false, calA: null, calB: null, calKey: MONTH_KEY,
+    flowDir: "debit", savExplain: false, baseDraft: 0, baseMode: "custom", baseSetup: false, baseFrom: null
   };
 
   /* Spec §11 pipeline for bank SMS: parse → match an account → drop duplicates → auto-file.
@@ -263,26 +279,57 @@ export class ThailiLogic extends React.Component {
       if (!p) return; // spec §12.2: an unparseable message shows the user nothing
       const src = sourceFor(p, this.state.sources);
       if (!src) { orphans++; return; }
-      const t = this.autoFile(dated({ id: newId(), m: p.m, amt: p.amt, dir: p.dir, src: src.key, cat: null,
-        rem: p.rem, ch: "SMS", raw: p.raw, at: new Date(p.at).toISOString() }));
+      const to = transferTo(p, this.state.sources);
+      const base = dated({ id: newId(), m: p.m, amt: p.amt, dir: to ? "transfer" : p.dir, to: to ? to.key : null, src: src.key, cat: null,
+        rem: p.rem, ch: msg.ch || "SMS", raw: p.raw, at: new Date(p.at).toISOString() });
+      const t = to ? base : this.autoFile(base);
       if (!isDuplicate(t, existing) && !isDuplicate(t, out)) out.push(t);
     });
-    return { tx: out, orphans: orphans };
+    return { tx: pairTransfers(out), orphans: orphans };
   }
 
   /* Ongoing capture: on open and on every return to the app, pick up bank SMS since the last look.
      ponytail: runs only while the app is open; a background SMS receiver comes with the capture phase. */
-  catchUpSms = () => {
+  catchUpSms = (manual) => {
     const s = this.state;
-    if (!s.loaded || !s.sources.length || this.catching) return;
-    if (!s.smsSince) { this.setState({ smsSince: Date.now() }); return; } // start capturing from now
-    this.catching = true;
+    if (!s.loaded || !s.sources.length || this.catching) return this.catching || Promise.resolve();
+    if (!s.smsSince) { this.setState({ smsSince: Date.now() }); return Promise.resolve(); } // start capturing from now
     const t0 = Date.now();
-    readSms(s.smsSince).then(msgs => {
+    // Notifications from the account apps go through the same parser; the app that posted one names its bank.
+    const apps = DETECTED.filter(d => s.sources.some(x => x.key === d.key));
+    this.catching = Promise.all([readSms(s.smsSince), readNotifications(s.smsSince)]).then(([sms, notes]) => {
+      const msgs = sms.concat(notes.map(n => {
+        const d = apps.filter(a => a.pkg === n.pkg)[0];
+        return d ? { sender: "", bank: d.key, body: n.body, at: n.at, ch: "App" } : null;
+      }).filter(Boolean));
       const found = this.smsToTx(msgs, this.state.tx).tx;
       this.setState({ smsSince: t0, tx: found.length ? found.concat(this.state.tx) : this.state.tx });
       if (found.length) this.flash(found.length + (found.length === 1 ? " new spend" : " new entries") + " from your bank messages");
-    }).finally(() => { this.catching = false; });
+      else if (manual) this.flash("Up to date — nothing new from your banks");
+    }).finally(() => { this.catching = null; });
+    return this.catching;
+  };
+
+  /* Background capture (Capture.java) checks new bank SMS and app notifications with the
+     same senders, wording and rules, and nudges "Review this transaction" for a spend no rule files. */
+  syncCapture() {
+    const s = this.state;
+    const keys = s.sources.map(x => x.key);
+    setCapture(Object.assign(nativeRules(keys), {
+      packages: Object.fromEntries(DETECTED.filter(d => keys.indexOf(d.key) > -1).map(d => [d.pkg, d.key])),
+      rules: s.rules.map(r => words(r.kw)).filter(Boolean),
+      notify: s.notifMode !== "Off",
+    }));
+  }
+
+  /* A tapped notification. Review: import first, then open the spend it was about. */
+  openFromNotification = o => {
+    if (!this.state.loaded) { this.pendingOpen = o; return; }
+    if (o.open === "weekly") { this.go("weekly", { weekStep: 1 }); return; }
+    Promise.resolve(this.catchUpSms()).then(() => {
+      const t = this.state.tx.filter(x => x.dir === "debit" && Math.abs(Date.parse(x.at) - o.at) <= 180000)[0];
+      if (t) this.openDetail(t.id, "home"); else this.go("txns", { txFilter: "review" });
+    });
   };
 
   stack = []; // screens to go back to, most recent last
@@ -329,7 +376,8 @@ export class ThailiLogic extends React.Component {
   };
 
   componentDidMount() {
-    registerPush();
+    onOpen(this.openFromNotification);
+    onWeeklyTap(() => this.openFromNotification({ open: "weekly", at: 0 }));
     this.paintBars();
     this._s = setTimeout(() => this.setState({ splash: false }), 2200); // let the mark finish drawing
     if (isDevice) this.backSub = CapApp.addListener("backButton", () => { if (!this.back()) CapApp.minimizeApp(); });
@@ -338,12 +386,18 @@ export class ThailiLogic extends React.Component {
     load().then(d => {
       if (!d) { this.setState({ loaded: true }); return; } // no backend configured: local only
       this.saving = true;
-      if (d.isNew) { markAllDirty(); this.setState({ loaded: true }); return; } // first save writes seed rules + prefs
+      // First save writes seed rules + prefs. "New" means no accounts yet, which stays true until
+      // onboarding ends — keep rules already saved by an earlier open instead of seeding them again.
+      if (d.isNew) { markAllDirty(); this.setState(d.rules.length ? { loaded: true, rules: d.rules } : { loaded: true }); return; }
       this.setState(Object.assign({}, d.prefs, {
         loaded: true, locked: !!d.prefs.appLock, sources: d.sources, roles: d.roles, tx: d.tx, rules: d.rules, goals: d.goals,
         srcKey: d.sources[0].key, addSrc: d.sources[0].key,
         screen: "home"
-      }), () => { if (this.state.locked) this.unlock(); this.catchUpSms(); });
+      }), () => {
+        if (this.state.locked) this.unlock();
+        weeklyReminder(this.state.notifMode !== "Off");
+        if (this.pendingOpen) { this.openFromNotification(this.pendingOpen); this.pendingOpen = null; } else this.catchUpSms();
+      });
     }).catch(e => {
       // Never let an empty screen overwrite a pouch we failed to read: saving stays off.
       console.warn("[thaili] load failed", e?.message || JSON.stringify(e));
@@ -354,6 +408,8 @@ export class ThailiLogic extends React.Component {
 
   componentDidUpdate(_, prev) {
     if (this.saving && prev.loaded) save(prev, this.state);
+    const n = this.state;
+    if (n.loaded && (prev.sources !== n.sources || prev.rules !== n.rules || prev.notifMode !== n.notifMode)) this.syncCapture();
     if (prev.theme !== this.state.theme) this.paintBars();
     const to = this.state.screen;
     if (prev.screen === to) return;
@@ -386,8 +442,8 @@ export class ThailiLogic extends React.Component {
   // Every navigation drops the toast and its undo.
   go(screen, extra) { clearTimeout(this._t); this.setState(Object.assign({ screen: screen, toast: null, undoState: null }, extra)); }
 
-  openDetail(id, from, raw) {
-    this.go("detail", { detailId: id, from: from, rawOpen: !!raw, editing: false, remarkDraft: null });
+  openDetail(id, from, raw, edit) {
+    this.go("detail", { detailId: id, from: from, rawOpen: !!raw, editing: !!edit, remarkDraft: null });
   }
 
   // Remarks are the user's own note; the bank's original message is never touched.
@@ -413,12 +469,15 @@ export class ThailiLogic extends React.Component {
   balance(key) {
     const src = this.state.sources.filter(s => s.key === key)[0];
     if (!src) return 0;
+    // Opening is what the account held when it was typed: older SMS (the 90-day scan) are already in it.
+    const since = src.openedAt ? new Date(src.openedAt).getTime() : 0;
     let b = src.opening;
     this.state.tx.forEach(t => {
+      if (new Date(t.at).getTime() <= since) return;
       if (t.src === key) b += (t.dir === "credit" ? t.amt : -t.amt);
       if (t.dir === "transfer" && t.to === key) b += t.amt;
     });
-    return b;
+    return Math.round(b * 100) / 100; // float sums of paisa drift (0.1 + 0.2); money is 2 places
   }
 
   ruleFor(t) {
@@ -448,6 +507,8 @@ export class ThailiLogic extends React.Component {
 
   addRule(kw, cat, label) {
     const prevT = this.state.tx, prevR = this.state.rules;
+    kw = words(kw);
+    if (!kw) return;
     const rule = { id: newId(), kw: kw, cat: cat, own: true };
     const rules = prevR.concat([rule]);
     let filed = 0;
@@ -492,7 +553,7 @@ export class ThailiLogic extends React.Component {
     const np = s.lang === "NP";
     const dark = s.theme === "dark";
     const allCats = ALL_CATS.concat(s.customCats);
-    const clabel = k => { const c = allCats.filter(x => x.key === k)[0]; return c ? c.label : "Uncategorised"; };
+    const clabel = k => { const c = allCats.concat(INCOME_CATS).filter(x => x.key === k)[0]; return c ? c.label : "Uncategorised"; };
     /* Extras and the user's own categories have no hand-set limit, so they get an
        even slice of the monthly target rather than a silent zero. */
     const inMonth = t => monthKey(t.bs) === MONTH_KEY;
@@ -524,7 +585,7 @@ export class ThailiLogic extends React.Component {
     /* Weekly balance check runs on the first account that has a statement to check against. */
     const wk = s.sources.filter(x => !isManualSrc(x))[0] || s.sources[0] || NO_SRC;
     const typedBal = this.balance(wk.key) + s.balNudge;
-    const gap = this.balance(wk.key) - typedBal;
+    const gap = Math.round((this.balance(wk.key) - typedBal) * 100) / 100;
 
     const srcOf = k => s.sources.filter(x => x.key === k)[0] || s.sources[0] || NO_SRC;
     const shownSrc = srcOf(s.srcKey);
@@ -555,35 +616,58 @@ export class ThailiLogic extends React.Component {
 
     const chip = (label, on, tap) => ({
       label: label, tap: tap,
-      bg: on ? "var(--action)" : "var(--surface2)", fg: on ? "var(--onAction)" : "var(--ink2)",
-      border: on ? "var(--action)" : "var(--line)", weight: on ? "600" : "500", check: on ? "✓ " : ""
+      bg: on ? "var(--ink)" : "var(--surface2)", fg: on ? "var(--canvas)" : "var(--ink2)",
+      border: on ? "var(--ink)" : "var(--line)", weight: on ? "600" : "500", check: on ? "✓ " : ""
     });
 
     /* Keypad. An amount gets a "00" key and never starts with 0; a code or account tail can. */
     const keypad = (target, cur, max, amount) => {
-      const put = d => { if (cur.length + d.length <= max && (cur || !amount || d[0] !== "0")) this.setState({ [target]: cur + d, toast: null }); };
+      // An amount: no leading zero, one dot, two paisa digits, max whole digits.
+      const ok = v => amount ? /^(0|[1-9]\d*)(\.\d{0,2})?$/.test(v) && v.split(".")[0].length <= max : v.length <= max;
+      const put = d => { const v = !cur && d === "." ? "0." : cur + d; if (ok(v)) this.setState({ [target]: v, toast: null }); };
       return ["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(d => ({ label: d, fg: "var(--ink)", tap: () => put(d) })).concat([
-        amount ? { label: "00", fg: "var(--ink3)", tap: () => put("00") } : { label: "", fg: "var(--ink3)", tap: () => {} },
+        amount ? { label: ".", fg: "var(--ink3)", tap: () => put(".") } : { label: "", fg: "var(--ink3)", tap: () => {} },
         { label: "0", fg: "var(--ink)", tap: () => put("0") },
         { label: "", isBack: true, fg: "var(--ink3)", tap: () => this.setState({ [target]: cur.slice(0, -1), toast: null }) }
       ]);
     };
 
+    /* Essential or leak. Unknown and user-made categories start essential — calling
+       someone's spending wasteful without being asked is not Thaili's job. */
+    const isEss = k => s.ess[k] !== undefined ? s.ess[k] : ESS_DEFAULT[k] !== false;
+    /* One colour per kind, everywhere: income green, essential navy, leak amber,
+       needs-category violet, transfer grey. The card carries the kind; the chip names the category. */
+    const kindOf = t => t.dir === "transfer" ? "xfer" : t.dir === "credit" ? "in" : !t.cat ? "uncat" : isEss(t.cat) ? "ess" : "leak";
+    const KIND = {
+      in: ["var(--pos)", "var(--tintG)", "Income"], ess: ["var(--navy)", "var(--tintN)", "Essential"], leak: ["var(--warnInk)", "var(--tintW)", "Leak"],
+      uncat: ["var(--uncat)", "var(--tintU)", "Needs category"], xfer: ["var(--ink3)", "var(--surface2)", "Transfer"]
+    };
+    const catDot = k => isEss(k) ? "var(--navy)" : "var(--warn)";
+    // A transaction as a TxCard; `from` is the screen its detail returns to.
+    const txCard = (from, meta) => t => {
+      const k = kindOf(t), [ifg, tint, word] = KIND[k];
+      return { title: t.m, icon: txLook(t).icon, amount: amtStr(t), fg: amtFg(t), isUncat: k === "uncat", ifg: ifg, rowBg: tint, kindWord: word,
+        chip: t.cat ? clabel(t.cat) : word, meta: meta ? meta(t) : srcOf(t.src).short,
+        tap: () => this.openDetail(t.id, from, false, k === "uncat") };
+    };
+    const dayMeta = t => dayLabel(t.off).split(" · ")[0] + " · " + srcOf(t.src).short;
+
+    /* Transactions: Today, Week (last 7 days), this BS Month, or a Custom run of days (stored as day offsets). */
+    const inTxWin = t => s.txRange === "today" ? t.off === 0 : s.txRange === "week" ? t.off < 7
+      : s.txRange === "custom" ? t.off <= s.txFrom && t.off >= s.txTo : monthKey(t.bs) === MONTH_KEY;
+    const q = s.txQuery.trim().toLowerCase();
+    const matchQ = t => !q || [t.m, t.rem || "", t.cat ? clabel(t.cat) : KIND[kindOf(t)][2], srcOf(t.src).short, String(t.amt), fmt(t.amt)].join(" ").toLowerCase().indexOf(q) > -1;
     const rows = [];
     let lastHeader = null;
-    (s.txFilter === "review" ? review : s.tx).forEach(t => {
+    (s.txFilter === "review" ? review : s.tx).filter(t => inTxWin(t) && matchQ(t)).forEach(t => {
       const dl = dayLabel(t.off);
       if (dl !== lastHeader) { rows.push({ isHeader: true, label: dl }); lastHeader = dl; }
-      rows.push(Object.assign(txLook(t), {
-        isHeader: false, title: t.m,
-        cat: t.cat ? clabel(t.cat) + " · " + srcOf(t.src).short
-          : t.dir === "transfer" ? "Transfer · " + srcOf(t.src).short
-          : t.dir === "credit" ? "Income · " + srcOf(t.src).short : "Needs a category",
-        catFg: (!t.cat && t.dir === "debit") ? "var(--warnInk)" : "var(--ink3)",
-        amount: amtStr(t), fg: amtFg(t),
-        tap: () => this.openDetail(t.id, "txns")
-      }));
+      rows.push(txCard("txns")(t));
     });
+    // Custom range picker: one BS month at a time; days count back from today.
+    const calY = Math.floor(s.calKey / 12), calM = s.calKey % 12, calDays = daysInBsMonth(calY, calM);
+    const offOf = d => Math.round((new Date().setHours(0, 0, 0, 0) - adOf(calY, calM, d).setHours(0, 0, 0, 0)) / 86400000);
+    const calLo = s.calA, calHi = s.calB === null ? s.calA : s.calB; // offsets: lo is the earlier day, so the larger number
 
     /* Period windows: today, the last 7 days, or this BS month — and the one before each. */
     const inWin = t => s.range === "Daily" ? t.off === 0 : s.range === "Weekly" ? t.off < 7 : inMonth(t);
@@ -591,13 +675,12 @@ export class ThailiLogic extends React.Component {
     const debitSum = pred => s.tx.filter(t => t.dir === "debit" && pred(t)).reduce((a, t) => a + t.amt, 0);
     const catIn = k => debitSum(t => t.cat === k && inWin(t));
     const catPrev = k => debitSum(t => t.cat === k && inPrev(t));
-    /* Essential or leak. Unknown and user-made categories start essential — calling
-       someone's spending wasteful without being asked is not Thaili's job. */
-    const isEss = k => s.ess[k] !== undefined ? s.ess[k] : ESS_DEFAULT[k] !== false;
     const leakCats = cats.filter(c => !isEss(c.key)).map(c => ({ c: c, amt: catIn(c.key) })).sort((a, b) => b.amt - a.amt);
     const essOut = cats.filter(c => isEss(c.key)).reduce((a, c) => a + catIn(c.key), 0);
     const leakOut = leakCats.reduce((a, x) => a + x.amt, 0);
     const periodOut = debitSum(inWin);
+    const leakTx = s.tx.filter(t => t.dir === "debit" && t.cat && !isEss(t.cat) && inWin(t));
+    const leakCut = Math.round(leakOut / 3 / 100) * 100; // what a third less leaking would keep
     const periodIn = s.tx.filter(t => t.dir === "credit" && inWin(t)).reduce((a, t) => a + t.amt, 0);
     const prevTotal = cats.reduce((a, c) => a + catPrev(c.key), 0);
     /* A period can be negative, and it should say so. */
@@ -613,14 +696,6 @@ export class ThailiLogic extends React.Component {
 
     /* FIX 8 — weekday labels come off the real date, not a hardcoded list. */
     const trendDaily = [6, 5, 4, 3, 2, 1, 0].map(o => [wdShort(o), debitSum(t => t.off === o)]);
-    const TRENDS = {
-      Daily: trendDaily,
-      Weekly: [5, 4, 3, 2, 1, 0].map(w => [w ? w + "w ago" : "Now", debitSum(t => t.off >= w * 7 && t.off < w * 7 + 7)]),
-      Monthly: [5, 4, 3, 2, 1, 0].map(i => [monthName(MONTH_KEY - i).slice(0, 3), debitSum(t => monthKey(t.bs) === MONTH_KEY - i)])
-    };
-    const trend = TRENDS[s.range];
-    const trendMax = Math.max.apply(null, trend.map(t => t[1]).concat([1]));
-    const trendAvg = Math.round(trend.reduce((a, t) => a + t[1], 0) / trend.length);
 
     /* Habits, derived rather than asserted. */
     const heaviest = trendDaily.slice().sort((a, b) => b[1] - a[1])[0];
@@ -649,8 +724,11 @@ export class ThailiLogic extends React.Component {
         : np ? prevWord + " भन्दा " + Math.abs(d) + "% " + (d > 0 ? "बढी" : "कम") : Math.abs(d) + "% " + (d > 0 ? "more" : "less") + " than " + prevWord;
     };
     const perDiv = s.range === "Daily" ? 1 : s.range === "Weekly" ? 7 : DAY_OF_MONTH;
+    const perName = s.range === "Monthly" ? (np ? MONTH_NP : MONTH_EN) : s.range === "Weekly" ? (np ? "यो हप्ता" : "this week") : (np ? "आज" : "today");
+    /* Hero numbers shrink to fit rather than wrap: full size up to `n` characters. */
+    const fit = (len, full, n, min) => (len <= n ? full : Math.max(min, Math.floor(full * n / len))) + "px";
 
-    const amt = parseInt(s.addEntry || "0", 10);
+    const amt = parseFloat(s.addEntry || "0");
 
     /* Savings is the floor. Only what sits above it — the surplus — funds goals,
        waterfalling down the priority list. A goal is reached when surplus covers it. */
@@ -712,10 +790,17 @@ export class ThailiLogic extends React.Component {
     const unallocated = Math.max(0, pool);
     const claimed = surplus - unallocated;
     const fundedCount = alloc.filter(a => a.short === 0).length;
-    const goalAmtNum = parseInt(s.goalAmt || "0", 10);
+    const goalAmtNum = parseFloat(s.goalAmt || "0");
+    /* The baseline: a cushion of 3 or 6 months of essential spending (last three BS months), or the user's own figure. */
+    const essCats = cats.filter(c => isEss(c.key));
+    const essMonthly = Math.round([1, 2, 3].reduce((a, i) => a + debitSum(t => essCats.some(c => c.key === t.cat) && monthKey(t.bs) === MONTH_KEY - i), 0) / 3);
+    const baseFor = m => Math.ceil(essMonthly * m / 5000) * 5000;
+    const baseDraft = s.baseDraft;
+    const kept = income - spent;
+    const openBaseline = () => this.go("baseline", { baseFrom: s.screen, baseSetup: false, baseMode: "custom", baseDraft: s.savingsGoal });
 
     const newKind = SRC_KINDS.filter(k => k.key === s.newSrcKind)[0] || SRC_KINDS[0];
-    const newSrcAmtNum = parseInt(s.newSrcAmt || "0", 10);
+    const newSrcAmtNum = parseFloat(s.newSrcAmt || "0");
     const needAcct = newKind.key !== "manual";
     const acctOk = !needAcct || s.newSrcAcct.length === 4;
     const srcMissing = s.sources.filter(x => !isManualSrc(x) && (!x.acct || !x.opening));
@@ -739,19 +824,20 @@ export class ThailiLogic extends React.Component {
     const targetPctNum = freeToSpend ? Math.round(spent / freeToSpend * 100) : (spent ? 100 : 0);
     const pacePctNum = Math.round(DAY_OF_MONTH / DAYS_IN_MONTH * 100);
 
-    const segBg = on => on ? "var(--action)" : "transparent";
-    const segFg = on => on ? "var(--onAction)" : "var(--ink2)";
+    const segBg = on => on ? "var(--surface)" : "transparent";
+    const segFg = on => on ? "var(--ink)" : "var(--ink2)";
+    const segSh = on => on ? "0 1px 2px rgba(0,0,0,.08)" : "none";
 
     return {
       screen: s.screen,
       setLight: () => this.setState({ theme: "light" }),
       setDark: () => this.setState({ theme: "dark" }),
-      lightBg: segBg(!dark), lightFg: segFg(!dark),
-      darkBg: segBg(dark), darkFg: segFg(dark),
+      lightBg: segBg(!dark), lightFg: segFg(!dark), lightSh: segSh(!dark),
+      darkBg: segBg(dark), darkFg: segFg(dark), darkSh: segSh(dark),
       setEn: () => this.setState({ lang: "EN" }),
       setNp: () => this.setState({ lang: "NP" }),
-      enBg: segBg(s.lang === "EN"), enFg: segFg(s.lang === "EN"),
-      npBg: segBg(s.lang === "NP"), npFg: segFg(s.lang === "NP"),
+      enBg: segBg(s.lang === "EN"), enFg: segFg(s.lang === "EN"), enSh: segSh(s.lang === "EN"),
+      npBg: segBg(s.lang === "NP"), npFg: segFg(s.lang === "NP"), npSh: segSh(s.lang === "NP"),
       t: T,
       obDots: obStep ? [1, 2, 3, 4, 5, 6].map(i => ({ bg: i <= obStep ? "var(--action)" : "var(--barTrack)" })) : [],
       obBack: () => {
@@ -764,7 +850,7 @@ export class ThailiLogic extends React.Component {
       scanSkipTap: () => { this.setState({ scanTx: [] }); this.go(s.perms[0] ? "cats" : "permission"); },
       authBack: () => {
         if (s.authStep === "code") { this.setState({ authStep: "email", authCode: "" }); return; }
-        this.go(s.authFrom === "cats" ? "cats" : s.authFrom === "welcome" ? "welcome" : "sync");
+        this.go(s.authFrom === "cats" ? "baseline" : s.authFrom === "welcome" ? "welcome" : "sync");
       },
       authShowJoin: s.authMode === "create" && s.authStep === "email",
       authJoin: () => this.setState({ authMode: "restore", authStep: "email", authCode: "" }),
@@ -782,15 +868,15 @@ export class ThailiLogic extends React.Component {
       authResendFg: s.resendLeft > 0 ? "var(--ink3)" : "var(--action)",
       restoreBack: toAuthEmail,
       syncIconD: s.account ? IC.cloud : IC.cloudOff,
-      syncIconFg: s.account ? "var(--pos)" : "var(--warnInk)",
-      syncStripBg: s.account ? "var(--tintG)" : "var(--tintW)",
+      syncIconFg: s.account ? "var(--pos)" : "var(--ink2)",
+      syncStripBg: s.account ? "var(--tintG)" : "var(--surface2)",
       syncStripLine: s.account
         ? (np ? "सिङ्क भयो " : "Synced ") + s.lastSync + " · " + s.devices.length + (np ? " फोन" : s.devices.length === 1 ? " phone" : " phones")
         : (np ? "सिङ्क बन्द — यो थैली यही फोनमा मात्र छ" : "Sync is off — this pouch lives only on this phone"),
       accountsBack: () => this.go(s.accountsFrom || "settings"),
       toAccounts: () => this.go("accounts", { accountsFrom: s.screen === "accounts" ? s.accountsFrom : s.screen }),
       goalsBack: () => this.go(s.goalsFrom || "home"),
-      totalBal: balFmt(s.sources.reduce((a, x) => a + this.balance(x.key), 0)),
+      totalBal: (() => { const b = s.sources.reduce((a, x) => a + this.balance(x.key), 0); return signed(b) + whole(b); })(),
       totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + balRs(savingsPot) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
       acctGroups: acctGroups,
       acctSplit: acctGroups.map(g => {
@@ -914,7 +1000,8 @@ export class ThailiLogic extends React.Component {
       catsNext: () => {
         if (s.picked.length < 3) return;
         if (s.catsMode === "edit") { this.go(s.catsFrom || "settings"); this.flash("Categories saved"); return; }
-        this.startAuth("create", "cats");
+        // Setup's last step before sync: pick the savings baseline, 3 months of essentials suggested.
+        this.go("baseline", { baseSetup: true, baseFrom: "cats", baseMode: essMonthly ? "3" : "custom", baseDraft: essMonthly ? baseFor(3) : s.savingsGoal });
       },
       authPhoneStep: s.authStep === "email",
       authCodeStep: s.authStep === "code",
@@ -953,7 +1040,7 @@ export class ThailiLogic extends React.Component {
           return;
         }
         if (s.authMode === "restore") { this.go(s.tx.length && s.authFrom !== "welcome" ? "merge" : "restore"); return; }
-        if (s.authFrom === "cats") registerPush(true); // onboarding done: now ask for notifications
+        if (s.authFrom === "cats") weeklyReminder(true, true); // onboarding done: now ask for notifications
         this.setState({
           account: { phone: s.authEmail.trim().toLowerCase(), since: "Syncing since today" },
           devices: [DEVICES[0]], lastSync: "just now",
@@ -970,7 +1057,7 @@ export class ThailiLogic extends React.Component {
           if (s.authFrom === "cats") { this.setState({ authMode: "create", authStep: "email", authCode: "" }); return; }
           this.go("sync"); return;
         }
-        if (s.authFrom === "cats") registerPush(true); // onboarding done: now ask for notifications
+        if (s.authFrom === "cats") weeklyReminder(true, true); // onboarding done: now ask for notifications
         this.setState({ screen: s.authFrom === "cats" ? "home" : "sync" });
         this.flash("Sync off · this pouch stays on this phone");
       },
@@ -1021,9 +1108,8 @@ export class ThailiLogic extends React.Component {
       })),
       syncBack: () => this.go(s.syncFrom || "settings"),
       toSync: () => this.go("sync", { syncFrom: s.screen === "sync" ? s.syncFrom : s.screen, stopSheet: false }),
-      acctCardBg: s.account ? "var(--tintG)" : "var(--tintW)",
-      acctCardBorder: s.account ? "transparent" : "var(--warn)",
-      acctCardFg: s.account ? "var(--pos)" : "var(--warnInk)",
+      acctCardBg: s.account ? "var(--tintG)" : "var(--surface2)",
+      acctCardFg: s.account ? "var(--pos)" : "var(--ink2)",
       acctCardTitle: s.account ? T.syncOn + " · " + s.account.phone : T.syncOffTitle,
       acctCardLine: s.account
         ? (np ? "पछिल्लो सिङ्क " + s.lastSync + " · " + s.devices.length + " फोन" : "Last synced " + s.lastSync + " across " + s.devices.length + (s.devices.length === 1 ? " phone" : " phones") + ".")
@@ -1160,11 +1246,13 @@ export class ThailiLogic extends React.Component {
       allowFg: remaining <= 0 ? "var(--warnInk)" : "var(--ink)",
       daysLeftShort: lastDay ? "last day" : daysLeft + " days",
       haveLabel: np ? "तपाईंसँग छ" : "You have",
+      balFs: fit(whole(s.sources.reduce((a, x) => a + this.balance(x.key), 0)).length, 52, 8, 34),
+      budgetFs: fit(Math.max(whole(spent).length, fmt(remaining).length) + 3, 30, 9, 18),
       haveMeta: np ? s.sources.length + " खाताको जम्मा" : "Across " + s.sources.length + (s.sources.length === 1 ? " account" : " accounts"),
       budgetTitle: np ? MONTH_NP + "मा खर्च गर्न मिल्ने" : "Spendable in " + MONTH_EN,
       dayOfLine: np ? "दिन " + DAY_OF_MONTH + " / " + DAYS_IN_MONTH : "Day " + DAY_OF_MONTH + " of " + DAYS_IN_MONTH,
       spentWord: np ? "खर्च भयो" : "Spent",
-      homeSpent: rs(spent),
+      homeSpent: "Rs " + whole(spent),
       leftWord: remaining >= 0 ? (np ? "खर्च गर्न बाँकी" : "Left to spend") : (np ? "बढी खर्च" : "Over by"),
       homeLeft: rs(Math.abs(remaining)),
       leftFg: remaining > 0 ? "var(--pos)" : "var(--warnInk)",
@@ -1176,11 +1264,11 @@ export class ThailiLogic extends React.Component {
       suggestTail: remaining <= 0 ? "" : np ? " भित्र राख्नुहोस्" : lastDay ? "" : " to stay on track",
       weeklyDue: weeklyDue(new Date(), s.weeklyDone),
       weeklyLine: np ? "साप्ताहिक समीक्षा तयार छ" : "Your weekly review is ready",
-      weeklyMeta: s.weeklyDone ? (np ? "पछिल्लो पटक " : "Last done ") + bsLabel(Math.round((new Date().setHours(0, 0, 0, 0) - new Date(s.weeklyDone).setHours(0, 0, 0, 0)) / 86400000)).replace(/ \d+$/, "") : "",
+      weeklyMeta: s.weeklyDone ? (np ? "पछिल्लो पटक " : "Last done ") + bsDay(Math.round((new Date().setHours(0, 0, 0, 0) - new Date(s.weeklyDone).setHours(0, 0, 0, 0)) / 86400000)) : "",
       goalsManage: np ? "व्यवस्थापन" : "Manage",
       floorPending: floorShort > 0,
       floorLine: np ? "बचत आधार " + rs(s.savingsGoal) + " पुगेपछि लक्ष्य भरिन थाल्छन् · " + rs(floorShort) + " बाँकी"
-        : "Goals start filling once savings clear the " + rs(s.savingsGoal) + " floor · " + rs(floorShort) + " to go",
+        : "Goals start filling once savings clear the " + rs(s.savingsGoal) + " baseline · " + rs(floorShort) + " to go",
       homeGoals: alloc.map(a => {
         const pct = Math.min(100, Math.round(a.got / Math.max(a.g.target, 1) * 100));
         return {
@@ -1252,7 +1340,7 @@ export class ThailiLogic extends React.Component {
       })),
       toGoalNew: () => this.go("goal-new", { goalAmt: "", goalName: GOAL_PRESETS[0] }),
       goalCancel: () => this.go("goals"),
-      goalAmtLabel: s.goalAmt ? fmt(parseInt(s.goalAmt, 10)) : "0",
+      goalAmtLabel: s.goalAmt ? fmtTyped(s.goalAmt) : "0",
       goalAmtFg: s.goalAmt ? "var(--ink)" : "var(--barDim)",
       goalNeedLine: !goalAmtNum
         ? "Type the full amount. Thaili checks it against the surplus you already have."
@@ -1285,13 +1373,7 @@ export class ThailiLogic extends React.Component {
 
       toWeekly: () => this.go("weekly", { weekStep: 1 }),
 
-      recent: s.tx.slice(0, 4).map(t => Object.assign(txLook(t), {
-        title: t.m,
-        cat: (t.cat ? clabel(t.cat) : t.dir === "credit" ? "Income" : t.dir === "transfer" ? "Transfer" : "Needs a category") + " · " + srcOf(t.src).short,
-        catFg: (!t.cat && t.dir === "debit") ? "var(--warnInk)" : "var(--ink3)",
-        amount: amtStr(t), fg: amtFg(t),
-        tap: () => this.openDetail(t.id, "home")
-      })),
+      recent: s.tx.slice(0, 4).map(txCard("home")),
 
       txTabs: [
         { key: "all", label: T.all + " " + s.tx.length },
@@ -1304,15 +1386,71 @@ export class ThailiLogic extends React.Component {
         tap: () => this.setState({ txFilter: t.key, toast: null })
       })),
       txRows: rows,
+      dateChips: [["today", "Today"], ["week", "Week"], ["month", "Month"],
+        ["custom", s.txRange !== "custom" ? "Custom" : s.txFrom === s.txTo ? bsDay(s.txFrom) : bsDay(s.txFrom) + " – " + bsDay(s.txTo)]
+      ].map(([k, label]) => {
+        const on = s.txRange === k;
+        return { label: label, isCustom: k === "custom", bg: on ? "var(--ink)" : "transparent", fg: on ? "var(--canvas)" : "var(--ink2)", border: on ? "var(--ink)" : "var(--line)",
+          tap: () => k === "custom" ? this.setState({ calOpen: true, calA: s.txFrom, calB: s.txTo, toast: null }) : this.setState({ txRange: k, toast: null }) };
+      }),
+      txEmpty: !rows.length,
+      txEmptyTitle: q ? "No matches" : "Nothing in this range",
+      txEmptyLine: q ? "Nothing matches “" + s.txQuery.trim() + "” in this range." : s.txFilter === "review" ? "Nothing waiting for review in this range." : "Try a wider range.",
+      txQuery: s.txQuery,
+      txQueryType: e => this.setState({ txQuery: e.target.value.slice(0, 40) }),
+      txQueryClear: () => this.setState({ txQuery: "" }),
+      calOpen: s.calOpen,
+      calClose: () => this.setState({ calOpen: false }),
+      calPickFrom: () => this.setState({ calA: null, calB: null }),
+      calPickTo: () => this.setState({ calB: null }),
+      calFromLabel: s.calA !== null ? bsDay(s.calA) : "Pick a day",
+      calToLabel: s.calB !== null ? bsDay(s.calB) : s.calA !== null ? "Same day" : "—",
+      calFromFg: s.calA !== null ? "var(--ink)" : "var(--ink3)",
+      calToFg: s.calB !== null ? "var(--ink)" : "var(--ink3)",
+      calFromBorder: s.calA === null || s.calB !== null ? "var(--action)" : "var(--line)",
+      calToBorder: s.calA !== null && s.calB === null ? "var(--action)" : "var(--line)",
+      calTitle: monthName(s.calKey, np) + " " + (np ? npDigits(calY) : calY),
+      calPrev: () => this.setState({ calKey: s.calKey - 1 }),
+      calNext: () => { if (s.calKey < MONTH_KEY) this.setState({ calKey: s.calKey + 1 }); },
+      calHasNext: s.calKey < MONTH_KEY,
+      calCells: (() => {
+        const blank = { label: "", band: "transparent", bandR: "0", bg: "transparent", fg: "var(--ink)", ring: "none", weight: 500 };
+        const out = Array.from({ length: adOf(calY, calM, 1).getDay() }, () => blank);
+        for (let d = 1; d <= calDays; d++) {
+          const off = offOf(d), future = off < 0, end = calLo !== null && (off === calLo || off === calHi);
+          const inR = calLo !== null && off <= calLo && off >= calHi, span = calLo !== null && calHi !== calLo;
+          out.push({
+            label: String(d), future: future,
+            band: inR && span ? "var(--tintN)" : "transparent",
+            bandR: span && off === calLo ? "21px 0 0 21px" : span && off === calHi ? "0 21px 21px 0" : "0",
+            bg: end ? "var(--ink)" : "transparent",
+            fg: end ? "var(--canvas)" : future ? "var(--barDim)" : "var(--ink)",
+            ring: off === 0 && !end ? "inset 0 0 0 1.5px var(--action)" : "none",
+            weight: end || off === 0 ? 700 : 500,
+            tap: () => {
+              if (future) return;
+              if (s.calA === null || s.calB !== null) this.setState({ calA: off, calB: null });
+              else if (off > s.calA) this.setState({ calA: off });
+              else this.setState({ calB: off });
+            }
+          });
+        }
+        while (out.length % 7) out.push(blank);
+        return out;
+      })(),
+      calCta: s.calA !== null ? "Show " + (calLo - calHi + 1) + (calLo === calHi ? " day" : " days") : "Pick a start date",
+      calCtaBg: s.calA !== null ? "var(--action)" : "var(--surface2)",
+      calCtaFg: s.calA !== null ? "var(--onAction)" : "var(--ink3)",
+      calApply: () => { if (s.calA === null) return; this.setState({ txRange: "custom", txFrom: calLo, txTo: calHi, calOpen: false }); },
 
       stackProgress: review.length ? (Math.min(s.stackIdx + 1, review.length) + " of " + review.length) : "All clear",
       stackHasCard: !!card && review.length > 0,
       stackDone: review.length === 0,
       stackExit: () => this.go("home"),
-      cardAmount: card ? "− " + rs(card.amt) : "",
+      cardAmount: card ? "−" + rs(card.amt) : "",
       cardMerchant: card ? card.m : "",
       cardMeta: card ? (dayLabel(card.off) + " · " + card.time + " · " + srcOf(card.src).name) : "",
-      cardCats: cats.map(c => chip(c.label, !!(card && card.cat === c.key), () => card && this.setCat(card.id, c.key, c.label))),
+      cardCats: cats.map(c => Object.assign(chip(c.label, !!(card && card.cat === c.key), () => card && this.setCat(card.id, c.key, c.label)), { dot: card && card.cat === c.key ? "var(--canvas)" : catDot(c.key) })),
       cardNoteLabel: card && card.rem ? "Note: " + card.rem : "Add note",
       cardNote: () => {
         if (!card) return;
@@ -1324,7 +1462,11 @@ export class ThailiLogic extends React.Component {
       cardSkip: () => this.setState({ stackIdx: s.stackIdx + 1, toast: null }),
       cardOpen: () => card && this.openDetail(card.id, "stack", true),
 
-      detailAmount: (detail.dir === "credit" ? "+ " : detail.dir === "transfer" ? "→ " : "− ") + rs(detail.amt),
+      detailAmount: (detail.dir === "credit" ? "+" : detail.dir === "transfer" ? "→ " : "−") + rs(detail.amt),
+      detailKindLabel: detail.dir === "credit" ? "Income · money in" : detail.dir === "transfer" ? "Transfer" : "Expense · money out",
+      detailKindIcon: detail.dir === "credit" ? SI.inA : detail.dir === "transfer" ? SI.xfer : SI.outA,
+      detailKindBg: detail.dir === "credit" ? "var(--tintG)" : detail.dir === "transfer" ? "var(--tintN)" : "var(--tintO)",
+      detailKindFg: detail.dir === "credit" ? "var(--pos)" : detail.dir === "transfer" ? "var(--navy)" : "var(--out)",
       detailFg: detail.dir === "credit" ? "var(--pos)" : detail.dir === "transfer" ? "var(--navy)" : "var(--ink)",
       detailMerchant: detail.m,
       /* FIX 2 — remember where we came from. */
@@ -1332,7 +1474,13 @@ export class ThailiLogic extends React.Component {
       editing: s.editing,
       toggleEdit: () => this.setState({ editing: !s.editing, toast: null }),
       /* FIX 6 — Edit actually edits. */
-      detailCats: cats.map(c => chip(c.label, detail.cat === c.key, () => this.setCat(detail.id, c.key, c.label))),
+      detailCats: (detail.dir === "credit" ? INCOME_CATS : cats).map(c => Object.assign(chip(c.label, detail.cat === c.key, () => this.setCat(detail.id, c.key, c.label)),
+        { dot: detail.cat === c.key ? "var(--canvas)" : detail.dir === "credit" ? "var(--pos)" : catDot(c.key) })),
+      detailShowCats: detail.dir !== "transfer" && (s.editing || !detail.cat),
+      detailCatsTitle: detail.dir === "credit" ? "Income category" : "Expense category",
+      detailCatsHint: !detail.cat ? "Needed for Insights" : "Tap to change",
+      detailCatsHintFg: !detail.cat ? "var(--uncat)" : "var(--ink3)",
+      detailIsDebit: detail.dir === "debit",
       detailAuto: !!detail.auto,
       detailAutoLine: detail.auto ? "“" + detail.auto + "” in the message means " + clabel(detail.cat) + ". Filed without asking." : "",
       detailAutoDrop: () => {
@@ -1346,6 +1494,16 @@ export class ThailiLogic extends React.Component {
 
       rulesBack: () => this.go("settings"),
       rulesStat: autoFiled + " of " + debitCount + " spends this month were filed by a rule. The rest asked you.",
+      ruleKw: s.ruleKw,
+      ruleKwType: e => this.setState({ ruleKw: e.target.value }),
+      ruleCats: cats.map(c => chip(c.label, s.ruleCat === c.key, () => this.setState({ ruleCat: c.key }))),
+      ruleAddFg: words(s.ruleKw) && s.ruleCat ? "var(--action)" : "var(--ink3)",
+      ruleAdd: () => {
+        const c = cats.filter(x => x.key === s.ruleCat)[0];
+        if (!words(s.ruleKw) || !c) return;
+        this.addRule(s.ruleKw, c.key, c.label);
+        this.setState({ ruleKw: "", ruleCat: null });
+      },
       ruleRows: s.rules.map(r => ({
         kw: r.kw, cat: clabel(r.cat),
         origin: r.own ? "You taught this" : "Built in",
@@ -1354,7 +1512,7 @@ export class ThailiLogic extends React.Component {
       })),
       rulesEmpty: s.rules.length === 0,
       detailFields: [
-        { label: "Category", value: detail.cat ? clabel(detail.cat) : "Not set", fg: detail.cat ? "var(--ink)" : "var(--warnInk)", action: s.editing ? "" : "Change", tap: () => this.setState({ editing: true, toast: null }) },
+        { label: "Category", value: detail.cat ? clabel(detail.cat) : "Not set", fg: detail.cat ? "var(--ink)" : "var(--uncat)", action: s.editing ? "" : "Change", tap: () => this.setState({ editing: true, toast: null }) },
         { label: "Direction", value: detail.dir, fg: "var(--ink)" },
         { label: "Source", value: srcOf(detail.src).name, fg: "var(--ink)" },
         { label: "Date", value: bsLabel(detail.off) + " · " + detail.time, fg: "var(--ink)" },
@@ -1395,8 +1553,11 @@ export class ThailiLogic extends React.Component {
       weekClose: () => this.go("home"),
       computedFor: wk.name,
       computedBal: balRs(this.balance(wk.key)),
-      typedBal: fmt(typedBal),
-      balType: e => { const n = parseInt(String(e.target.value).replace(/[^0-9]/g, ""), 10) || 0; this.setState({ balNudge: n - this.balance(wk.key), gapState: null }); },
+      typedBal: s.balDraft !== null ? fmtTyped(s.balDraft) : fmt(typedBal),
+      balType: e => {
+        const m = /^\d*(?:\.\d{0,2})?/.exec(String(e.target.value).replace(/[^0-9.]/g, ""))[0];
+        this.setState({ balDraft: m, balNudge: Math.round(((parseFloat(m) || 0) - this.balance(wk.key)) * 100) / 100, gapState: null });
+      },
       hasGap: gap !== 0 && !s.gapState,
       gapLine: gap > 0 ? rs(gap) + " unaccounted" : rs(gap) + " more than expected",
       gapBody: gap > 0
@@ -1411,7 +1572,7 @@ export class ThailiLogic extends React.Component {
             dir: gap > 0 ? "debit" : "credit", src: wk.key, cat: null,
             rem: "Balance adjustment", ch: "Adjustment", at: now(),
             raw: "Dated adjustment from the weekly balance check on " + adLabel(0) + "." })].concat(s.tx),
-          balNudge: 0, weekStep: 3
+          balNudge: 0, balDraft: null, weekStep: 3
         });
         this.flash("Recorded against " + wk.short + " — balances match");
       },
@@ -1433,18 +1594,55 @@ export class ThailiLogic extends React.Component {
         label: { Daily: T.daily, Weekly: T.weeklyR, Monthly: T.monthly }[r], bg: s.range === r ? "var(--surface)" : "transparent", fg: s.range === r ? "var(--ink)" : "var(--ink3)", shadow: s.range === r ? "0 1px 2px rgba(0,0,0,.08)" : "none",
         tap: () => this.setState({ range: r })
       })),
-      spentHeadLabel: (np ? "खर्च · " : "Spent · ") + (s.range === "Monthly" ? (np ? MONTH_NP : MONTH_EN) : s.range === "Weekly" ? (np ? "यो हप्ता" : "this week") : (np ? "आज" : "today")),
-      spentBig: fmt(periodOut),
+      keptHeadLabel: (net >= 0 ? (np ? "बचेको · " : "Kept · ") : (np ? "बढी खर्च · " : "Overspent · ")) + perName,
+      keptBig: whole(net),
+      keptFg: net >= 0 ? "var(--ink)" : "var(--warnInk)",
+      keptFs: fit(whole(net).length, 52, 8, 34),
+      keptSentence: periodIn > 0
+        ? (net >= 0 ? "Income minus expenses · " + Math.round(net / periodIn * 100) + "% of what came in stayed with you" : "Expenses ran " + rs(-net) + " past income")
+        : "No income landed in this period, so spending came from what you already had",
+      inBig: "+" + whole(periodIn),
+      outBig: "−" + whole(periodOut),
+      flowFs: fit(Math.max(whole(periodIn).length, whole(periodOut).length) + 1, 30, 8, 18),
+      inMeta: (n => n ? n + (n === 1 ? " deposit" : " deposits") : "Nothing yet")(s.tx.filter(t => t.dir === "credit" && inWin(t)).length),
       spentChip: deltaChip(periodOut, prevTotal),
       spentSentence: vsSentence(periodOut, prevTotal),
-      insTrio: [
-        { vfg: "var(--pos)", label: T.inL, value: kfmt(periodIn) },
-        { vfg: net >= 0 ? "var(--ink)" : "var(--warnInk)", label: net >= 0 ? T.savedL : (np ? "बढी" : "Over"), value: kfmt(net) },
-        { vfg: "var(--warnInk)", label: T.leaks, value: kfmt(leakOut) }
+      toFlow: () => this.go("flow", { flowDir: "debit" }),
+      toFlowIn: () => this.go("flow", { flowDir: "credit" }),
+      toLeaks: () => this.go("leaks"),
+      leaksBack: () => this.go("insights"),
+      leakHeadLabel: T.leaks + " · " + perName,
+      leakAmtLabel: rs(leakOut),
+      leakCutLabel: rs(leakCut),
+
+      // Savings against the baseline on one bar, with room past the larger of the two.
+      ...(() => {
+        const sc = Math.max(savingsPot, s.savingsGoal, 1) * 1.12;
+        return {
+          savPotBig: balFmt(savingsPot),
+          savAcctLine: "In savings · " + savingsSources.length + (savingsSources.length === 1 ? " account" : " accounts"),
+          savBaseW: Math.max(0, Math.min(savingsPot, s.savingsGoal)) / sc * 100 + "%",
+          savSurW: surplus / sc * 100 + "%",
+          baseLeft: s.savingsGoal / sc * 100 + "%"
+        };
+      })(),
+      savBaseLabel: rs(s.savingsGoal),
+      savSurWord: surplus > 0 ? "Above · for goals" : "Still to reach",
+      savSurLabel: rs(surplus > 0 ? surplus : floorShort),
+      savSurFg: surplus > 0 ? "var(--pos)" : "var(--warnInk)",
+      savLine: surplus > 0 ? "Your cushion is covered. Only the " + rs(surplus) + " above it goes to goals." : "Goals wait until savings reach the baseline — " + rs(floorShort) + " to go.",
+      savExplain: s.savExplain,
+      toggleSavExplain: () => this.setState({ savExplain: !s.savExplain }),
+      savExplainLine: "You set it during setup — 3 or 6 months of essential spending, or your own amount — and can change it any time. It's a cushion you leave untouched. Thaili adds up every account marked Savings and compares it with the baseline. Below it, goals wait. Above it, the extra fills your goals in priority order.",
+      savSteps: [
+        { n: "1", label: "Income this month", value: "+" + fmt(income), fg: "var(--pos)" },
+        { n: "2", label: "Expenses this month", value: "−" + fmt(spent), fg: "var(--ink)" },
+        { n: "3", label: "Kept — move it into savings", value: signed(kept) + fmt(kept), fg: kept < 0 ? "var(--warnInk)" : "var(--navy)" },
+        { n: "4", label: surplus > 0 ? "Savings above baseline → goals" : "Savings still below baseline", value: rs(surplus > 0 ? surplus : floorShort), fg: surplus > 0 ? "var(--pos)" : "var(--warnInk)" }
       ],
-      trendAvgShort: (np ? "औसत " : "Avg ") + kfmt(trendAvg),
+      toBaseline: openBaseline,
+
       whereTitle: np ? "पैसा कहाँ गयो" : "Where it went",
-      biggestTitle: np ? "ठूला खर्च" : "Biggest spends",
       splitRows: [
         { label: np ? "आवश्यक" : "Essential", amt: essOut, color: "var(--navy)" },
         { label: T.leaks, amt: leakOut, color: "var(--warn)" },
@@ -1457,48 +1655,80 @@ export class ThailiLogic extends React.Component {
       catMore: catRows.length > 5,
       catMoreLabel: s.insCatsAll ? (np ? "कम देखाउनुहोस्" : "Show fewer") : (np ? "सबै " + catRows.length + " वर्ग" : "Show all " + catRows.length + " categories"),
       toggleCatsAll: () => this.setState({ insCatsAll: !s.insCatsAll }),
-      leakBig: fmt(leakOut),
+
+      // Income or Expenses for the period, every entry behind the Insights figure.
+      ...(() => {
+        const isIn = s.flowDir === "credit";
+        const list = s.tx.filter(t => t.dir === (isIn ? "credit" : "debit") && inWin(t));
+        return {
+          flowName: isIn ? (np ? "आम्दानी" : "Income") : (np ? "खर्च" : "Expenses"),
+          flowHeadLabel: (isIn ? (np ? "आम्दानी · " : "Came in · ") : (np ? "खर्च · " : "Spent · ")) + perName,
+          flowBig: whole(isIn ? periodIn : periodOut),
+          flowBigFg: isIn ? "var(--pos)" : "var(--ink)",
+          flowSub: isIn ? "" : vsSentence(periodOut, prevTotal),
+          flowSubFg: isIn ? "var(--ink3)" : deltaChip(periodOut, prevTotal).fg,
+          flowListTitle: isIn ? (np ? "जम्मा भएका" : "Deposits") : (np ? "खर्चहरू" : "Spends"),
+          flowCount: list.length + (isIn ? (list.length === 1 ? " deposit" : " deposits") : (list.length === 1 ? " spend" : " spends")),
+          flowRows: list.map(txCard("flow", dayMeta)),
+          flowEmptyLine: list.length ? "" : isIn ? "No income in this period" : "No spending in this period"
+        };
+      })(),
+
+      leakBig: whole(leakOut),
+      leakFs: fit(whole(leakOut).length, 52, 8, 34),
       leakSentence: (np ? "कुल खर्चको " + leakShare + "%" : leakShare + "% of what you spent") + (vsSentence(leakOut, prevLeak) && pctDelta(leakOut, prevLeak) !== 0 ? " · " + vsSentence(leakOut, prevLeak) : ""),
-      leakEditLabel: np ? "के चुहावट हो?" : "What counts",
+      leakPerDay: rs(Math.round(leakOut / perDiv)),
+      leakPerDayMeta: s.range === "Daily" ? "today so far" : "average over " + perDiv + " days",
       leaksNoneLabel: np ? "कुनै चुहावट छैन" : "No leaks this period",
-      leakRowsTop: leakCats.filter(x => x.amt > 0).slice(0, 3).map(x => ({
+      leaksNone: leakCats.filter(x => x.amt > 0).length === 0,
+      leakRows: leakCats.filter(x => x.amt > 0).map(x => ({
         label: x.c.label, amount: rs(x.amt), per: kfmt(Math.round(x.amt / perDiv)) + (np ? "/दिन" : "/day"),
         width: Math.round(x.amt / Math.max(leakCats[0].amt, 1) * 100) + "%"
       })),
+      leakTxRows: leakTx.map(txCard("leaks", dayMeta)),
+      leakTxCount: leakTx.length + (leakTx.length === 1 ? " spend" : " spends"),
       leakStats: [
         { value: heaviest[0] + " · " + kfmt(heaviest[1]), label: np ? "सबैभन्दा महँगो दिन" : "Heaviest day" },
         { value: rs(median), label: np ? "सामान्य खर्च" : "Typical spend" }
       ],
+      leakWhatLine: cats.filter(c => !isEss(c.key)).map(c => c.label).join(", ") || "Nothing is marked as a leak",
+      toEssEdit: () => this.go("cats", { catsMode: "edit", catsFrom: s.screen }),
 
-
-      leaksNone: leakCats.filter(x => x.amt > 0).length === 0,
-      toEssEdit: () => this.go("cats", { catsMode: "edit", catsFrom: "insights" }),
-
-
-
-      topSpends: s.tx.filter(t => t.dir === "debit").sort((a, b) => b.amt - a.amt).slice(0, 3).map(t => Object.assign(txLook(t), {
-        title: t.m, meta: dayLabel(t.off) + " · " + (t.cat ? clabel(t.cat) : "Uncategorised"),
-        amount: "−" + fmt(t.amt), tap: () => this.openDetail(t.id, "insights")
-      })),
-
-
-      trendTitle: s.range === "Daily" ? "Last seven days" : s.range === "Weekly" ? "Last six weeks" : "Last six BS months",
-      trendBars: trend.map((t, i) => ({
-        label: t[0].length > 4 ? t[0].slice(0, 3) : t[0], value: i !== trend.length - 1 ? "" : t[1] >= 1000 ? Math.round(t[1] / 100) / 10 + "k" : fmt(t[1]),
-        h: Math.max(6, Math.round(t[1] / trendMax * 100)) + "px",
-        color: i === trend.length - 1 ? "var(--navy)" : t[1] > trendAvg ? "var(--barDim)" : "var(--barTrack)",
-        valFg: i === trend.length - 1 ? "var(--ink)" : "var(--ink3)",
-        labelFg: i === trend.length - 1 ? "var(--ink)" : "var(--ink3)"
-      })),
-      trendAvgPos: Math.round(trendAvg / trendMax * 100) + 22 + "px",
+      baseSetupMode: s.baseSetup,
+      baseBack: () => this.go(s.baseSetup ? "cats" : (s.baseFrom || "settings")),
+      baseDraftBig: fmt(baseDraft),
+      baseStatus: savingsPot >= baseDraft
+        ? "Covered — " + balRs(savingsPot) + " in savings, " + rs(savingsPot - baseDraft) + " above it for goals"
+        : rs(baseDraft - savingsPot) + " to go — " + balRs(savingsPot) + " in savings today. Goals wait until it's reached.",
+      baseStatusFg: savingsPot >= baseDraft ? "var(--pos)" : "var(--warnInk)",
+      baseOptions: [["3", "3 months of essentials", "Covers a job gap", baseFor(3)], ["6", "6 months of essentials", "Irregular income", baseFor(6)], ["custom", "My own amount", "Adjust below", baseDraft]]
+        .filter(o => o[0] === "custom" || essMonthly) // no essential spending yet means no months to multiply
+        .map(o => {
+          const on = s.baseMode === o[0];
+          return { label: o[1], meta: o[2], amount: rs(o[3]), rec: o[0] === "3", ring: on ? "var(--action)" : "var(--barDim)", dot: on ? "var(--action)" : "transparent",
+            tap: () => this.setState({ baseMode: o[0], baseDraft: o[3] }) };
+        }),
+      baseIsCustom: s.baseMode === "custom",
+      baseUp: () => this.setState({ baseMode: "custom", baseDraft: baseDraft + 10000 }),
+      baseDown: () => this.setState({ baseMode: "custom", baseDraft: Math.max(10000, baseDraft - 10000) }),
+      baseBasisLine: essMonthly
+        ? "Your essentials — " + (essCats.map(c => c.label).join(", ") || "none marked yet") + " — averaged " + rs(essMonthly) + " a month over the last three months. Leaks aren't counted: a cushion only has to cover what you can't skip."
+        : "No essential spending recorded in the last three months yet, so set your own amount. Leaks never count: a cushion only has to cover what you can't skip.",
+      baseCta: s.baseSetup ? "Save and continue" : "Save baseline",
+      baseSave: () => {
+        if (s.baseSetup) { this.setState({ savingsGoal: baseDraft }); this.startAuth("create", "cats"); return; }
+        const prev = s.savingsGoal;
+        this.go(s.baseFrom || "settings", { savingsGoal: baseDraft });
+        this.flash("Baseline set to " + rs(baseDraft), { savingsGoal: prev });
+      },
 
       srcNewTitle: s.editSrcKey ? "Edit source" : "Add a source",
       isEditSrc: !!s.editSrcKey,
-      newSrcAmtLabel: s.newSrcAmt ? fmt(parseInt(s.newSrcAmt, 10)) : "0",
+      newSrcAmtLabel: s.newSrcAmt ? fmtTyped(s.newSrcAmt) : "0",
       newSrcAmtFg: s.newSrcAmt ? "var(--ink)" : "var(--barDim)",
       newSrcKeys: needAcct && s.newSrcField === "acct" ? keypad("newSrcAcct", s.newSrcAcct, 4) : keypad("newSrcAmt", s.newSrcAmt, 9, true),
       newSrcOpeningNote: s.editSrcKey
-        ? "Opening balance — the baseline this account is counted from. Change it and every figure derived from it moves with it."
+        ? "Balance — what is in " + s.newSrcName + " right now. Change it and the account is counted from this moment."
         : "Opening balance — what is in " + s.newSrcName + " right now. Every later figure is counted from here, and it locks once the first transaction lands.",
       srcNeedsAcct: needAcct,
       acctFieldLabel: newKind.key === "wallet" ? "Wallet mobile · last 4 digits" : "Account number · last 4 digits",
@@ -1543,7 +1773,8 @@ export class ThailiLogic extends React.Component {
         if (s.editSrcKey) {
           this.setState({
             sources: prevS.map(x => x.key === s.editSrcKey
-              ? Object.assign({}, x, { name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: newKind.dot, opening: newSrcAmtNum }) : x),
+              ? Object.assign({}, x, { name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: newKind.dot, opening: newSrcAmtNum,
+                openedAt: newSrcAmtNum !== x.opening ? new Date().toISOString() : x.openedAt }) : x),
             roles: Object.assign({}, prevR, { [s.editSrcKey]: s.newSrcRole }),
             screen: back, editSrcKey: null, newSrcAmt: "", newSrcAcct: ""
           });
@@ -1552,7 +1783,7 @@ export class ThailiLogic extends React.Component {
         }
         const key = "src" + Date.now();
         this.setState({
-          sources: prevS.concat([{ key: key, name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: newKind.dot, opening: newSrcAmtNum }]),
+          sources: prevS.concat([{ key: key, name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: newKind.dot, opening: newSrcAmtNum, openedAt: new Date().toISOString() }]),
           roles: Object.assign({}, prevR, { [key]: s.newSrcRole }),
           screen: back, newSrcAmt: "", newSrcAcct: ""
         });
@@ -1595,7 +1826,7 @@ export class ThailiLogic extends React.Component {
         tap: () => this.openDetail(t.id, "source-detail")
       })),
 
-      addEntry: s.addEntry ? fmt(parseInt(s.addEntry, 10)) : "0",
+      addEntry: s.addEntry ? fmtTyped(s.addEntry) : "0",
       addFg: s.addEntry ? "var(--ink)" : "var(--barDim)",
       addKeys: keypad("addEntry", s.addEntry, 6, true),
       addCats: cats.map(c => chip(c.label, s.addCat === c.key, () => this.setState({ addCat: c.key }))),
@@ -1621,20 +1852,18 @@ export class ThailiLogic extends React.Component {
         this.flash(rs(amt) + " into " + c.label, { tx: prev });
       },
 
+      prefsTitle: np ? "प्राथमिकता" : "Preferences", manageTitle: np ? "व्यवस्थापन" : "Manage",
       settingRows: [
         { icon: P.wallet, label: T.accounts, meta: s.sources.length + (s.sources.length === 1 ? " account · " : " accounts · ") + "balances and roles",
           value: "Rs " + balFmt(s.sources.reduce((a, x) => a + this.balance(x.key), 0)),
           tap: () => this.go("accounts", { accountsFrom: "settings" }) },
-        /* Notifications and quiet hours are saved now and apply once capture sends spend prompts. */
         { icon: IC.bell, label: T.notifications,
-          meta: s.notifMode === "All" ? "Ask for a purpose after each spend" : s.notifMode === "Off" ? "No prompts — review from the app" : "Only spends that need a category",
-          value: s.notifMode, tap: () => {
-            const next = NOTIF_MODES[(NOTIF_MODES.indexOf(s.notifMode) + 1) % NOTIF_MODES.length];
-            if (next !== "Off") registerPush(true); // no-op if already allowed
-            this.setState({ notifMode: next });
+          meta: s.notifMode === "Off" ? "No alerts — review from the app" : "Spends that need a category · weekly review on Sunday",
+          value: s.notifMode === "Off" ? "Off" : "On", tap: () => {
+            const on = s.notifMode === "Off";
+            weeklyReminder(on, true);
+            this.setState({ notifMode: on ? "On" : "Off" });
           } },
-        { icon: IC.moon, label: T.quiet, meta: s.quiet === "Off" ? "Prompts arrive any time" : "Held for a morning digest",
-          value: s.quiet, tap: () => this.setState({ quiet: QUIET_HOURS[(QUIET_HOURS.indexOf(s.quiet) + 1) % QUIET_HOURS.length] }) },
         { icon: IC.lock, label: T.appLock, meta: "Fingerprint or phone PIN on open", value: s.appLock ? "On" : "Off",
           tap: () => this.auth(s.appLock ? "Turn off app lock" : "Turn on app lock").then(r => {
             if (r.ok) { this.setState({ appLock: !s.appLock }); this.flash(s.appLock ? "App lock off" : "App lock on — Thaili asks every time you open it"); }
@@ -1642,12 +1871,14 @@ export class ThailiLogic extends React.Component {
           }) },
         { icon: IC.bolt, label: T.rules, meta: s.rules.length + " rules · " + autoFiled + " filed this month", value: "", tap: () => this.go("rules") },
         { icon: IC.tag, label: T.categories, meta: s.picked.length + " in use · what counts as a leak", value: "", tap: () => this.go("cats", { catsMode: "edit", catsFrom: "settings" }) },
-        { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => this.go("goals", { goalsFrom: "settings" }) },
-        { icon: IC.exportI, label: T.exportAll, meta: "CSV of every entry, account, rule and goal", value: "", tap: () => this.flash("thaili-export.csv saved to Downloads") },
-        { icon: IC.archive, label: T.archive, meta: "Deleted items, kept 30 days", value: "2", tap: () => this.flash("Restorable until purge") }
+        { icon: IC.vault, label: np ? "बचत आधार" : "Savings baseline", meta: "Protected before any goal is funded", value: rs(s.savingsGoal),
+          tap: openBaseline },
+        { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => this.go("goals", { goalsFrom: "settings" }) }
+        // Export everything and Archive are hidden until they work — see "To do" in README.md.
       ],
 
       goTab: k => this.go(k),
+      syncPull: () => this.catchUpSms(true),
       hasToast: !!s.toast,
       toast: s.toast,
       /* FIX 5 — Undo only where there is something to undo. */

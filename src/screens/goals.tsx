@@ -12,7 +12,7 @@ export function Goals({ v }: { v: V }) {
       <div className="flex flex-1 flex-col gap-3 overflow-auto px-4 pb-24">
         <div className={cx(CARD, "flex flex-col gap-3 px-5 py-4.5")}>
           <div className="flex items-baseline justify-between gap-3">
-            <span className={LABEL}>Savings floor</span>
+            <span className={LABEL}>Savings baseline</span>
             <span className="flex-none text-[12.5px] font-bold" style={{ color: v.floorStateFg }}>{v.floorState}</span>
           </div>
           <div className="flex items-baseline gap-2">
@@ -25,7 +25,7 @@ export function Goals({ v }: { v: V }) {
           <span className={LABEL}>How the surplus is shared</span>
           <Seg items={v.splitModes} itemClass="flex-1 rounded-[9px] p-2 text-center text-[12.5px]" />
           <div className="flex items-center gap-2.25 pt-0.5">
-            <span className="flex-1 text-[12.5px] text-ink-3">Move the floor</span>
+            <span className="flex-1 text-[12.5px] text-ink-3">Move the baseline</span>
             <Stepper onClick={v.savingsDown} small>−</Stepper>
             <Stepper onClick={v.savingsUp} small>+</Stepper>
           </div>

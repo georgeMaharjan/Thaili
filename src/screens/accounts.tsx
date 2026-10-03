@@ -1,6 +1,6 @@
 // Accounts, one account, and the add/edit account form.
 import {
-  Amount, CARD, Chevron, Chips, Cta, GoalCard, Icon, IconBtn, ItemRow, Keypad, LABEL, P, Seg, Tile, TopBar, cx, type V,
+  Amount, CARD, Chevron, Chips, Cta, GoalCard, Hero, Icon, IconBtn, ItemRow, Keypad, LABEL, P, Seg, Tile, TopBar, cx, type V,
 } from "@/components/ui";
 
 export function Accounts({ v }: { v: V }) {
@@ -13,10 +13,7 @@ export function Accounts({ v }: { v: V }) {
         <GoalCard v={v} />
         <div className="flex flex-col gap-1.5 px-1.5 pt-2 pb-1.5">
           <span className={LABEL}>{v.t.totalAcross}</span>
-          <div className="flex items-baseline gap-2.25">
-            <span className="font-display text-[24px] font-bold">Rs</span>
-            <span className="font-display text-[54px] font-extrabold leading-[.95] tracking-[-0.03em]">{v.totalBal}</span>
-          </div>
+          <Hero value={v.totalBal} fs={v.balFs} />
           <span className="truncate text-[13px] leading-[1.5] text-ink-2">{v.totalMeta}</span>
         </div>
 
@@ -83,7 +80,7 @@ export function SourceDetail({ v }: { v: V }) {
       <div className="flex flex-1 flex-col gap-3 overflow-auto px-4 pb-24">
         <div className="flex flex-col gap-1.25 px-1.5 pt-1.5 pb-3">
           <span className="min-w-0 truncate font-display text-[22px] font-bold tracking-[-0.01em]">{v.srcName}</span>
-          <span className="font-display text-[46px] font-extrabold leading-[1.05] tracking-[-0.03em]">{v.srcBalance}</span>
+          <span className="font-display text-[52px] font-extrabold leading-[1.05] tracking-[-0.03em]">{v.srcBalance}</span>
           <span className="text-[12px] text-ink-3">{v.srcMeta}</span>
           <button onClick={v.srcEdit} className="w-fit text-[12px] font-semibold" style={{ color: v.srcAcctFg }}>{v.srcAcctLine}</button>
         </div>
