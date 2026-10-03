@@ -28,7 +28,11 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 /** Device access the web layer can't reach: SMS permission, notification access, installed apps. */
 @CapacitorPlugin(
@@ -122,11 +126,62 @@ public class ThailiPlugin extends Plugin {
         });
     }
 
-    // Money messages only: an amount plus a debit/credit word. OTPs, chats and promos never leave this method.
-    private static final Pattern AMOUNT = Pattern.compile("(?i)(NPR|Rs\\.?)\\s*[\\d,]+");
-    private static final Pattern MOVE = Pattern.compile("(?i)debit|credit|withdrawn|deposit|paid|purchase|POS");
-    // An actual code, not the "Never share your OTP" footer real bank alerts carry.
-    private static final Pattern OTP = Pattern.compile("(?i)(OTP|one[- ]?time password|verification code|code)\\W{0,4}(is\\W{0,3})?\\d{4,8}\\b");
+    // Messages with an amount and no OTP. Which sender counts and which wording is a transaction
+    // is decided in src/lib/sms.ts, so the rules live in one place.
+    private static final Pattern AMOUNT = ThailiNotificationListener.AMOUNT;
+    private static final Pattern OTP = ThailiNotificationListener.OTP;
+
+    /**
+     * What background capture needs from the app: account senders and apps, the transaction
+     * wording, the user's rule keywords, and whether to notify. See Capture and sms.ts nativeRules.
+     */
+    @PluginMethod
+    public void setCapture(PluginCall call) {
+        getContext().getSharedPreferences(Capture.PREFS, Context.MODE_PRIVATE)
+            .edit().putString("config", call.getData().toString()).apply();
+        call.resolve();
+    }
+
+    // A tapped "Review this transaction" opens the app with thailiOpen; the web layer listens for "open".
+    @Override
+    public void load() {
+        if (getActivity() != null) openFrom(getActivity().getIntent());
+    }
+
+    @Override
+    protected void handleOnNewIntent(Intent intent) {
+        super.handleOnNewIntent(intent);
+        openFrom(intent);
+    }
+
+    private void openFrom(Intent intent) {
+        if (intent == null || intent.getStringExtra("thailiOpen") == null) return;
+        JSObject o = new JSObject();
+        o.put("open", intent.getStringExtra("thailiOpen"));
+        o.put("at", intent.getLongExtra("at", 0L));
+        intent.removeExtra("thailiOpen");
+        notifyListeners("open", o, true); // kept until the web layer subscribes (cold start)
+    }
+
+    /** Kept money notifications posted since sinceMs, as { pkg, body, at }. */
+    @PluginMethod
+    public void readNotifications(PluginCall call) {
+        long since = call.getLong("sinceMs", 0L);
+        SharedPreferences p = getContext().getSharedPreferences(ThailiNotificationListener.PREFS, Context.MODE_PRIVATE);
+        JSArray out = new JSArray();
+        try {
+            JSONArray all = new JSONArray(p.getString("log", "[]"));
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject n = all.getJSONObject(i);
+                if (n.getLong("at") >= since) out.put(n);
+            }
+        } catch (JSONException ignored) {
+            // Unreadable log: nothing to give back; the listener resets it on the next write.
+        }
+        JSObject r = new JSObject();
+        r.put("notifications", out);
+        call.resolve(r);
+    }
 
     /** Bank messages received since sinceMs (epoch ms), newest first. Needs the SMS permission. */
     @PluginMethod
@@ -139,7 +194,7 @@ public class ThailiPlugin extends Plugin {
                     Telephony.Sms.DATE + " >= ?", new String[] { since }, Telephony.Sms.DATE + " DESC")) {
                 while (c != null && c.moveToNext()) {
                     String body = c.getString(1);
-                    if (body == null || !AMOUNT.matcher(body).find() || !MOVE.matcher(body).find() || OTP.matcher(body).find()) continue;
+                    if (body == null || !AMOUNT.matcher(body).find() || OTP.matcher(body).find()) continue;
                     JSObject m = new JSObject();
                     m.put("sender", c.getString(0));
                     m.put("body", body);

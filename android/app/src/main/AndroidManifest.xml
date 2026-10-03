@@ -20,6 +20,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Bank SMS while Thaili is closed: may nudge "Review this transaction"; see Capture. -->
+        <receiver android:name=".SmsReceiver" android:exported="true" android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Lets the user grant notification access; see ThailiNotificationListener. -->
         <service
             android:name=".ThailiNotificationListener"
@@ -47,6 +54,7 @@
     <!-- Bank SMS capture (spec §12). Restricted on Play: needs the Permissions Declaration Form. -->
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Android 11+ hides other apps unless named here. Keep in sync with DETECTED in src/lib/logic.tsx. -->
     <queries>
