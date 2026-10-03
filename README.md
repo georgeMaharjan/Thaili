@@ -16,3 +16,9 @@ bash supabase/test.sh supabase/migrations/*.sql   # migrations + RLS on a throwa
   colour/font/radius tokens are in the `@theme` block of `src/app/globals.css`. `design/Thaili v9.dc.html` is a visual reference only.
 - `src/lib/store.ts` — load/save to Supabase. `sms.ts` — SMS parser. `bs.ts` — BS calendar. `nav.ts` — back stack.
 - `android/.../ThailiPlugin.java` — native bridge: SMS, installed apps, biometrics, haptics.
+
+## To do
+
+- **Export everything** — CSV of every entry, account, rule and goal. Hidden from Settings until built.
+- **Archive** — browse and restore deleted entries (rows keep `archived_at` for 30 days). Hidden from Settings until built.
+- **Spend prompts** — Settings → Notifications and Quiet hours are saved but nothing sends a push yet; `supabase/functions/send-push` has no caller.
