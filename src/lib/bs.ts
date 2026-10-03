@@ -11,6 +11,8 @@ export const bsOf = (date: Date): Bs => {
   const n = new NepaliDate(date);
   return { y: n.getYear(), m: n.getMonth(), d: n.getDate() };
 };
+// The AD date a BS day falls on.
+export const adOf = (y: number, m: number, d: number) => new NepaliDate(y, m, d).getDateObject();
 export const daysInBsMonth = (y: number, m: number) => NepaliDate.getDaysOfMonth(y, m);
 // Months as one running number, so "previous month" is just key - 1 across year ends.
 export const monthKey = (b: Bs) => b.y * 12 + b.m;
