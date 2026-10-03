@@ -1,7 +1,7 @@
 // Building blocks shared by every screen. Colours, fonts, radii and shadows are
 // Tailwind theme tokens (see @theme in globals.css); colours that depend on state
 // arrive ready-made from the view model in lib/logic.tsx.
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 // The view model from ThailiLogic.renderVals(). logic.tsx is untyped, so this is too.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -151,8 +151,9 @@ export function Toggle({ t, small }: { t: V; small?: boolean }) {
 /** A pick-one chip; `c` is a chip() from the view model. */
 export function Chip({ c, check = true, className = "px-3.5 py-3 text-[13.5px]" }: { c: V; check?: boolean; className?: string }) {
   return (
-    <button onClick={c.tap} className={cx("press rounded-xl border leading-[1.3]", className)}
+    <button onClick={c.tap} className={cx("press rounded-xl border leading-[1.3]", c.dot && "flex items-center gap-2", className)}
       style={{ background: c.bg, color: c.fg, borderColor: c.border, fontWeight: c.weight }}>
+      {c.dot && <span className="size-2 flex-none rounded-full" style={{ background: c.dot }} />}
       {check && c.check}{c.label}
     </button>
   );
@@ -269,20 +270,80 @@ export const Section = ({ title, action, className, children }: { title: ReactNo
 
 /** Small text link in a section heading ("See all", "Manage"). */
 export const HeadLink = ({ onClick, children }: { onClick: () => void; children: ReactNode }) => (
-  <button onClick={onClick} className="-my-2.5 py-2.5 pl-3 text-[13px] font-semibold text-action">{children}</button>
+  <button onClick={onClick} className="-my-2.5 flex items-center gap-0.5 py-2.5 pl-3 text-[13px] font-semibold text-action">
+    {children}<Icon d={P.next} size={14} sw={2.4} />
+  </button>
 );
 
-/** One transaction in a flat list: plain icon, title over category, amount. */
-export function TxLine({ r, className = "min-h-15" }: { r: V; className?: string }) {
+/** The headline figure: a small "Rs" beside a big number. `fs` is the number's font size. */
+export const Hero = ({ value, fs = "52px", fg, rs = "text-[22px]" }: { value: ReactNode; fs?: string; fg?: string; rs?: string }) => (
+  <span className="flex min-w-0 items-baseline gap-2" style={{ color: fg }}>
+    <span className={cx("flex-none font-display font-bold", rs)}>Rs</span>
+    <span className="min-w-0 whitespace-nowrap font-display font-extrabold leading-none tracking-[-0.03em] tabular-nums" style={{ fontSize: fs }}>{value}</span>
+  </span>
+);
+
+
+/** One transaction as a card: kind-tinted icon, title over kind and account, amount over category. `r` comes from rowLook(). */
+export function TxCard({ r }: { r: V }) {
+  const pill = "flex h-5.5 flex-none items-center whitespace-nowrap rounded-full px-2.25 text-[12.5px] font-bold";
   return (
-    <button onClick={r.tap} className={cx("press flex w-full items-center gap-3.5 border-t border-line text-left", className)}>
-      <Icon d={r.icon} size={20} sw={1.8} className="text-ink-3" />
+    <button onClick={r.tap} className="press mt-2 flex min-h-18 w-full items-center gap-3 rounded-[18px] border border-line bg-surface pr-4 pl-3 text-left">
+      <span className="flex size-10 flex-none items-center justify-center rounded-full" style={{ background: r.rowBg, color: r.ifg }}>
+        <Icon d={r.icon} size={19} sw={1.9} />
+      </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[16px] font-medium leading-[1.3]">{r.title}</span>
-        <span className="truncate text-[13px] leading-[1.35]" style={{ color: r.catFg || "var(--ink3)" }}>{r.cat ?? r.meta}</span>
+        <span className="truncate text-[16px] font-semibold leading-[1.3]">{r.title}</span>
+        {r.isUncat
+          ? <span className={cx(pill, "self-start bg-tint-u text-uncat")}>Needs category</span>
+          : <div className="flex min-w-0 items-center gap-2">
+              <span className={pill} style={{ background: r.rowBg, color: r.ifg }}>{r.kindWord}</span>
+              <span className="truncate text-[13px] leading-[1.35] text-ink-3">{r.meta}</span>
+            </div>}
       </div>
-      <span className="flex-none whitespace-nowrap font-display text-[19px] font-bold tabular-nums" style={{ color: r.fg }}>{r.amount}</span>
+      <div className="flex flex-none flex-col items-end gap-0.5">
+        <span className="whitespace-nowrap font-display text-[19px] font-bold tabular-nums" style={{ color: r.fg }}>{r.amount}</span>
+        {r.isUncat
+          ? <span className="text-[12.5px] font-bold text-uncat">Categorise</span>
+          : <span className="flex h-5 items-center whitespace-nowrap rounded-[10px] bg-surface-2 px-2 text-[12px] font-bold text-ink-2">{r.chip}</span>}
+      </div>
     </button>
+  );
+}
+
+/** A scrolling column you can pull down from the top to sync. onRefresh runs once per pull. */
+export function Pull({ onRefresh, className, children }: { onRefresh: () => unknown; className?: string; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const start = useRef<number | null>(null);
+  const [pull, setPull] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const READY = 64;
+  const end = () => {
+    if (start.current === null) return;
+    start.current = null;
+    setDragging(false);
+    if (pull < READY) { setPull(0); return; }
+    setBusy(true);
+    setPull(44);
+    Promise.resolve(onRefresh()).finally(() => { setBusy(false); setPull(0); });
+  };
+  return (
+    <div ref={box} className={cx("flex flex-col overflow-auto", className)}
+      onTouchStart={(e) => { if (!busy && box.current && box.current.scrollTop <= 0) { start.current = e.touches[0].clientY; setDragging(true); } }}
+      onTouchMove={(e) => {
+        if (start.current === null) return;
+        const d = e.touches[0].clientY - start.current;
+        if (d <= 0) { start.current = null; setDragging(false); setPull(0); return; }
+        setPull(Math.min(d * 0.5, 96)); // half the finger's travel, so it feels like a pull
+      }}
+      onTouchEnd={end} onTouchCancel={end}>
+      <div aria-live="polite" className="flex flex-none items-center justify-center overflow-hidden text-[13px] font-semibold text-ink-3"
+        style={{ height: pull, transition: dragging ? "none" : "height .2s" }}>
+        {busy ? "Syncing…" : pull >= READY ? "Release to sync" : "Pull to sync"}
+      </div>
+      {children}
+    </div>
   );
 }
 
