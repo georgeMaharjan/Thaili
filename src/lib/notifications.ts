@@ -34,3 +34,30 @@ export async function registerPush(ask = false): Promise<void> {
 
   await PushNotifications.register();
 }
+
+// Sunday 8 am "Weekly review — tap to view", repeating. A local notification: nothing leaves the phone.
+// ask=true shows Android's permission dialog (end of onboarding, or turning Notifications on).
+// The same permission covers "Review this transaction", which the native side posts (Capture.java).
+const WEEKLY = 7;
+export async function weeklyReminder(on: boolean, ask = false): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  const { LocalNotifications } = await import("@capacitor/local-notifications");
+  await LocalNotifications.cancel({ notifications: [{ id: WEEKLY }] });
+  if (!on) return;
+  let perm = await LocalNotifications.checkPermissions();
+  if (ask && perm.display !== "granted") perm = await LocalNotifications.requestPermissions();
+  if (perm.display !== "granted") return;
+  await LocalNotifications.schedule({ notifications: [{
+    id: WEEKLY, title: "Weekly review", body: "Tap to view your week", smallIcon: "ic_stat_thaili",
+    schedule: { on: { weekday: 1, hour: 8, minute: 0 }, allowWhileIdle: true }, // weekday 1 = Sunday
+    extra: { open: "weekly" },
+  }] });
+}
+
+export async function onWeeklyTap(cb: () => void): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  const { LocalNotifications } = await import("@capacitor/local-notifications");
+  await LocalNotifications.addListener("localNotificationActionPerformed", (a) => {
+    if (a.notification.extra?.open === "weekly") cb();
+  });
+}

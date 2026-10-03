@@ -12,6 +12,9 @@ type Native = {
   installedApps(o: { packages: string[] }): Promise<{ installed: string[] }>;
   authenticate(o: { title?: string }): Promise<{ ok: boolean; reason?: string }>;
   readSms(o: { sinceMs: number }): Promise<{ messages: Sms[] }>;
+  setCapture(o: object): Promise<void>;
+  addListener(e: "open", cb: (o: { open: string; at: number }) => void): Promise<{ remove: () => void }>;
+  readNotifications(o: { sinceMs: number }): Promise<{ notifications: { pkg: string; body: string; at: number }[] }>;
   tap(): Promise<void>;
 };
 
@@ -33,5 +36,12 @@ export const authenticate = (title?: string) =>
 // Money messages since sinceMs (filtered natively: amount + debit/credit word, no OTPs).
 export const readSms = (sinceMs: number) =>
   isDevice ? native.readSms({ sinceMs }).then((r) => r.messages) : Promise.resolve([] as Sms[]);
+// What background capture watches and checks; see Capture.java and sms.ts nativeRules.
+export const setCapture = (config: object) => (isDevice ? native.setCapture(config).catch(() => {}) : Promise.resolve());
+// A tapped Thaili notification ("review" carries the spend's time).
+export const onOpen = (cb: (o: { open: string; at: number }) => void) => { if (isDevice) native.addListener("open", cb); };
+// Money notifications those apps posted since sinceMs (kept natively, even while Thaili was closed).
+export const readNotifications = (sinceMs: number) =>
+  isDevice ? native.readNotifications({ sinceMs }).then((r) => r.notifications) : Promise.resolve([] as { pkg: string; body: string; at: number }[]);
 // Light haptic tick for taps; silent in a browser.
 export const hapticTap = () => { if (isDevice) native.tap().catch(() => {}); };
