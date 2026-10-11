@@ -24,7 +24,10 @@ public class SmsReceiver extends BroadcastReceiver {
             at = m.getTimestampMillis();
         }
         for (Map.Entry<String, StringBuilder> e : bodies.entrySet()) {
-            if (Capture.bankForSender(c, e.getKey()) != null) Capture.onMessage(ctx, c, e.getValue().toString(), at);
+            if (Capture.bankForSender(c, e.getKey()) != null) {
+                ThailiPlugin.moneyNotification(); // Import foreground SMS as promptly as app alerts.
+                Capture.onMessage(ctx, c, e.getValue().toString(), at);
+            }
         }
     }
 }

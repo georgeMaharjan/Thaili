@@ -66,9 +66,9 @@ assert.equal(p("ROCFIT", "Dear Customer, your payment of NPR 3000 is due. Please
 // Not a transaction
 assert.equal(p("NIC_ALERT", "Dear customer, our branch is closed on Friday."), null);
 
-// Account matching: last-4 beats bank; bank name matches a hand-added account
+// Account matching: institution is resolved before last-4; hand-added accounts still match.
 const sources = [{ key: "nic", base: "NIC Asia", acct: "4821" }, { key: "src1", base: "Nabil Bank", acct: null }];
-assert.equal(sourceFor(p("NABIL", "A/C ...4821 is debited by NPR 5.00")!, sources)?.key, "nic");
+assert.equal(sourceFor(p("NABIL", "A/C ...4821 is debited by NPR 5.00")!, sources)?.key, "src1");
 assert.equal(sourceFor(p("NABIL", "A/C ...9999 has been withdrawn by NPR 5.00")!, sources)?.key, "src1");
 assert.equal(sourceFor(p("EBL_ALERT", "A/C ...7777 is debited by NPR 5.00")!, sources), null);
 
@@ -83,21 +83,27 @@ assert.equal(transferTo(p("NICA_ALERT", "Your 270###52401 has been Debited by NP
 assert.equal(transferTo(p("NABIL_ALERT", "Your 098##44344 has been withdrawn by NPR 500.00, Remarks: MPAY FPQR,123")!, own), null);
 assert.equal(transferTo(p("NICA_ALERT", "Your A/C ...4821 is debited by NPR 500.00. Remarks: LoadeSewa/1")!, [{ key: "nic", base: "NIC Asia" }]), null);
 
-// Debit in one account + same credit in another within 15 minutes = one transfer
+// Only an explicitly identified transfer can absorb its matching destination credit.
 const tx = (id: string, src: string, dir: string, amt: number, min: number, to: string | null = null) =>
   ({ id, src, dir, amt, to, cat: "food", auto: "X", at: new Date(at + min * 60000).toISOString() });
-let pr = pairTransfers([tx("d", "nic", "debit", 1700, 0), tx("c", "khalti", "credit", 1700, 2), tx("o", "nic", "debit", 50, 1)]);
+let pr = pairTransfers([tx("d", "nic", "transfer", 1700, 0, "khalti"), tx("c", "khalti", "credit", 1700, 2), tx("o", "nic", "debit", 50, 1)]);
 assert.deepEqual(pr.map((t) => [t.id, t.dir, t.to, t.cat]), [["d", "transfer", "khalti", null], ["o", "debit", null, "food"]]);
 pr = pairTransfers([tx("d", "nic", "transfer", 1700, 0, "khalti"), tx("c", "khalti", "credit", 1700, 1)]);
 assert.deepEqual(pr.map((t) => [t.id, t.to]), [["d", "khalti"]]);
 assert.equal(pairTransfers([tx("d", "nic", "debit", 1700, 0), tx("c", "khalti", "credit", 1700, 16)]).length, 2);
 assert.equal(pairTransfers([tx("d", "nic", "debit", 1700, 0), tx("c", "nic", "credit", 1700, 1)]).length, 2);
+assert.equal(pairTransfers([tx("purchase", "nic", "debit", 1700, 0), tx("salary", "khalti", "credit", 1700, 1)]).length, 2);
 
 // Dedup: ±3 minutes, same account and amount
 const t = { src: "nic", amt: 100, at: "2026-09-24T10:00:00Z" };
 assert.equal(isDuplicate(t, [{ src: "nic", amt: 100, at: "2026-09-24T10:02:59Z" }]), true);
 assert.equal(isDuplicate(t, [{ src: "nic", amt: 100, at: "2026-09-24T10:03:01Z" }]), false);
 assert.equal(isDuplicate(t, [{ src: "esewa", amt: 100, at: "2026-09-24T10:00:00Z" }]), false);
+assert.equal(isDuplicate({ ...t, dir: "credit" }, [{ ...t, dir: "debit" }]), false);
+assert.equal(isDuplicate({ ...t, dir: "debit", raw: "You paid Rs 100 Ref: ABC1234" }, [{ ...t, dir: "debit", raw: "You paid Rs 100 Ref: XYZ1234" }]), false);
+assert.equal(isDuplicate({ ...t, id: "same", ch: "App", dir: "debit" }, [{ ...t, id: "same", ch: "App", dir: "debit" }]), true);
+assert.equal(isDuplicate({ ...t, id: "new", ch: "App", dir: "debit" }, [{ ...t, id: "old", ch: "App", dir: "debit" }]), false);
+assert.equal(sourceFor(p("NIC_ALERT", "A/C ...9999 is debited by NPR 5")!, sources), null);
 
 // Tail discovery for onboarding
 assert.deepEqual(tailsByBank([

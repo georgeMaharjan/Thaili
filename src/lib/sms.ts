@@ -1,8 +1,10 @@
 // Bank SMS → transaction (spec §11–12, §15). Pure functions; the native side
 // (ThailiPlugin.readSms) already dropped everything that isn't a money message.
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NOTIFICATION_IGNORE, normalizeMoneyText, parseNotification } from "./notification-transactions.ts";
+import { INSTITUTIONS, institutionForAccount } from "./institutions.ts";
+import { duplicateScore, type CapturedEntry } from "./transaction-capture.ts";
 
-// A bank or wallet name in free text: an account's name, a remark. Keys match DETECTED / account keys.
+// A bank or wallet name in free text: an account's name, a remark. Keys match recognized account keys.
 // (?<![A-Z])…(?![A-Z]) instead of \b: sender IDs look like NIC_ALERT, and "_" is a word char.
 const BANKS: Record<string, RegExp> = {
   nic: /NIC\s?ASIA|(?<![A-Z])NICA?(?![A-Z])/i,
@@ -17,14 +19,7 @@ const BANKS: Record<string, RegExp> = {
 // Who may report money: the alert sender IDs banks send from. Anyone else — a person, a promo
 // short code — is ignored, whatever the text says. The same IDs also send OTPs and offers;
 // TXN below decides which of their messages are transactions.
-const SENDERS: Record<string, RegExp> = {
-  nic: /^NICA?[_-]?(ALERT|ASIA)?$/i,
-  nabil: /^NABIL[_-]?(ALERT)?$/i,
-  scb: /^(SCB?[_-]?ALERT|STANCHART|SCBNL)$/i,
-  everest: /^EBL[_-]?ALERT$/i,
-  gibl: /^GIBL[_-]?(ALERT)?$/i,
-  khalti: /^KHALTI$/i,
-};
+const SENDERS = Object.fromEntries(INSTITUTIONS.filter(i => i.sms).map(i => [i.key, i.sms!]));
 export const bankOf = (sender: string) => Object.keys(SENDERS).find((k) => SENDERS[k].test(sender.trim())) || null;
 
 const AMOUNT = /(?:NPR|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)/i;
@@ -53,14 +48,19 @@ export type Parsed = {
 // An app notification has no sender ID: the bank is known from the app that posted it (msg.bank).
 export function parseSms(msg: { sender: string; body: string; at: number; bank?: string }): Parsed | null {
   const bank = msg.bank || bankOf(msg.sender || "");
-  if (!bank) return null;
-  const body = JUNK.reduce((t, re) => t.replace(re, ""), msg.body).trim();
+  if (!bank || !Number.isFinite(msg.at) || NOTIFICATION_IGNORE.test(normalizeMoneyText(msg.body))) return null;
+  const body = JUNK.reduce((t, re) => t.replace(re, ""), normalizeMoneyText(msg.body)).trim();
+  const generic = () => {
+    const parsed = parseNotification({ bank, body, at: msg.at });
+    return parsed ? { ...parsed, raw: msg.body } : null;
+  };
   const a = AMOUNT.exec(body);
-  if (!a || NOT_A_TXN.test(body)) return null;
+  if (NOT_A_TXN.test(body)) return null;
+  if (!a) return generic();
   const amt = parseFloat(a[1].replace(/,/g, ""));
-  if (!(amt > 0)) return null;
+  if (!(amt > 0) || !Number.isFinite(amt)) return null;
   const dir = TXN.find(([re]) => re.test(body))?.[1];
-  if (!dir) return null;
+  if (!dir) return generic();
   const t = TAIL.exec(body);
   const r = REMARK.exec(body);
   const rem = r ? (r[1] || r[2]).trim().replace(/\s{2,}/g, " ") || null : null;
@@ -72,12 +72,17 @@ export function parseSms(msg: { sender: string; body: string; at: number; bank?:
   return { amt, dir, tail: t ? t[1] || t[2] || t[3] : null, rem, m, bank, raw: msg.body, at: msg.at };
 }
 
-// The account a message belongs to: the last four digits first, then the bank.
-export function sourceFor(p: Parsed, sources: any[]) {
-  const tail = p.tail;
-  return (tail && sources.find((x) => x.acct && String(x.acct).slice(-4) === tail.slice(-4)))
-    || (p.bank && sources.find((x) => x.key === p.bank || BANKS[p.bank!].test(x.base || x.name)))
-    || null;
+// Resolve the institution before comparing suffixes, so two banks sharing a tail
+// cannot change each other's balance.
+type MatchableSource = { key: string; base?: string; name?: string; acct?: string | null; type?: string };
+export function sourceFor<T extends MatchableSource>(p: Parsed, sources: T[]): T | null {
+  const accounts = sources.filter((x) => !/manual/i.test(x.type || "") && (x.key === p.bank || institutionForAccount(x)?.key === p.bank));
+  if (p.tail) {
+    const matching = accounts.filter((x) => x.acct && String(x.acct).slice(-4) === p.tail!.slice(-4));
+    if (matching.length) return matching.length === 1 ? matching[0] : null;
+    if (accounts.some((x) => x.acct)) return null;
+  }
+  return accounts.length === 1 ? accounts[0] : null;
 }
 
 // A debit that loads one of your wallets ("LoadeSewa/…", "eSewa Load …", "Wallet Transfer for Khalti")
@@ -86,23 +91,23 @@ export function sourceFor(p: Parsed, sources: any[]) {
 // else's wallet: that's a payment. Nabil cuts the number to 7 digits, so your own load reads as
 // a payment there too — ponytail: store the full wallet number to tell those apart.
 const MOBILE = /(?<!\d)9[78]\d{5}(?:\d{3})?(?!\d)/;
-export function transferTo(p: { dir: string; rem: string | null }, sources: any[]) {
+export function transferTo<T extends MatchableSource>(p: { dir: string; rem: string | null }, sources: T[]): T | null {
   if (p.dir !== "debit" || !p.rem) return null;
   const w = ["esewa", "khalti"].find((k) => BANKS[k].test(p.rem!));
-  const wallet = w && sources.find((x) => x.key === w || BANKS[w].test(x.base || x.name));
+  const wallet = w && sources.find((x) => x.key === w || BANKS[w].test(x.base || x.name || ""));
   if (!wallet) return null;
   const mobile = MOBILE.exec(p.rem)?.[0];
   return mobile && !(wallet.acct && mobile.endsWith(String(wallet.acct))) ? null : wallet;
 }
 
-// Money out of one of your accounts and the same amount into another within 15 minutes is
-// one transfer: the debit becomes "transfer to", the credit goes. Pure; returns a new list.
-// ponytail: pairs within one batch of messages; a pair split across two SMS reads stays two lines.
-export function pairTransfers(tx: any[]) {
+// An identified own-wallet transfer plus its destination credit is stored once.
+// Equal debit and credit amounts alone do not establish that they are a transfer.
+type TransferEntry = { amt: number; src: string; dir: string; to?: string | null; at: string; cat?: string | null; auto?: string | null };
+export function pairTransfers<T extends TransferEntry>(tx: T[]): T[] {
   const out = tx.slice();
   tx.filter((c) => c.dir === "credit").forEach((c) => {
     const i = out.findIndex((d) => d.amt === c.amt && d.src !== c.src
-      && (d.dir === "debit" || (d.dir === "transfer" && d.to === c.src))
+      && d.dir === "transfer" && d.to === c.src
       && Math.abs(Date.parse(d.at) - Date.parse(c.at)) <= 900000);
     if (i < 0) return;
     out[i] = { ...out[i], dir: "transfer", to: c.src, cat: null, auto: null };
@@ -113,16 +118,16 @@ export function pairTransfers(tx: any[]) {
 
 // The same checks, as pattern strings, for the native side that nudges "Review this transaction"
 // while Thaili is closed (android/.../Capture.java). Only the user's own accounts' senders go.
-export const nativeRules = (accountKeys: string[]) => ({
-  senders: Object.fromEntries(Object.keys(SENDERS).filter((k) => accountKeys.includes(k)).map((k) => [k, SENDERS[k].source])),
+export const nativeRules = (accounts: (string | MatchableSource)[]) => ({
+  senders: Object.fromEntries(Object.keys(SENDERS).filter(k => accounts.some(a => typeof a === "string" ? a === k : institutionForAccount(a)?.key === k)).map(k => [k, SENDERS[k].source])),
   txn: TXN.map(([re, dir]) => [re.source, dir]),
   amount: AMOUNT.source, remark: REMARK.source, notTxn: NOT_A_TXN.source,
   wallets: BANKS.esewa.source + "|" + BANKS.khalti.source,
 });
 
-// Spec §15: same amount + same account within ±3 minutes is one transaction.
-export const isDuplicate = (t: { src: string; amt: number; at: string }, existing: any[]) =>
-  existing.some((x) => x.src === t.src && x.amt === t.amt && Math.abs(Date.parse(x.at) - Date.parse(t.at)) <= 180000);
+// Prefer notification identity and transaction reference; reference-less cross-channel
+// duplicates must agree on account, amount and direction within three minutes.
+export const isDuplicate = (t: CapturedEntry, existing: CapturedEntry[]) => existing.some(x => duplicateScore(t, x) !== null);
 
 /** Most common last-4 per bank across messages — fills "ending 4821, seen in your messages". */
 export function tailsByBank(msgs: { sender: string; body: string; at: number }[]) {

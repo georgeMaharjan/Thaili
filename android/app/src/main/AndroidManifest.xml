@@ -13,6 +13,7 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -56,8 +57,12 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Android 11+ hides other apps unless named here. Keep in sync with DETECTED in src/lib/logic.tsx. -->
+    <!-- Android 11+ visibility for installed apps with launcher activities. -->
     <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
         <package android:name="com.f1soft.nicasiamobilebanking" />
         <package android:name="com.f1soft.nabilmbank" />
         <package android:name="com.sc.mobilebanking.np" />

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -14,6 +15,11 @@ import android.view.HapticFeedbackConstants;
 import android.provider.Settings;
 import android.provider.Telephony;
 import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import java.lang.ref.WeakReference;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.app.NotificationManagerCompat;
@@ -40,6 +46,12 @@ import android.content.SharedPreferences;
     permissions = { @Permission(alias = "sms", strings = { Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS }) }
 )
 public class ThailiPlugin extends Plugin {
+    private static WeakReference<ThailiPlugin> active = new WeakReference<>(null);
+
+    static void moneyNotification() {
+        ThailiPlugin plugin = active.get();
+        if (plugin != null) plugin.notifyListeners("moneyNotification", new JSObject());
+    }
 
     @PluginMethod
     public void status(PluginCall call) {
@@ -139,13 +151,21 @@ public class ThailiPlugin extends Plugin {
     public void setCapture(PluginCall call) {
         getContext().getSharedPreferences(Capture.PREFS, Context.MODE_PRIVATE)
             .edit().putString("config", call.getData().toString()).apply();
+        ThailiNotificationListener.refresh();
         call.resolve();
     }
 
     // A tapped "Review this transaction" opens the app with thailiOpen; the web layer listens for "open".
     @Override
     public void load() {
+        active = new WeakReference<>(this);
         if (getActivity() != null) openFrom(getActivity().getIntent());
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        if (active.get() == this) active.clear();
+        super.handleOnDestroy();
     }
 
     @Override
@@ -173,7 +193,7 @@ public class ThailiPlugin extends Plugin {
             JSONArray all = new JSONArray(p.getString("log", "[]"));
             for (int i = 0; i < all.length(); i++) {
                 JSONObject n = all.getJSONObject(i);
-                if (n.getLong("at") >= since) out.put(n);
+                if (n.optLong("receivedAt", n.getLong("at")) >= since) out.put(n);
             }
         } catch (JSONException ignored) {
             // Unreadable log: nothing to give back; the listener resets it on the next write.
@@ -189,13 +209,16 @@ public class ThailiPlugin extends Plugin {
         JSArray out = new JSArray();
         if (getPermissionState("sms") == PermissionState.GRANTED) {
             String since = String.valueOf(call.getLong("sinceMs", 0L));
-            String[] cols = { Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE };
+            String[] cols = { Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms._ID };
             try (Cursor c = getContext().getContentResolver().query(Telephony.Sms.Inbox.CONTENT_URI, cols,
                     Telephony.Sms.DATE + " >= ?", new String[] { since }, Telephony.Sms.DATE + " DESC")) {
                 while (c != null && c.moveToNext()) {
                     String body = c.getString(1);
-                    if (body == null || !AMOUNT.matcher(body).find() || OTP.matcher(body).find()) continue;
+                    if (body == null) continue;
+                    String normalized = MoneyNotificationText.normalize(body);
+                    if (!AMOUNT.matcher(normalized).find() || OTP.matcher(normalized).find()) continue;
                     JSObject m = new JSObject();
+                    m.put("id", UUID.nameUUIDFromBytes(("sms|" + c.getLong(3) + "|" + c.getLong(2) + "|" + c.getString(0) + "|" + body).getBytes(StandardCharsets.UTF_8)).toString());
                     m.put("sender", c.getString(0));
                     m.put("body", body);
                     m.put("at", c.getLong(2));
@@ -225,23 +248,31 @@ public class ThailiPlugin extends Plugin {
         call.resolve();
     }
 
-    /** Which of the given packages are installed. Each must also be listed under <queries> in the manifest (Android 11+). */
+    /** Discover launchable apps, including banks/wallets whose package names we don't know yet. */
     @PluginMethod
     public void installedApps(PluginCall call) {
-        JSArray asked = call.getArray("packages", new JSArray());
         JSArray found = new JSArray();
         PackageManager pm = getContext().getPackageManager();
-        for (int i = 0; i < asked.length(); i++) {
-            try {
-                String p = asked.getString(i);
-                pm.getPackageInfo(p, 0);
-                found.put(p);
-            } catch (PackageManager.NameNotFoundException | JSONException ignored) {
-                // not installed
+        Intent launcher = new Intent(Intent.ACTION_MAIN);
+        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+        Set<String> seen = new HashSet<>();
+        try {
+            for (ResolveInfo info : pm.queryIntentActivities(launcher, 0)) {
+                if (info.activityInfo == null || !info.activityInfo.applicationInfo.enabled) continue;
+                String pkg = info.activityInfo.packageName;
+                if (pkg.equals(getContext().getPackageName()) || !seen.add(pkg)) continue;
+                CharSequence label = info.activityInfo.applicationInfo.loadLabel(pm);
+                JSObject app = new JSObject();
+                app.put("pkg", pkg);
+                app.put("label", label == null ? pkg : label.toString());
+                found.put(app);
             }
+        } catch (RuntimeException e) {
+            call.reject("Unable to read installed apps", e);
+            return;
         }
         JSObject r = new JSObject();
-        r.put("installed", found);
+        r.put("apps", found);
         call.resolve(r);
     }
 }
