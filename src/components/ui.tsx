@@ -1,7 +1,7 @@
 // Building blocks shared by every screen. Colours, fonts, radii and shadows are
 // Tailwind theme tokens (see @theme in globals.css); colours that depend on state
 // arrive ready-made from the view model in lib/logic.tsx.
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 // The view model from ThailiLogic.renderVals(). logic.tsx is untyped, so this is too.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,6 +27,8 @@ export const P = {
   arrowUp: "M12 19V5M6 11l6-6 6 6",
   arrowDown: "M12 5v14M6 13l6 6 6-6",
   calendar: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4",
+  eye: "M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12ZM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z",
+  eyeOff: "M3 3l18 18M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.4M6.3 6.9C3.9 8.6 2.5 12 2.5 12s3.5 6.5 9.5 6.5c1.7 0 3.2-.5 4.5-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2",
   wallet: "M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V18a1.5 1.5 0 0 0 1.5 1.5H20V8H6.5A2.5 2.5 0 0 1 4 7.5ZM16 13.8h.01",
   gear: "M12 8.9a3.1 3.1 0 1 0 0 6.2a3.1 3.1 0 1 0 0-6.2ZM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z",
 };
@@ -34,15 +36,15 @@ export const P = {
 // Class sets repeated across screens.
 export const CARD = "rounded-card border border-line bg-surface";
 export const H1 = "font-display text-[28px] font-bold leading-[1.18] tracking-[-0.015em]";
-export const SUB = "text-pretty text-[13.5px] leading-[1.6] text-ink-2";
+export const SUB = "text-pretty text-[14px] leading-[1.6] text-ink-2";
 export const LABEL = "text-[13px] font-semibold text-ink-3";
-const ROUND_BTN = "press flex size-11 flex-none items-center justify-center rounded-full";
+const ROUND_BTN = "press flex size-[44px] flex-none items-center justify-center rounded-full";
 
 export function Icon({ d, size = 22, sw = 2, className, style, children }: {
   d?: string; size?: number; sw?: number; className?: string; style?: CSSProperties; children?: ReactNode;
 }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={sw}
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={sw}
       strokeLinecap="round" strokeLinejoin="round" className={cx("flex-none", className)} style={style}>
       {d && <path d={d} />}
       {children}
@@ -57,19 +59,9 @@ export function IconBtn({ d, label, onClick, className = "text-ink", style, size
   size?: number; sw?: number; children?: ReactNode;
 }) {
   return (
-    <button onClick={onClick} aria-label={label} className={cx(ROUND_BTN, className)} style={style}>
+    <button type="button" onClick={onClick} aria-label={label} className={cx(ROUND_BTN, className)} style={style}>
       {children ?? <Icon d={d} size={size} sw={sw} />}
     </button>
-  );
-}
-
-/** Sync and Settings shortcuts in the Home and Accounts headers. */
-export function HeaderActions({ v }: { v: V }) {
-  return (
-    <div className="flex flex-none items-center">
-      <IconBtn d={v.syncIconD} label="Sync" onClick={v.toSync} sw={1.9} className="" style={{ color: v.syncIconFg }} />
-      <IconBtn d={P.wallet} label="Accounts" onClick={v.toAccounts} sw={1.8} className="text-ink-2" />
-    </div>
   );
 }
 
@@ -78,7 +70,7 @@ export function TopBar({ onBack, icon = P.back, label = "Back", title, children 
   onBack: () => void; icon?: string; label?: string; title?: ReactNode; children?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-13 flex-none items-center gap-0.5 px-2 py-0.5">
+    <div className="flex min-h-[52px] flex-none items-center gap-0.5 px-2 py-0.5">
       <IconBtn d={icon} label={label} onClick={onBack} />
       <span className="min-w-0 flex-1 truncate pl-1 font-display text-[18px] font-bold leading-[1.2]">{title}</span>
       {children}
@@ -93,10 +85,10 @@ export function StepHead({ v, onBack, step, title, sub, className = "gap-2", tit
 }) {
   return (
     <div className={cx("flex flex-col", className)}>
-      <div className="-mt-2.5 mb-0.5 -ml-3 flex items-center gap-2">
+      <div className="-mt-3 mb-0.5 -ml-3 flex items-center gap-2">
         <IconBtn d={P.back} label="Back" onClick={onBack} />
-        <div className="flex flex-1 gap-1.25">
-          {v.obDots.map((d: V, i: number) => <span key={i} className="h-1 flex-1 rounded-xs" style={{ background: d.bg }} />)}
+        <div className="flex flex-1 gap-1">
+          {v.obDots.map((d: V, i: number) => <span key={i} className="h-[4px] flex-1 rounded-xs" style={{ background: d.bg }} />)}
         </div>
       </div>
       <div className="text-[13px] font-semibold text-action">{step}</div>
@@ -117,7 +109,7 @@ export function Btn({ onClick, kind = "primary", className, children }: {
   onClick?: () => void; kind?: keyof typeof BTN; className?: string; children: ReactNode;
 }) {
   return (
-    <button onClick={onClick} className={cx("press flex min-h-13 items-center justify-center rounded-2xl px-5.5 text-center text-[15px] font-semibold", BTN[kind], className)}>
+    <button type="button" onClick={onClick} className={cx("press flex min-h-[52px] items-center justify-center rounded-2xl px-6 text-center text-[15px] font-semibold", BTN[kind], className)}>
       {children}
     </button>
   );
@@ -128,7 +120,7 @@ export function Cta({ onClick, bg, fg, className, children }: {
   onClick: () => void; bg: string; fg: string; className: string; children: ReactNode;
 }) {
   return (
-    <button onClick={onClick} style={{ background: bg, color: fg }} className={cx("press w-full rounded-2xl text-center font-semibold", className)}>
+    <button type="button" onClick={onClick} style={{ background: bg, color: fg }} className={cx("press w-full rounded-2xl text-center font-semibold", className)}>
       {children}
     </button>
   );
@@ -136,29 +128,30 @@ export function Cta({ onClick, bg, fg, className, children }: {
 
 /** Centred text link under a call to action. */
 export const TextLink = ({ onClick, className = "p-2 text-ink-3", children }: { onClick: () => void; className?: string; children: ReactNode }) => (
-  <button onClick={onClick} className={cx("text-center text-[12.5px] font-semibold", className)}>{children}</button>
+  <button type="button" onClick={onClick} className={cx("text-center text-[13px] font-semibold", className)}>{children}</button>
 );
 
 /** On/off switch drawn from the view model's `justify` and `track`. */
 export function Toggle({ t, small }: { t: V; small?: boolean }) {
   return (
-    <span className={cx("flex flex-none rounded-full p-0.75", small ? "h-6.75 w-11.5" : "h-7 w-12")} style={{ justifyContent: t.justify, background: t.track }}>
-      <span className={cx("rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)]", small ? "size-5.25" : "size-5.5")} />
+    <span className={cx("flex flex-none rounded-full p-1", small ? "h-[27px] w-[46px]" : "h-[28px] w-[48px]")} style={{ justifyContent: t.justify, background: t.track }}>
+      <span className={cx("rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)]", small ? "size-[21px]" : "size-[22px]")} />
     </span>
   );
 }
 
 /** A pick-one chip; `c` is a chip() from the view model. */
-export function Chip({ c, check = true, className = "px-3.5 py-3 text-[13.5px]" }: { c: V; check?: boolean; className?: string }) {
+export function Chip({ c, check = true, className = "px-4 py-3 text-[14px]" }: { c: V; check?: boolean; className?: string }) {
   return (
-    <button onClick={c.tap} className={cx("press rounded-xl border leading-[1.3]", className)}
+    <button type="button" onClick={c.tap} aria-pressed={Boolean(c.check)} className={cx("press rounded-xl border leading-[1.3]", c.dot && "flex items-center gap-2", className)}
       style={{ background: c.bg, color: c.fg, borderColor: c.border, fontWeight: c.weight }}>
+      {c.dot && <span className="size-[8px] flex-none rounded-full" style={{ background: c.dot }} />}
       {check && c.check}{c.label}
     </button>
   );
 }
 
-export const Chips = ({ items, className = "px-4 pt-2.25" }: { items: V[]; className?: string }) => (
+export const Chips = ({ items, className = "px-5 pt-2" }: { items: V[]; className?: string }) => (
   <div className={cx("flex flex-wrap gap-2", className)}>
     {items.map((c: V, i: number) => <Chip key={i} c={c} />)}
   </div>
@@ -167,9 +160,9 @@ export const Chips = ({ items, className = "px-4 pt-2.25" }: { items: V[]; class
 /** Segmented control. `itemClass` sets each segment's padding, radius and text size. */
 export function Seg({ items, itemClass, className = "rounded-xl" }: { items: V[]; itemClass: string; className?: string }) {
   return (
-    <div className={cx("flex bg-surface-2 p-0.75", className)}>
+    <div className={cx("flex bg-surface-2 p-1", className)}>
       {items.map((x: V, i: number) => (
-        <button key={i} onClick={x.tap} className={cx("font-semibold", itemClass)} style={{ background: x.bg, color: x.fg, boxShadow: x.shadow }}>{x.label}</button>
+        <button type="button" key={i} onClick={x.tap} aria-pressed={x.bg !== "transparent"} className={cx("font-semibold", itemClass)} style={{ background: x.bg, color: x.fg, boxShadow: x.shadow }}>{x.label}</button>
       ))}
     </div>
   );
@@ -179,8 +172,8 @@ export function Keypad({ keys, tall }: { keys: V[]; tall?: boolean }) {
   return (
     <div className="grid flex-none grid-cols-3 gap-px border-t border-line bg-line">
       {keys.map((k: V, i: number) => (
-        <button key={i} onClick={k.tap} style={{ color: k.fg }}
-          className={cx("press-bg flex items-center justify-center bg-canvas font-display font-semibold", tall ? "h-14.5 text-[24px]" : "h-13.5 text-[23px]")}>
+        <button type="button" key={i} onClick={k.tap} style={{ color: k.fg }}
+          className={cx("press-bg flex items-center justify-center bg-canvas font-display font-semibold", tall ? "h-[58px] text-[24px]" : "h-[54px] text-[24px]")}>
           {k.isBack && <Icon d={P.backspace} size={24} sw={1.9} />}{k.label}
         </button>
       ))}
@@ -191,23 +184,23 @@ export function Keypad({ keys, tall }: { keys: V[]; tall?: boolean }) {
 /** A big "Rs 12,000" readout above a keypad, with a caret. */
 export function AmountEntry({ value, fg, className, caret }: { value: ReactNode; fg: string; className: string; caret: string }) {
   return (
-    <div className="flex items-baseline gap-2.25 px-5 pt-2.5 pb-0.5">
-      <span className="font-display text-[24px] font-bold text-ink-3">Rs</span>
+    <div className="flex items-baseline gap-2 px-5 pt-3 pb-0.5">
+      <span className="font-display text-[22px] font-bold text-ink-3">Rs</span>
       <span className={cx("font-display font-extrabold leading-none tracking-[-0.035em]", className)} style={{ color: fg }}>{value}</span>
-      <span className={cx("w-0.5 bg-action", caret)} />
+      <span className={cx("w-[2px] bg-action", caret)} />
     </div>
   );
 }
 
 /** −/+ square button. */
 export const Stepper = ({ onClick, small, children }: { onClick: () => void; small?: boolean; children: ReactNode }) => (
-  <button onClick={onClick} className={cx("flex items-center justify-center rounded-xl border border-line bg-surface-2 text-ink-2", small ? "size-10 text-[19px]" : "size-11 text-[20px]")}>
+  <button type="button" onClick={onClick} className={cx("flex items-center justify-center rounded-xl border border-line bg-surface-2 text-ink-2", small ? "size-[40px] text-[20px]" : "size-[44px] text-[20px]")}>
     {children}
   </button>
 );
 
 /** Rounded icon square. Colours come from `tint`/`fg`, or from classes in `className`. */
-export function Tile({ d, tint, fg, className = "size-9", size = 19, sw = 1.9 }: {
+export function Tile({ d, tint, fg, className = "size-[36px]", size = 19, sw = 1.9 }: {
   d: string; tint?: string; fg?: string; className?: string; size?: number; sw?: number;
 }) {
   return (
@@ -226,11 +219,11 @@ export function ItemRow({ look, title, sub, subFg = "var(--ink3)", right, onClic
   look: V; title: ReactNode; sub: ReactNode; subFg?: string; right?: ReactNode; onClick: () => void; className?: string;
 }) {
   return (
-    <button onClick={onClick} className={cx("press flex w-full items-center gap-3", className)}>
+    <button type="button" onClick={onClick} className={cx("press flex w-full items-center gap-3", className)}>
       <Tile d={look.icon} tint={look.tint} fg={look.ifg} />
       <div className="flex min-w-0 flex-1 flex-col gap-px">
-        <span className="truncate text-[13.5px] leading-[1.35]">{title}</span>
-        <span className="truncate text-[12.5px] leading-[1.4]" style={{ color: subFg }}>{sub}</span>
+        <span className="truncate text-[14px] leading-[1.35]">{title}</span>
+        <span className="truncate text-[13px] leading-[1.4]" style={{ color: subFg }}>{sub}</span>
       </div>
       {right}
     </button>
@@ -245,12 +238,12 @@ export const Bar = ({ width, color, className }: { width: string; color: string;
 
 /** The ✓ list of what sync keeps. */
 export const Includes = ({ v, title, className }: { v: V; title: string; className: string }) => (
-  <div className={cx(CARD, "flex flex-col gap-2.25", className)}>
+  <div className={cx(CARD, "flex flex-col gap-2", className)}>
     <span className={LABEL}>{title}</span>
     {v.syncIncludes.map((x: V, i: number) => (
-      <div key={i} className="flex items-start gap-2.25">
+      <div key={i} className="flex items-start gap-2">
         <Icon d={P.check} size={13} sw={3} className="mt-1" style={{ color: x.fg }} />
-        <span className="text-pretty text-[12.5px] leading-[1.55] text-ink-2">{x.text}</span>
+        <span className="text-pretty text-[13px] leading-[1.55] text-ink-2">{x.text}</span>
       </div>
     ))}
   </div>
@@ -260,7 +253,7 @@ export const Includes = ({ v, title, className }: { v: V; title: string; classNa
 /** Page section: a quiet heading with an optional action on the right, then its rows. */
 export const Section = ({ title, action, className, children }: { title: ReactNode; action?: ReactNode; className?: string; children: ReactNode }) => (
   <div className={cx("flex flex-col", className)}>
-    <div className="flex min-h-8 items-center justify-between pb-1">
+    <div className="flex min-h-[32px] items-center justify-between pb-1">
       <span className="text-[15px] font-bold text-ink-2">{title}</span>{action}
     </div>
     {children}
@@ -269,33 +262,107 @@ export const Section = ({ title, action, className, children }: { title: ReactNo
 
 /** Small text link in a section heading ("See all", "Manage"). */
 export const HeadLink = ({ onClick, children }: { onClick: () => void; children: ReactNode }) => (
-  <button onClick={onClick} className="-my-2.5 py-2.5 pl-3 text-[13px] font-semibold text-action">{children}</button>
+  <button type="button" onClick={onClick} className="-my-3 flex items-center gap-0.5 py-3 pl-3 text-[13px] font-semibold text-action">
+    {children}<Icon d={P.next} size={14} sw={2.4} />
+  </button>
 );
 
-/** One transaction in a flat list: plain icon, title over category, amount. */
-export function TxLine({ r, className = "min-h-15" }: { r: V; className?: string }) {
+/** Hide/show-balance eye, 36px target. Its handler stops the tap reaching whatever row it sits in. */
+export const BalEye = ({ v }: { v: V }) => (
+  <button type="button" onClick={v.toggleBal} aria-label={v.balEyeLabel} className="press -m-1.5 flex size-[36px] flex-none items-center justify-center rounded-full text-ink-3">
+    <Icon d={v.balEyeD} size={18} sw={1.9} />
+  </button>
+);
+
+/** Labelled name + "+977" mobile fields, as Register and Profile both use them. */
+export function PersonFields({ name, onName, nameBorder, namePh, phone, onPhone, phoneBorder, hint, hintFg, labels }: {
+  name: string; onName: (e: V) => void; nameBorder: string; namePh?: string; phone: string; onPhone: (e: V) => void;
+  phoneBorder: string; hint: string; hintFg: string; labels: { name: string; phone: string };
+}) {
   return (
-    <button onClick={r.tap} className={cx("press flex w-full items-center gap-3.5 border-t border-line text-left", className)}>
-      <Icon d={r.icon} size={20} sw={1.8} className="text-ink-3" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[16px] font-medium leading-[1.3]">{r.title}</span>
-        <span className="truncate text-[13px] leading-[1.35]" style={{ color: r.catFg || "var(--ink3)" }}>{r.cat ?? r.meta}</span>
+    <div className="flex flex-col gap-5">
+      <label className="flex flex-col gap-2">
+        <span className={LABEL}>{labels.name}</span>
+        <input value={name} onChange={onName} placeholder={namePh} autoComplete="name"
+          className="rounded-2xl border bg-surface px-4 py-4 text-[16px] text-ink outline-none placeholder:text-ink-3" style={{ borderColor: nameBorder }} />
+      </label>
+      <label className="flex flex-col gap-2">
+        <span className={LABEL}>{labels.phone}</span>
+        <div className="flex items-stretch overflow-hidden rounded-2xl border bg-surface" style={{ borderColor: phoneBorder }}>
+          <span className="flex flex-none items-center border-r border-line pr-3 pl-4 text-[16px] font-semibold text-ink-2">+977</span>
+          <input value={phone} onChange={onPhone} inputMode="numeric" autoComplete="tel-national" placeholder="98XXXXXXXX"
+            className="min-w-0 flex-1 bg-transparent px-4 py-4 text-[16px] tracking-[.02em] text-ink outline-none placeholder:text-ink-3" />
+        </div>
+        <span className="text-[13px] leading-normal" style={{ color: hintFg }}>{hint}</span>
+      </label>
+    </div>
+  );
+}
+
+/** The headline figure: a small "Rs" beside a big number. `fs` is the number's font size. */
+export const Hero = ({ value, fs = "52px", fg, rs = "text-[22px]" }: { value: ReactNode; fs?: string; fg?: string; rs?: string }) => (
+  <span className="flex min-w-0 items-baseline gap-2" style={{ color: fg }}>
+    <span className={cx("flex-none font-display font-bold", rs)}>Rs</span>
+    <span className="min-w-0 whitespace-nowrap font-display font-extrabold leading-none tracking-[-0.03em] tabular-nums" style={{ fontSize: fs }}>{value}</span>
+  </span>
+);
+
+
+/** One transaction as a card: kind-tinted icon, title over kind and account, amount over category. `r` comes from rowLook(). */
+export function TxCard({ r }: { r: V }) {
+  return <button type="button" onClick={r.tap} className="press flex min-h-[72px] w-full items-center gap-3 border-b border-line py-3 text-left">
+    <span className="flex size-[38px] flex-none items-center justify-center rounded-xl bg-surface-2 text-ink-2"><Icon d={r.icon} size={19} sw={1.8} /></span>
+    <span className="flex min-w-0 flex-1 flex-col gap-1"><strong className="truncate text-[15px] font-semibold leading-snug">{r.title}</strong><span className={cx("text-[13px] leading-snug",r.isUncat ? "text-uncat" : "text-ink-3")}>{r.chip} · {r.meta}</span></span>
+    <span className="flex-none whitespace-nowrap font-display text-[20px] font-semibold tabular-nums" style={{color:r.fg}}>{r.amount}</span>
+  </button>;
+}
+
+/** A scrolling column you can pull down from the top to sync. onRefresh runs once per pull. */
+export function Pull({ onRefresh, className, children }: { onRefresh: () => unknown; className?: string; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const start = useRef<number | null>(null);
+  const [pull, setPull] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const READY = 64;
+  const end = () => {
+    if (start.current === null) return;
+    start.current = null;
+    setDragging(false);
+    if (pull < READY) { setPull(0); return; }
+    setBusy(true);
+    setPull(44);
+    Promise.resolve(onRefresh()).finally(() => { setBusy(false); setPull(0); });
+  };
+  return (
+    <div ref={box} className={cx("flex flex-col overflow-auto", className)}
+      onTouchStart={(e) => { if (!busy && box.current && box.current.scrollTop <= 0) { start.current = e.touches[0].clientY; setDragging(true); } }}
+      onTouchMove={(e) => {
+        if (start.current === null) return;
+        const d = e.touches[0].clientY - start.current;
+        if (d <= 0) { start.current = null; setDragging(false); setPull(0); return; }
+        setPull(Math.min(d * 0.5, 96)); // half the finger's travel, so it feels like a pull
+      }}
+      onTouchEnd={end} onTouchCancel={end}>
+      <div aria-live="polite" className="flex flex-none items-center justify-center overflow-hidden text-[13px] font-semibold text-ink-3"
+        style={{ height: pull, transition: dragging ? "none" : "height .2s" }}>
+        {busy ? "Syncing…" : pull >= READY ? "Release to sync" : "Pull to sync"}
       </div>
-      <span className="flex-none whitespace-nowrap font-display text-[19px] font-bold tabular-nums" style={{ color: r.fg }}>{r.amount}</span>
-    </button>
+      {children}
+    </div>
   );
 }
 
 export function GoalCard({ v }: { v: V }) {
   return (
-    <button onClick={v.toGoal} className="press flex flex-col gap-2.5 rounded-card bg-tint-g px-5 py-4.5">
+    <button type="button" onClick={v.toGoal} className="press flex flex-col gap-3 rounded-card bg-tint-g px-5 py-5">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="min-w-0 truncate text-[14.5px] font-semibold text-pos">{v.goalName}</span>
+        <span className="min-w-0 truncate text-[15px] font-semibold text-pos">{v.goalName}</span>
         <span className="flex-none font-display text-[14px] font-bold text-pos">{v.goalLabel}</span>
       </div>
-      <Bar width={v.goalWidth} color="var(--pos)" className="h-2 rounded-sm" />
+      <Bar width={v.goalWidth} color="var(--pos)" className="h-[8px] rounded-sm" />
       <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-[12.5px] leading-[1.5] text-ink-2">{v.goalNote}</span>
+        <span className="min-w-0 truncate text-[13px] leading-[1.5] text-ink-2">{v.goalNote}</span>
         <Icon d={P.next} size={18} className="text-pos" />
       </div>
     </button>

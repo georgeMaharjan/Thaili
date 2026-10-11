@@ -8,12 +8,13 @@
     "lint": "eslint",
     "sync": "next build && cap sync",
     "android": "npm run sync && cap open android",
-    "test": "node src/lib/sms.check.ts && node src/lib/nav.check.ts"
+    "test": "node src/lib/sms.check.ts && node src/lib/nav.check.ts && node src/lib/format.check.ts && node src/lib/scale.check.ts && node src/lib/transactions.check.ts && node src/lib/goals.check.ts && node src/lib/money-apps.check.ts && node src/lib/notification-transactions.check.ts && node src/lib/local-ledger.check.ts && node src/lib/finance.check.ts && node src/lib/rules.check.ts && node src/lib/import-transactions.check.ts && node src/lib/cloud-store.check.ts && node src/lib/capture-integration.check.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/push-notifications": "^8.1.2",
     "@supabase/supabase-js": "^2.117.1",
     "nepali-datetime": "^2.0.0",
