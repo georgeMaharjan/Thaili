@@ -6,7 +6,7 @@ rm -rf $S/pg; $B/initdb -D $S/pg -U postgres -A trust >/dev/null
 $B/pg_ctl -D $S/pg -o "-p 54999 -k '' -c listen_addresses=127.0.0.1" -l $S/pg.log -w start >/dev/null || { tail $S/pg.log; exit 1; }
 trap '$B/pg_ctl -D $S/pg stop >/dev/null' EXIT
 P="$B/psql -h 127.0.0.1 -p 54999 -U postgres -v ON_ERROR_STOP=1 -q"
-$P <<'EOF'
+$P <<'EOF' || exit 1
 create role authenticated;
 create schema auth;
 create table auth.users (id uuid primary key);
@@ -14,7 +14,7 @@ create function auth.uid() returns uuid language sql stable as $$ select nullif(
 grant usage on schema auth to authenticated;
 EOF
 for f in "$@"; do $P -f "$f" || exit 1; done; echo MIGRATION_OK
-$P <<'EOF'
+$P <<'EOF' || exit 1
 grant usage on schema public to authenticated;
 grant all on all tables in schema public to authenticated;
 insert into auth.users values ('00000000-0000-0000-0000-00000000000a'), ('00000000-0000-0000-0000-00000000000b');
@@ -31,9 +31,28 @@ insert into settings (prefs) values ('{"saveTarget": 10000}');
 \echo expect 2 txns, 1 rule, 1 settings row for A
 select (select count(*) from transactions) txns, (select count(*) from rules) rules, (select count(*) from settings) settings;
 delete from sources where key = 'sahakari';
+update sources set packages = array['np.fixture.bank'] where key = 'nic';
+update transactions set capture = '[{"ch":"SMS","id":"sms-capture","src":"nic","dir":"debit","at":"2026-10-11T12:00:00Z","ref":"REF10001","fingerprint":"hash"},{"ch":"App","id":"push-capture","src":"nic","dir":"debit","at":"2026-10-11T12:01:00Z","ref":"REF10001","fingerprint":"other"}]'
+where id = '30000000-0000-0000-0000-000000000002';
+do $$ begin
+  if (select packages from sources where key = 'nic') <> array['np.fixture.bank'] then
+    raise exception 'Discovered packages did not round-trip';
+  end if;
+  if (select jsonb_array_length(capture) from transactions where id = '30000000-0000-0000-0000-000000000002') <> 2 then
+    raise exception 'Capture evidence did not round-trip';
+  end if;
+  if (select capture from transactions where id = '30000000-0000-0000-0000-000000000001') <> '[]'::jsonb then
+    raise exception 'Existing/default capture evidence must be empty';
+  end if;
+end $$;
 \echo expect transfer kept with to_src null after peer account deleted
 select amount, dir, to_src from transactions where id = '30000000-0000-0000-0000-000000000002';
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000b';
+do $$ begin
+  if exists (select 1 from transactions where jsonb_array_length(capture) > 0) then
+    raise exception 'Another owner can read capture evidence';
+  end if;
+end $$;
 \echo expect 0 0 0 for B
 select (select count(*) from sources) s, (select count(*) from transactions) t, (select count(*) from settings) st;
 EOF
@@ -46,3 +65,7 @@ echo "--- full account number (expect check error):"
 $P -c "set role authenticated; set request.jwt.claim.sub='00000000-0000-0000-0000-00000000000a'; insert into sources (key, name, base, short, type, dot, acct) values ('k','x','x','x','x','x','0123456789');" 2>&1 | head -1
 echo "--- spoof user_id (expect RLS error):"
 $P -c "set role authenticated; set request.jwt.claim.sub='00000000-0000-0000-0000-00000000000b'; insert into goals (id, user_id, name, target) values (gen_random_uuid(), '00000000-0000-0000-0000-00000000000a', 'x', 1);" 2>&1 | head -1
+echo "--- profile: own row ok, B can't read A's, bad phone rejected (expect 1, 0, check error):"
+$P -tAc "set role authenticated; set request.jwt.claim.sub='00000000-0000-0000-0000-00000000000a'; insert into profiles (name, phone) values ('George', '+9779860981395'); select count(*) from profiles;"
+$P -tAc "set role authenticated; set request.jwt.claim.sub='00000000-0000-0000-0000-00000000000b'; select count(*) from profiles;"
+$P -c "set role authenticated; set request.jwt.claim.sub='00000000-0000-0000-0000-00000000000b'; insert into profiles (name, phone) values ('Bad', '+9779541234567');" 2>&1 | head -1

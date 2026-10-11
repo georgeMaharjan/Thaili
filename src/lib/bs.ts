@@ -23,10 +23,10 @@ const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDat
 
 // The design's logic reads a transaction's day offset from today (`off`), its
 // clock time and its BS date; all three are derived from the stored timestamp.
-export function dated<T extends { at: string }>(t: T) {
+export function dated<T extends { at: string }>(t: T, today = new Date()) {
   const at = new Date(t.at);
   return Object.assign({}, t, {
-    off: Math.round((startOfDay(new Date()) - startOfDay(at)) / 86400000),
+    off: Math.round((startOfDay(today) - startOfDay(at)) / 86400000),
     time: at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase(),
     bs: bsOf(at),
   });

@@ -1,14 +1,20 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Static SPA + Capacitor: the client talks to Supabase directly from the device.
-// NEXT_PUBLIC_* are inlined at build time. Absent → local mode, no persistence.
+// NEXT_PUBLIC_* are inlined at build time. Absent → persistent local mode without cloud sync.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const isConfigured = Boolean(url && anon);
 
 export const supabase: SupabaseClient | null = isConfigured
-  ? createClient(url!, anon!, { auth: { persistSession: true, autoRefreshToken: true } })
+  ? createClient(url!, anon!, {
+    auth: { persistSession: true, autoRefreshToken: true },
+    // Captive portals and stalled connections must release the background retry.
+    global: { fetch: (input, init) => fetch(input, { ...init,
+      signal: init?.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
+    }) },
+  })
   : null;
 
 // Spec §22: no account creation up front. Every install starts as an anonymous
