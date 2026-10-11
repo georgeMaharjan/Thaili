@@ -2,9 +2,9 @@
 
 /* Theme tokens, switched by data-theme on the app root. */
 :root {
-  --canvas: #FDF8EC; --surface: #FFFFFF; --surface2: #F6EEDE; --line: #E7DDC9;
+  --canvas: #FDF8EC; --surface: #FFFEFA; --surface2: #F3ECDD; --line: #E6DDCC;
   --ink: #221E19; --ink2: #5C5346; --ink3: #6B6153;
-  --brand: #E8383C; --action: #D02A2E; --onAction: #FFFFFF;
+  --brand: #C93538; --action: #C93538; --onAction: #FFFFFF;
   --navy: #2B3A4A; --pos: #1E7A5E; --warn: #B4721F;
   --tintR: #FBEAE6; --tintG: #E6F1EB; --tintN: #ECEFF3; --tintW: #FAF0DC; --warnInk: #8A5710;
   --barTrack: #EFE6D4; --barDim: #D8CDB8; --shadow: 0 1px 2px rgba(64,48,24,.05), 0 8px 24px rgba(64,48,24,.06);
@@ -13,10 +13,10 @@
 }
 [data-theme="dark"] {
   --canvas: #1C2330; --surface: #242C3A; --surface2: #2C3545; --line: #364152;
-  --ink: #E6E0D5; --ink2: #B6BDC7; --ink3: #959EAA;
-  --brand: #EE7B7C; --action: #E7797A; --onAction: #1C2330;
-  --navy: #AABBCD; --pos: #72BE9F; --warn: #D6A862;
-  --tintR: #3A2C33; --tintG: #233631; --tintN: #283241; --tintW: #373127; --warnInk: #D6A862;
+  --ink: #E6E0D5; --ink2: #B6BDC7; --ink3: #B8BEC7;
+  --brand: #C93538; --action: #EE9393; --onAction: #1C2330;
+  --navy: #AABBCD; --pos: #A9C2E6; --warn: #D6A862;
+  --tintR: #3A2C33; --tintG: #29374B; --tintN: #283241; --tintW: #373127; --warnInk: #D6A862;
   --barTrack: #2F3949; --barDim: #465266; --shadow: 0 1px 2px rgba(8,12,20,.25), 0 8px 24px rgba(8,12,20,.22);
   --toastBg: #E6E0D5; --toastFg: #1C2330; --toastAccent: #B5403F; --bezel: #10141B;
   --out: #A9A296; --tintO: #2F3949; --uncat: #B89BE6; --tintU: #2E2A40;
@@ -41,6 +41,9 @@ body:has([data-theme="dark"]) { background: #1C2330; }
   --color-bar-track: var(--barTrack); --color-bar-dim: var(--barDim);
   --color-toast-bg: var(--toastBg); --color-toast-fg: var(--toastFg); --color-toast-accent: var(--toastAccent);
   --radius-card: 20px;
+  /* Every p-/m-/gap- step is this unit × --sp, the Spacing setting (0.8 / 1 / 1.2), set on the app root.
+     Sizes, type, radii and touch targets use fixed px values instead, so they never move with it. */
+  --spacing: calc(0.25rem * var(--sp, 1));
   --shadow-card: var(--shadow);
 }
 @keyframes thaili-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
@@ -75,3 +78,31 @@ img { -webkit-user-drag: none; }
 .scr-back { animation: scr-back .22s cubic-bezier(.2, .8, .2, 1); }
 .scr-fade { animation: scr-fade .15s ease-out; }
 @media (prefers-reduced-motion: reduce) { .scr-fwd, .scr-back, .scr-fade, .thaili-draw, .thaili-rise, .thaili-intro { animation: none; stroke-dashoffset: 0; opacity: 1; } }
+
+/* The balance card retains its identity in both appearances. */
+.balance-card { background: #2B3A4A; color: #FFF9EE; }
+.balance-card .text-ink-3, .balance-card .text-ink-2 { color: #E4E0D9; }
+.field { display: flex; min-width: 0; flex-direction: column; gap: 8px; font-size: 14px; color: var(--ink2); }
+.field input, .field select, .field textarea, .picker-field { width: 100%; min-width: 0; min-height: 52px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 12px 14px; font: inherit; font-size: 16px; }
+.field input::placeholder, .field textarea::placeholder { color: var(--ink3); }
+/* Focus rings are for keyboards. On touch, a tapped control shows no ring or border. */
+input:focus, textarea:focus, select:focus, button:focus, summary:focus { outline: none; }
+@media (hover: hover) and (pointer: fine) {
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+}
+button:disabled { opacity: .45; cursor: default; }
+input, textarea, select { scroll-margin-block: 24px; }
+.native-segment { display:flex; gap:4px; padding:4px; border-radius:14px; background:var(--surface2); }
+.native-segment button { flex:1; min-width:0; min-height:44px; padding:8px; border-radius:10px; text-align:center; font-size:14px; color:var(--ink2); }
+.native-segment button[aria-pressed="true"] { background:var(--surface); color:var(--ink); font-weight:600; }
+[data-theme="dark"] .native-segment button[aria-pressed="true"] { background:#455873; color:#F4F7FC; }
+
+/* Bottom sheets slide up over a fading scrim; sheet.tsx drives the drag and the slide away. */
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes scrim-in { from { opacity: 0; } }
+.sheet-panel { animation: sheet-up .28s cubic-bezier(.2, .8, .2, 1); touch-action: pan-y; }
+.sheet-scrim { animation: scrim-in .2s ease-out; transition: opacity .22s; }
+.sheet-scrim-out { opacity: 0; }
+.picker-field { padding-block: 0; display: flex; align-items: center; }
+.picker-field > button { min-height: 50px; }
+@media (prefers-reduced-motion: reduce) { .sheet-panel, .sheet-scrim { animation: none; } }
