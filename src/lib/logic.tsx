@@ -28,6 +28,7 @@ import { Splash } from "@/screens/onboarding";
 import { captureNotifications } from "./notifications";
 import { load, save, initializeStore, subscribeStore, retrySync, mergeIncoming } from "./store";
 import { permStatus, requestSms, openNotificationAccess, openAppSettings, installedApps, isDevice, authenticate, readSms, setCapture, onOpen, readNotifications, onMoneyNotification, hapticTap } from "./device";
+import { AuthenticationSession, authenticationMessage } from "./authentication";
 import { appendMoneyAccounts, allMoneyPackages, detectMoneyApps, rememberMoneyPackages, scanMoneyApps, sourceForMoneyApp } from "./money-apps";
 import { notificationInbox, notificationRules } from "./notification-transactions";
 import { tailsByBank, nativeRules } from "./sms";
@@ -209,7 +210,7 @@ export class ThailiLogic extends React.Component {
     rawOpen: false, editing: false, deleting: false,
     range: "Monthly", insCatsAll: false, ruleEdit: null, addEntry: "", addCat: "food", addSrc: "cash", addDir: "debit", addNote: "", addError: "", discardAdd: false,
     srcKey: null, toast: null, undoState: null, perms: [false, false], // real device state; see refreshPerms()
-    appLock: false, locked: false, notifMode: "On",
+    appLock: false, locked: false, unlockBusy: false, unlockError: null, notifMode: "On",
     detTails: {}, scanTx: [], scanResult: null, scanOrphans: 0, smsSince: null, notificationSince: null,
     theme: "light", lang: "EN", txFilter: "all",
     savingsGoal: 200000, splitMode: "Queue",
@@ -338,10 +339,17 @@ export class ThailiLogic extends React.Component {
   refreshPerms = () => permStatus().then(p => this.setState({ perms: [p.sms, p.notifications] }));
   /* App lock: every return to the app asks again. While a prompt is up, Android's own
      PIN screen hides the WebView too, so hides during auth don't count. */
-  auth = title => { this.authing = true; return authenticate(title).finally(() => { this.authing = false; }); };
+  authentication = new AuthenticationSession(authenticate, () => document.visibilityState === "visible",
+    active => this.setState({ unlockBusy: active }));
+  get authing() { return this.authentication.active; }
+  auth = title => this.authentication.run(title);
   unlock = () => {
-    if (this.authing) return;
-    this.auth("Unlock Thaili").then(r => { if (r.ok) this.setState({ locked: false }); });
+    if (this.authing || document.visibilityState !== "visible") return;
+    this.setState({ unlockError: null });
+    this.auth("Unlock Thaili").then(r => {
+      if (r.ok) this.setState({ locked: false, unlockError: null });
+      else this.setState({ unlockError: authenticationMessage(r.reason) });
+    });
   };
   onVisible = () => {
     if (document.visibilityState === "hidden") {
@@ -2012,7 +2020,7 @@ export class ThailiLogic extends React.Component {
         { icon: IC.lock, label: T.appLock, meta: "Fingerprint or phone PIN on open", value: s.appLock ? "On" : "Off",
           tap: () => this.auth(s.appLock ? "Turn off app lock" : "Turn on app lock").then(r => {
             if (r.ok) { this.setState({ appLock: !s.appLock }); this.flash(s.appLock ? "App lock off" : "App lock on — Thaili asks every time you open it"); }
-            else if (r.reason === "no-lock") this.flash("Set a screen lock in Android settings first");
+            else this.flash(authenticationMessage(r.reason));
           }) },
         { icon: IC.bolt, label: T.rules, meta: s.rules.length + " rules · " + autoFiled + " filed this month", value: "", tap: () => this.go("rules") },
         { icon: IC.tag, label: T.categories, meta: s.picked.length + " in use · essential or optional", value: "", tap: () => this.go("cats", { catsMode: "edit", catsFrom: "settings" }) },
@@ -2056,7 +2064,9 @@ export class ThailiLogic extends React.Component {
               <img src="./thaili-mark-line.png" alt="Thaili" className="h-[50px] w-[36px] object-contain" />
             </div>
             <div className="text-[15px] text-ink-2">Thaili is locked</div>
-            <button onClick={this.unlock} className="rounded-[16px] bg-action px-10 py-4 text-[15px] font-semibold text-on-action">Unlock</button>
+            {this.state.unlockError && <div role="alert" className="max-w-[320px] px-5 text-center text-[14px] text-action">{this.state.unlockError}</div>}
+            <button onClick={this.unlock} disabled={this.state.unlockBusy} aria-busy={this.state.unlockBusy}
+              className="rounded-[16px] bg-action px-10 py-4 text-[15px] font-semibold text-on-action disabled:opacity-60">{this.state.unlockBusy ? "Authenticating…" : "Unlock"}</button>
           </div>
         ) : <div key={scr} className={"scr " + this.anim}><Screens v={v} /></div>}
       </div>

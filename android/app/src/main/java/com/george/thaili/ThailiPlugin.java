@@ -1,6 +1,7 @@
 package com.george.thaili;
 
 import android.Manifest;
+import android.app.KeyguardManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -25,6 +26,7 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.Lifecycle;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -106,36 +108,62 @@ public class ThailiPlugin extends Plugin {
         int auth = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
             ? BiometricManager.Authenticators.BIOMETRIC_STRONG
             : BiometricManager.Authenticators.BIOMETRIC_WEAK) | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
-        JSObject r = new JSObject();
-        if (BiometricManager.from(getContext()).canAuthenticate(auth) != BiometricManager.BIOMETRIC_SUCCESS) {
-            r.put("ok", false);
-            r.put("reason", "no-lock");
-            call.resolve(r);
+        FragmentActivity activity = getActivity();
+        if (activity == null) {
+            authResult(call, false, "not-ready");
             return;
         }
-        getActivity().runOnUiThread(() -> {
-            BiometricPrompt prompt = new BiometricPrompt((FragmentActivity) getActivity(),
-                ContextCompat.getMainExecutor(getContext()),
-                new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
-                        r.put("ok", true);
-                        call.resolve(r);
-                    }
+        activity.runOnUiThread(() -> {
+            // AndroidX silently returns without a callback after onSaveInstanceState.
+            // Always complete that request, so the web Unlock gate can retry on resume.
+            if (activity.isFinishing() || activity.isDestroyed()
+                    || !activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)
+                    || activity.getSupportFragmentManager().isStateSaved()) {
+                authResult(call, false, "not-ready");
+                return;
+            }
+            KeyguardManager keyguard = (KeyguardManager) activity.getSystemService(Context.KEYGUARD_SERVICE);
+            if (keyguard == null || !keyguard.isDeviceSecure()) {
+                authResult(call, false, "no-lock");
+                return;
+            }
+            if (BiometricManager.from(activity).canAuthenticate(auth) != BiometricManager.BIOMETRIC_SUCCESS) {
+                authResult(call, false, "unavailable");
+                return;
+            }
+            try {
+                BiometricPrompt prompt = new BiometricPrompt(activity,
+                    ContextCompat.getMainExecutor(getContext()),
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                            authResult(call, true, null);
+                        }
 
-                    @Override
-                    public void onAuthenticationError(int code, CharSequence msg) {
-                        r.put("ok", false);
-                        r.put("reason", msg.toString());
-                        call.resolve(r);
-                    }
-                    // onAuthenticationFailed = one bad try; the prompt stays up, so nothing to resolve.
-                });
-            prompt.authenticate(new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(call.getString("title", "Unlock Thaili"))
-                .setAllowedAuthenticators(auth)
-                .build());
+                        @Override
+                        public void onAuthenticationError(int code, CharSequence msg) {
+                            boolean cancelled = code == BiometricPrompt.ERROR_CANCELED
+                                || code == BiometricPrompt.ERROR_USER_CANCELED
+                                || code == BiometricPrompt.ERROR_NEGATIVE_BUTTON;
+                            authResult(call, false, cancelled ? "cancelled" : msg.toString());
+                        }
+                        // One bad try leaves the prompt open; only terminal callbacks resolve.
+                    });
+                prompt.authenticate(new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle(call.getString("title", "Unlock Thaili"))
+                    .setAllowedAuthenticators(auth)
+                    .build());
+            } catch (RuntimeException error) {
+                authResult(call, false, "unavailable");
+            }
         });
+    }
+
+    private void authResult(PluginCall call, boolean ok, String reason) {
+        JSObject r = new JSObject();
+        r.put("ok", ok);
+        if (reason != null) r.put("reason", reason);
+        call.resolve(r);
     }
 
     // Messages with an amount and no OTP. Which sender counts and which wording is a transaction
