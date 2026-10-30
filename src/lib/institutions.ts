@@ -1,7 +1,9 @@
 /** Recognition catalog, not a promise that every app/version emits readable alerts.
  * Only configured SMS sender patterns are enabled; label-only apps use their discovered package. */
-export type Institution = { key: string; name: string; kind: "bank" | "wallet"; labels: RegExp; packages?: string[]; sms?: RegExp };
-export const INSTITUTIONS: Institution[] = [
+import { NEPAL_BFIS, type BfiCategory } from "./nepal-bfis.ts";
+
+export type Institution = { key: string; name: string; kind: "bank" | "wallet"; labels: RegExp; packages?: string[]; sms?: RegExp; category?: BfiCategory };
+const LEGACY_INSTITUTIONS: Institution[] = [
   { key: "esewa", name: "eSewa", kind: "wallet", labels: /\be-?sewa\b/i, packages: ["com.f1soft.esewa"] },
   { key: "khalti", name: "Khalti", kind: "wallet", labels: /\bkhalti\b/i, packages: ["com.khalti"], sms: /^KHALTI$/i },
   { key: "ime", name: "IME Pay", kind: "wallet", labels: /\bime\s*pay\b/i, packages: ["com.swifttechnology.imepay"] },
@@ -49,7 +51,42 @@ export const INSTITUTIONS: Institution[] = [
   { key: "shineresunga", name: "Shine Resunga Development Bank", kind: "bank", labels: /\bshine\s*resunga\b/i },
 ];
 
-export const institutionForName = (name: string) => INSTITUTIONS.find(i => i.labels.test(name));
+// One catalog feeds discovery, manual setup, SMS identity and native configuration.
+const escapePattern = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const namePattern = (name: string) => name.split(/[\s-]+/).map(escapePattern).join("[\\s_-]*");
+function bfiLabels(name: string, aliases: string[], legacy?: RegExp, mobileRoots: string[] = []) {
+  const root = name.replace(/ (?:Commercial Bank|Development Bank|Bikas Bank|Bikash Bank|Bank International|Bank|Finance)$/, "");
+  const mobileNames = [root, ...mobileRoots].flatMap(r => ["Smart", "Mobile Banking", "Mobile", "Mbank"].map(suffix => r + " " + suffix));
+  return new RegExp([legacy?.source, ...[name, ...aliases, ...mobileNames].map(n => "\\b" + namePattern(n) + "\\b")].filter(Boolean).join("|"), "i");
+}
+function namedSenders(names: string[], legacy?: RegExp) {
+  const named = names.filter(n => !/smart|mobile|mbank/i.test(n)).map(namePattern);
+  return new RegExp([legacy?.source, "^(?:" + named.join("|") + ")(?:[\\s_-]*(?:ALERT|SMS|INFO))?$"].filter(Boolean).join("|"), "i");
+}
+export const INSTITUTIONS: Institution[] = [
+  ...LEGACY_INSTITUTIONS.filter(i => i.kind === "wallet"),
+  ...NEPAL_BFIS.map(bfi => {
+    const legacy = LEGACY_INSTITUTIONS.find(i => i.key === bfi.key);
+    const names = [bfi.name, ...(bfi.aliases || []), ...(bfi.smsNames || [])];
+    return {
+      ...legacy, key: bfi.key, name: bfi.name, kind: "bank" as const, category: bfi.category,
+      labels: bfiLabels(bfi.name, bfi.aliases || [], legacy?.labels, bfi.smsNames),
+      sms: namedSenders(names, legacy?.sms),
+    };
+  }),
+];
+
+// Specific identities win: "NIC Asia Laghubitta" must not become "NIC Asia Bank".
+// This also distinguishes Prabhu Pay from Prabhu Bank and NMB's microfinance subsidiary.
+export function institutionForName(name: string) {
+  let best: Institution | undefined;
+  let specificity = 0;
+  for (const institution of INSTITUTIONS) {
+    const match = institution.labels.exec(name);
+    if (match && match[0].length > specificity) { best = institution; specificity = match[0].length; }
+  }
+  return best;
+}
 export function institutionForAccount(account: { key: string; base?: string; name?: string; type?: string }) {
   if (/manual/i.test(account.type || "")) return undefined;
   return INSTITUTIONS.find(i => i.key === account.key) || institutionForName(account.base || account.name || "");

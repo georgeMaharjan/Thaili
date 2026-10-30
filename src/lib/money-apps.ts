@@ -5,8 +5,7 @@ export type InstalledApp = { pkg: string; label: string };
 export type MoneyApp = { key: string; app: string; base: string; kind: "bank" | "wallet"; packages: string[] };
 
 // Recognize new banks without having to ship their package names in the manifest.
-const BANK = /bank(?:ing)?|mbank|बैंक|बैंकिङ/i;
-const NEPAL_BANK = /\b(?:prabhu|kumari|siddhartha|sanima|machhapuchchhre|laxmi|sunrise|himalayan|nmb|nimb|nibl|nbl|adbl|rbb|sbi|sangrila|muktinath|garima|jyoti|mahalaxmi|kamana\s*sewa|shine\s*resunga)\b/i;
+const BANK = /bank(?:ing)?|mbank|laghubitta|बैंक|बैंकिङ|वित्त|लघुवित्त/i;
 const WALLET = /\b(?:wallet|mobile\s*money|fonepay|connect\s*ips|moruu?|namaste\s*pay|prabhu\s*pay|cell\s*pay|qr\s*pay|paypal|venmo|cash\s*app|google\s*pay|samsung\s*pay)\b|वालेट/i;
 const PACKAGE_WALLET = /(?:^|\.)(?:wallet|fonepay|connectips|moru|namastepay|prabhupay|cellpay|paypal|venmo)(?:\.|$)/i;
 
@@ -19,7 +18,7 @@ export function detectMoneyApps(installed: InstalledApp[]): MoneyApp[] {
     const app = label.trim() || pkg;
     const identity = INSTITUTIONS.find(d => d.packages?.includes(pkg)) || institutionForName(app);
     const wallet = WALLET.test(app) || PACKAGE_WALLET.test(pkg);
-    if (!identity && !wallet && !BANK.test(app + " " + pkg) && !NEPAL_BANK.test(app)) continue;
+    if (!identity && !wallet && !BANK.test(app + " " + pkg)) continue;
     const key = identity?.key || "app:" + pkg;
     const existing = found.get(key);
     if (existing) existing.packages.push(pkg);

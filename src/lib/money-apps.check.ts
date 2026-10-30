@@ -49,7 +49,7 @@ assert.equal(merged.roles[added.key], "spending");
 assert.deepEqual(merged.added, [added]);
 assert.deepEqual(appendMoneyAccounts(existing, [], { "src-manual": "savings" }).sources, existing);
 
-const labelOnly = [{ key: "src-prabhu", base: "Prabhu Bank", type: "Bank · SMS", opening: 250 }];
+const labelOnly: { key: string; base: string; type: string; opening: number; packages?: string[] }[] = [{ key: "src-prabhu", base: "Prabhu Bank", type: "Bank · SMS", opening: 250 }];
 const remembered = rememberMoneyPackages(labelOnly, apps);
 assert.deepEqual(remembered[0].packages, ["np.example.prabhu"]);
 assert.equal(remembered[0].opening, 250);
