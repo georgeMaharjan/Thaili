@@ -1,5 +1,6 @@
+import type { GoalsScreenModel as V } from "../features/goals/screen-model";
 // The savings floor, the goals it funds, and the new-goal form.
-import { Bar, Btn, CARD, Chips, Icon, IconBtn, LABEL, P, Seg, Stepper, TopBar, cx, type V } from "@/components/ui";
+import { Bar,Btn,CARD,Chips,Icon,IconBtn,LABEL,P,Seg,Stepper,TopBar,cx } from "@/components/ui";
 
 const SQUARE = "flex size-[44px] flex-none items-center justify-center rounded-xl border border-line bg-surface-2";
 
@@ -38,9 +39,9 @@ export function Goals({ v }: { v: V }) {
               <span className="flex-none text-[13px] font-semibold text-ink-2">{v.surplusFreeLabel}</span>
             </div>
             <div className="flex h-[14px] overflow-hidden rounded-[5px] bg-bar-track">
-              {v.surplusSegments.map((g: V, i: number) => <div key={i} className="h-full border-r-2 border-tint-g" style={{ width: g.width, background: g.color }} />)}
+              {v.surplusSegments.map((g, i: number) => <div key={i} className="h-full border-r-2 border-tint-g" style={{ width: g.width, background: g.color }} />)}
             </div>
-            {v.surplusSegments.map((g: V, i: number) => (
+            {v.surplusSegments.map((g, i: number) => (
               <div key={i} className="flex items-baseline justify-between text-[13px]">
                 <span className="flex items-center gap-2 text-ink-2"><span className="size-[8px] rounded-full" style={{ background: g.color }} />{g.name}</span>
                 <span className="font-display font-semibold">{g.amount}</span>
@@ -49,7 +50,7 @@ export function Goals({ v }: { v: V }) {
           </div>
         )}
 
-        {v.goalCards.map((g: V, i: number) => (
+        {v.goalCards.map((g, i: number) => (
           <div key={i} className={cx(CARD, "flex flex-col gap-3 px-5 py-5")}>
             <div className="flex items-baseline justify-between gap-3">
               <span className="flex min-w-0 items-baseline gap-2">

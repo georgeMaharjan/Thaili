@@ -1,6 +1,9 @@
+import { useRef } from "react";
+import { NumericField } from "../components/numeric-field";
+import type { AccountsScreenModel as V } from "../features/accounts/screen-model";
 // Accounts, one account, and the add/edit account form.
 import {
-  Amount, BalEye, CARD, Chevron, Chips, Cta, GoalCard, Hero, Icon, IconBtn, ItemRow, Keypad, LABEL, P, Seg, Tile, TopBar, cx, type V,
+Amount,BalEye,CARD,Chevron,Chips,Cta,GoalCard,Hero,Icon,IconBtn,ItemRow,LABEL,P,Seg,Tile,TopBar,cx,
 } from "@/components/ui";
 
 export function Accounts({ v }: { v: V }) {
@@ -18,10 +21,10 @@ export function Accounts({ v }: { v: V }) {
 
         <div className="flex flex-col gap-3">
           <div className="flex h-[10px] gap-0.5 overflow-hidden rounded-[5px] bg-bar-track">
-            {v.acctSplit.map((g: V, i: number) => <div key={i} className="h-full" style={{ width: g.width, background: g.color }} />)}
+            {v.acctSplit.map((g, i: number) => <div key={i} className="h-full" style={{ width: g.width, background: g.color }} />)}
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-            {v.acctSplit.map((g: V, i: number) => (
+            {v.acctSplit.map((g, i: number) => (
               <span key={i} className="flex items-center gap-1.5 whitespace-nowrap text-[13px] text-ink-2">
                 <span className="size-[8px] flex-none rounded-full" style={{ background: g.color }} />{g.label}<span className="font-semibold text-ink">{g.pct}</span>
               </span>
@@ -39,7 +42,7 @@ export function Accounts({ v }: { v: V }) {
           <span className="flex-none text-[13px] font-semibold text-action">{v.transactionNotificationsStatus}</span>
         </button>
 
-        {v.acctGroups.map((grp: V) => (
+        {v.acctGroups.map((grp) => (
           <div key={grp.key} className="flex flex-col gap-1.5 pt-2">
             <div className="flex items-center gap-2">
               <span className="flex h-[24px] items-center gap-1.5 rounded-xl px-3 text-[13px] font-bold" style={{ background: grp.tint, color: grp.fg }}>
@@ -49,7 +52,7 @@ export function Accounts({ v }: { v: V }) {
               <Amount className="text-[15px] font-bold">{grp.total}</Amount>
             </div>
             <div className="rounded-2xl border border-line bg-surface px-4">
-              {grp.rows.map((a: V, i: number) => (
+              {grp.rows.map((a, i: number) => (
                 <button key={i} onClick={a.tap} className={cx("flex min-h-[64px] w-full items-center gap-3 text-left", i > 0 && "border-t border-line")}>
                   <Tile d={a.icon} tint={grp.tint} fg={grp.fg} size={19} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -105,7 +108,7 @@ export function SourceDetail({ v }: { v: V }) {
           <Seg items={v.roleChips} itemClass="flex-1 rounded-[8px] p-2 text-center text-[13px]" />
         </div>
         <div className={cx(CARD, "-mt-px flex flex-col px-5")}>
-          {v.srcTxns.map((x: V, i: number) => (
+          {v.srcTxns.map((x, i: number) => (
             <ItemRow key={i} look={x} title={x.title} sub={x.meta} onClick={x.tap} className="min-h-[60px] border-b border-line" right={<Amount fg={x.fg}>{x.amount}</Amount>} />
           ))}
         </div>
@@ -114,38 +117,39 @@ export function SourceDetail({ v }: { v: V }) {
   );
 }
 
-function Field({ onClick, border, label, value, valueClass, fg, hint, hintFg }: {
-  onClick: () => void; border: string; label: string; value: string; valueClass: string; fg: string; hint: string; hintFg: string;
-}) {
-  return (
-    <button onClick={onClick} className="mx-5 mt-3 flex items-center justify-between gap-3 rounded-2xl border bg-surface px-4 py-3" style={{ borderColor: border }}>
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className={LABEL}>{label}</span>
-        <span className={cx("font-display", valueClass)} style={{ color: fg }}>{value}</span>
-      </div>
-      <span className="flex-none text-[13px] font-semibold" style={{ color: hintFg }}>{hint}</span>
-    </button>
-  );
-}
-
 export function SrcNew({ v }: { v: V }) {
+  const amountInput = useRef<HTMLInputElement>(null);
+  const focusAmount = () => amountInput.current?.focus();
   const heading = "px-5 text-[13px] font-semibold text-ink-3";
   const seg = "flex-1 rounded-[10px] px-1 py-3 text-center text-[13px]";
   return (
     <div className="flex flex-1 flex-col overflow-hidden pt-2 pb-6">
       <TopBar onBack={v.srcNewCancel} icon={P.close} label="Cancel" title={v.srcNewTitle} />
       <div className="flex flex-1 flex-col overflow-auto">
-        {v.srcNeedsAcct && (
-          <Field onClick={v.pickAcctField} border={v.acctFieldBorder} label={v.acctFieldLabel} value={v.newSrcAcctLabel}
-            valueClass="text-[22px] font-bold tracking-[-0.01em]" fg={v.newSrcAcctFg} hint={v.acctFieldHint} hintFg={v.acctFieldHintFg} />
-        )}
-        <Field onClick={v.pickAmtField} border={v.amtFieldBorder} label="Opening balance" value={"Rs " + v.newSrcAmtLabel}
-          valueClass="text-[28px] font-extrabold leading-[1.1] tracking-[-0.025em]" fg={v.newSrcAmtFg} hint={v.amtFieldHint} hintFg={v.amtFieldHintFg} />
-        <div className="text-pretty px-5 pt-2 text-[12px] leading-[1.5] text-ink-3">{v.newSrcOpeningNote}</div>
+        <div className="flex flex-col gap-3 px-5 pt-3">
+          <p className="font-display text-[20px] font-bold leading-[1.3]">{v.newSrcName}</p>
+          <p className="text-[13px] leading-[1.5] text-ink-2">{v.numericEditHint}</p>
+          {v.srcNeedsAcct && <NumericField value={v.newSrcAccountInput} onChange={v.changeSourceAccount}
+            label={v.acctFieldLabel} hint={v.accountInputHint} kind="digits" maxDigits={4} prefix="••" placeholder="0000"
+            autoFocus={v.newSrcInitialField === "acct"} onFocus={v.pickAcctField} onNext={focusAmount} nextLabel={v.accountNextLabel}
+            editingLabel={v.numericEditingLabel} clearLabel={v.clearAccountLabel} errors={v.accountInputErrors} />}
+          <NumericField inputRef={amountInput} value={v.newSrcAmountInput} onChange={v.changeSourceAmount}
+            label={v.balanceFieldLabel} hint={v.amountInputHint} kind="amount" maxDigits={9} prefix="Rs" placeholder="0.00"
+            autoFocus={v.newSrcInitialField === "amt"} onFocus={v.pickAmtField}
+            editingLabel={v.numericEditingLabel} clearLabel={v.clearAmountLabel} errors={v.amountInputErrors} />
+          <p className="text-pretty text-[12px] leading-[1.5] text-ink-3">{v.newSrcOpeningNote}</p>
+        </div>
         <div className={cx(heading, "pt-4")}>What kind</div>
         <div className="px-5 pt-2"><Seg items={v.newSrcKinds} itemClass={seg} /></div>
         <div className={cx(heading, "pt-4")}>{v.newSrcPickLabel}</div>
-        <Chips items={v.newSrcNameChips} />
+        {v.newSrcUsesPicker ? (
+          <div className="px-5 pt-2">
+            <select aria-label={v.newSrcPickLabel} value={v.newSrcName} onChange={v.pickSrcName}
+              className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-[14px] text-ink">
+              {v.newSrcNameOptions.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </div>
+        ) : <Chips items={v.newSrcNameChips} />}
         <div className={cx(heading, "pt-4")}>What is it for</div>
         <div className="px-5 pt-2"><Seg items={v.newSrcRoles} itemClass={seg} /></div>
         <div className="text-pretty px-5 pt-3 pb-2 text-[13px] leading-[1.6] text-ink-2">{v.newSrcFeedNote}</div>
@@ -155,7 +159,6 @@ export function SrcNew({ v }: { v: V }) {
           </button>
         )}
       </div>
-      <Keypad keys={v.newSrcKeys} />
       <div className="flex-none px-5 pt-3">
         <Cta onClick={v.newSrcCreate} bg={v.newSrcCtaBg} fg={v.newSrcCtaFg} className="p-4 text-[15px]">{v.newSrcCta}</Cta>
       </div>

@@ -7,7 +7,7 @@ const walk = (screens: string[]) => screens.slice(1).reduce((st, to, i) => nextS
 // onboarding goes back step by step; an edit screen visited and left is not re-entered
 assert.deepEqual(walk(["welcome", "permission", "detect", "source", "src-new", "source"]), ["welcome", "permission", "detect"]);
 // finishing onboarding clears everything
-assert.deepEqual(walk(["welcome", "permission", "cats", "signup", "home"]), []);
+assert.deepEqual(walk(["welcome", "permission", "cats", "baseline", "home"]), []);
 // tabs: a non-home tab has only Home behind it
 assert.deepEqual(walk(["home", "insights", "txns"]), ["home"]);
 // Accounts is a tab: switching to it drops the Transactions trail; its detail screen stacks on it
@@ -29,7 +29,7 @@ for (const tab of ["home", "txns", "insights", "accounts"]) {
   assert.equal(gate(tab, false), "register");
   assert.equal(gate(tab, true), tab);
 }
-for (const s of ["welcome", "register", "permission", "cats", "signup", "restore"]) assert.equal(gate(s, false), s);
+for (const s of ["welcome", "register", "permission", "cats"]) assert.equal(gate(s, false), s);
 
 // Settings is pushed from the Home avatar: back returns Home, and its own sub-screens come back to it
 assert.deepEqual(walk(["home", "settings"]), ["home"]);

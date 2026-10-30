@@ -18,7 +18,7 @@ export const gate = (to: string, hasUser: boolean) => (!hasUser && TABS.includes
 // Back dismisses the topmost presentation before touching screen history.
 // Empty-string note drafts are open editors too.
 export function backDismissal(s: Record<string, unknown>): Record<string, unknown> | null {
-  for (const key of ["discardAdd", "discardGoal", "deleting", "stopSheet", "calOpen", "filtersOpen"]) {
+  for (const key of ["discardAdd", "discardGoal", "deleting", "calOpen", "filtersOpen"]) {
     if (s[key]) return { [key]: false };
   }
   for (const key of ["ruleEdit", "rulePrompt", "remarkDraft"]) {

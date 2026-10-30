@@ -1,5 +1,6 @@
+import type { OnboardingScreenModel as V } from "../features/onboarding/screen-model";
 // First run: welcome → register → SMS permission → app scan → accounts → 90-day history → categories.
-import { Btn, CARD, Chip, Cta, Icon, IconBtn, P, PersonFields, SUB, Seg, StepHead, Stepper, Toggle, cx, type V } from "@/components/ui";
+import { Btn,CARD,Cta,Icon,IconBtn,P,PersonFields,SUB,Seg,StepHead,Stepper,Toggle,cx } from "@/components/ui";
 
 const PAGE = "flex flex-1 flex-col px-5 pt-4 pb-8";
 const ROW = "flex items-center justify-between gap-3 rounded-2xl border bg-surface px-4";
@@ -62,7 +63,6 @@ export function Welcome({ v }: { v: V }) {
       </div>
       <div className="thaili-intro flex flex-col gap-3" style={{ animationDelay: "510ms" }}>
         <Btn onClick={v.toPermission}>{v.t.getStarted}</Btn>
-        <Btn kind="secondary" onClick={v.toRestoreAuth}>{v.t.otherPhone}</Btn>
       </div>
     </div>
   );
@@ -73,7 +73,7 @@ export function Permission({ v }: { v: V }) {
     <div className={cx(PAGE, "gap-5")}>
       <StepHead v={v} onBack={v.obBack} step={v.t.step1} title={v.t.permTitle} sub={v.t.permSub} />
       <div className="flex flex-col gap-3">
-        {v.perms.map((p: V, i: number) => (
+        {v.perms.map((p, i: number) => (
           <button key={i} onClick={p.tap} className={cx(ROW, "border-line py-4")}>
             <div className="flex flex-col gap-0.5">
               <span className="text-[15px] font-semibold leading-[1.35]">{p.name}</span>
@@ -105,7 +105,7 @@ export function Detect({ v }: { v: V }) {
       {v.detectDone && (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           <div className="flex flex-1 flex-col gap-3 overflow-auto">
-            {v.detectRows.map((d: V) => (
+            {v.detectRows.map((d) => (
               <button key={d.key} onClick={d.tap} disabled={d.added} aria-pressed={d.added || d.justify === "flex-end"} className={cx(ROW, "py-4", d.added && "opacity-60")} style={{ borderColor: d.border }}>
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-[15px] font-semibold leading-[1.35]">{d.app}</span>
@@ -138,7 +138,7 @@ export function Source({ v }: { v: V }) {
     <div className={cx(PAGE, "gap-4 overflow-hidden")}>
       <StepHead v={v} onBack={v.obBack} step={v.t.step3} title={v.t.srcTitle} sub={v.t.srcSub} />
       <div className="flex flex-1 flex-col gap-3 overflow-auto">
-        {v.setupSources.map((s: V, i: number) => (
+        {v.setupSources.map((s, i: number) => (
           <button key={i} onClick={s.tap} className={cx(ROW, "press border-line py-4")}>
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[15px] font-semibold leading-[1.35]">{s.name}</span>
@@ -165,7 +165,7 @@ export function Scan({ v }: { v: V }) {
     <div className={cx(PAGE, "gap-4 overflow-hidden")}>
       <StepHead v={v} onBack={v.obBack} step={v.t.step4} title={v.scanTitle} sub={v.scanSub} />
       <div className="flex flex-1 flex-col gap-3 overflow-auto">
-        {v.scanGroups.map((g: V, i: number) => (
+        {v.scanGroups.map((g, i: number) => (
           <div key={i} className={cx(ROW, "border-line py-4")}>
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[14px] font-semibold leading-[1.35]">{g.label}</span>
@@ -185,17 +185,35 @@ export function Cats({ v }: { v: V }) {
   return (
     <div className={cx(PAGE, "gap-4 overflow-auto")}>
       <StepHead v={v} onBack={v.obBack} step={v.catsStepLabel} title={v.t.catsTitle} sub={v.t.catsSub} className="flex-none gap-2" />
-      <div className="flex flex-none flex-wrap content-start gap-2">
-        {v.catPicks.map((c: V, i: number) => <Chip key={i} c={c} check={false} className="px-4 py-3 text-[14px]" />)}
-      </div>
       <div className={cx(CARD, "flex flex-col gap-3 p-4")}>
-        <span className="text-[14px] font-semibold">Add your own</span>
+        <Seg items={v.catDirs} itemClass="flex-1 rounded-lg px-3 py-2 text-[13px]" />
         <div className="flex items-center gap-2">
-          <input value={v.newCatName} onChange={v.newCatType} placeholder="School fees, loan EMI, puja"
+          <input value={v.newCatName} onChange={v.newCatType} placeholder={v.newCatIn ? "Rent received, side work" : "School fees, loan EMI, puja"}
             className="min-w-0 flex-1 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] text-ink outline-none" />
           <button onClick={v.addCustomCat} className="flex-none rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] font-semibold" style={{ color: v.newCatFg }}>Add</button>
         </div>
         <span className="text-pretty text-[13px] leading-[1.5] text-ink-3">{v.addCatNote}</span>
+        <div className="flex flex-col">
+          {v.catRows.map(r => (
+            <div key={r.key} className="flex items-center gap-2 border-b border-line py-1 last:border-b-0">
+              {r.on !== null && (
+                <button type="button" onClick={r.toggle} aria-pressed={r.on} aria-label={(r.on ? "Stop using " : "Use ") + r.label}
+                  className={cx("press flex size-[24px] flex-none items-center justify-center rounded-full border-2", r.on ? "border-action bg-action text-on-action" : "border-bar-dim")}>
+                  {r.on && <Icon d={P.check} size={14} sw={3} />}
+                </button>
+              )}
+              <input defaultValue={r.label} onBlur={r.rename} aria-label={"Rename " + r.label}
+                className={cx("min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-2 text-[14px] outline-none focus:border-line focus:bg-surface-2", r.on === false ? "text-ink-3" : "text-ink")} />
+              {v.catsEdit && r.on && (
+                <button type="button" onClick={r.toggleEss} aria-label={r.label + ": " + (r.ess ? "essential" : "optional") + ", tap to switch"}
+                  className={cx("press flex-none rounded-full px-3 py-1 text-[12px] font-semibold", r.ess ? "bg-tint-n text-navy" : "bg-tint-w text-warn-ink")}>
+                  {r.ess ? "Essential" : "Optional"}
+                </button>
+              )}
+              <IconBtn d={P.trash} label={"Delete " + r.label} onClick={r.remove} className="flex-none text-ink-3" size={18} />
+            </div>
+          ))}
+        </div>
       </div>
       <div className={cx(CARD, "flex flex-col gap-2 p-4")}>
         <span className="text-[14px] font-semibold">Monthly savings target</span>
@@ -208,20 +226,6 @@ export function Cats({ v }: { v: V }) {
         </div>
         <span className="text-pretty text-[13px] leading-[1.5] text-ink-3">{v.saveTargetNote}</span>
       </div>
-      {v.catsEdit && (
-        <div className={cx(CARD, "flex flex-col gap-3 p-4")}>
-          <span className="text-[14px] font-semibold">Essential or optional</span>
-          {v.essRows.map((r: V, i: number) => (
-            <div key={i} className="flex items-center justify-between gap-3">
-              <span className="min-w-0 text-[13px]">{r.label}</span>
-              <Seg className="flex-none rounded-[10px]" itemClass="rounded-lg px-3 py-2 text-[13px]" items={[
-                { label: "Essential", tap: r.setEss, bg: r.essBg, fg: r.essFg },
-                { label: "Optional", tap: r.setLeak, bg: r.leakBg, fg: r.leakFg },
-              ]} />
-            </div>
-          ))}
-        </div>
-      )}
       <Cta onClick={v.catsNext} bg={v.catCtaBg} fg={v.catCtaFg} className="p-4 text-[15px]">{v.catCta}</Cta>
     </div>
   );
@@ -238,7 +242,7 @@ export function Register({ v }: { v: V }) {
         <div className={SUB}>{v.regSub}</div>
       </div>
       <div className="flex-1 overflow-auto px-5 pt-5 pb-1.5">
-        <PersonFields labels={v.regLabels} name={v.regName} onName={v.regNameType} nameBorder={v.regNameBorder} namePh={v.regNamePh}
+        <PersonFields editingLabel={v.numericEditingLabel} labels={v.regLabels} name={v.regName} onName={v.regNameType} nameBorder={v.regNameBorder} namePh={v.regNamePh}
           phone={v.regPhone} onPhone={v.regPhoneType} phoneBorder={v.regPhoneBorder} hint={v.regPhoneHint} hintFg={v.regPhoneHintFg} />
       </div>
       <div className="flex flex-none flex-col gap-2 px-5 pt-3">

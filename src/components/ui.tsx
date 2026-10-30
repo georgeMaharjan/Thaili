@@ -1,11 +1,16 @@
 // Building blocks shared by every screen. Colours, fonts, radii and shadows are
 // Tailwind theme tokens (see @theme in globals.css); colours that depend on state
 // arrive ready-made from the view model in lib/logic.tsx.
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useRef,useState,type CSSProperties,type ReactNode } from "react";
 
-// The view model from ThailiLogic.renderVals(). logic.tsx is untyped, so this is too.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type V = any;
+// The composed application model is inferred from checked feature builders.
+export type V = import("../features/view-model").AppViewModel;
+
+export type ToggleModel = { justify: string; track: string };
+export type ChipModel = { label: string; tap: () => void; bg: string; fg: string; border: string; weight?: CSSProperties["fontWeight"]; check?: string; dot?: string };
+export type SegmentModel = { label: string; tap: () => void; bg: string; fg: string; shadow?: string };
+export type KeyModel = { label: string; tap: () => void; fg: string; isBack?: boolean };
+export type TransactionCardModel = { title: string; tap: () => void; icon: string; amount: string; fg: string; isUncat: boolean; chip: string; meta?: string };
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -80,7 +85,7 @@ export function TopBar({ onBack, icon = P.back, label = "Back", title, children 
 
 /** Onboarding header: back, progress dots, step label, title and explainer. */
 export function StepHead({ v, onBack, step, title, sub, className = "gap-2", titleClass = H1, subClass = SUB }: {
-  v: V; onBack: () => void; step: ReactNode; title: ReactNode; sub: ReactNode;
+  v: Pick<V, "obDots">; onBack: () => void; step: ReactNode; title: ReactNode; sub: ReactNode;
   className?: string; titleClass?: string; subClass?: string;
 }) {
   return (
@@ -88,7 +93,7 @@ export function StepHead({ v, onBack, step, title, sub, className = "gap-2", tit
       <div className="-mt-3 mb-0.5 -ml-3 flex items-center gap-2">
         <IconBtn d={P.back} label="Back" onClick={onBack} />
         <div className="flex flex-1 gap-1">
-          {v.obDots.map((d: V, i: number) => <span key={i} className="h-[4px] flex-1 rounded-xs" style={{ background: d.bg }} />)}
+          {v.obDots.map((d, i: number) => <span key={i} className="h-[4px] flex-1 rounded-xs" style={{ background: d.bg }} />)}
         </div>
       </div>
       <div className="text-[13px] font-semibold text-action">{step}</div>
@@ -132,7 +137,7 @@ export const TextLink = ({ onClick, className = "p-2 text-ink-3", children }: { 
 );
 
 /** On/off switch drawn from the view model's `justify` and `track`. */
-export function Toggle({ t, small }: { t: V; small?: boolean }) {
+export function Toggle({ t, small }: { t: ToggleModel; small?: boolean }) {
   return (
     <span className={cx("flex flex-none rounded-full p-1", small ? "h-[27px] w-[46px]" : "h-[28px] w-[48px]")} style={{ justifyContent: t.justify, background: t.track }}>
       <span className={cx("rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)]", small ? "size-[21px]" : "size-[22px]")} />
@@ -141,7 +146,7 @@ export function Toggle({ t, small }: { t: V; small?: boolean }) {
 }
 
 /** A pick-one chip; `c` is a chip() from the view model. */
-export function Chip({ c, check = true, className = "px-4 py-3 text-[14px]" }: { c: V; check?: boolean; className?: string }) {
+export function Chip({ c, check = true, className = "px-4 py-3 text-[14px]" }: { c: ChipModel; check?: boolean; className?: string }) {
   return (
     <button type="button" onClick={c.tap} aria-pressed={Boolean(c.check)} className={cx("press rounded-xl border leading-[1.3]", c.dot && "flex items-center gap-2", className)}
       style={{ background: c.bg, color: c.fg, borderColor: c.border, fontWeight: c.weight }}>
@@ -151,27 +156,27 @@ export function Chip({ c, check = true, className = "px-4 py-3 text-[14px]" }: {
   );
 }
 
-export const Chips = ({ items, className = "px-5 pt-2" }: { items: V[]; className?: string }) => (
+export const Chips = ({ items, className = "px-5 pt-2" }: { items: ChipModel[]; className?: string }) => (
   <div className={cx("flex flex-wrap gap-2", className)}>
-    {items.map((c: V, i: number) => <Chip key={i} c={c} />)}
+    {items.map((c, i: number) => <Chip key={i} c={c} />)}
   </div>
 );
 
 /** Segmented control. `itemClass` sets each segment's padding, radius and text size. */
-export function Seg({ items, itemClass, className = "rounded-xl" }: { items: V[]; itemClass: string; className?: string }) {
+export function Seg({ items, itemClass, className = "rounded-xl" }: { items: SegmentModel[]; itemClass: string; className?: string }) {
   return (
     <div className={cx("flex bg-surface-2 p-1", className)}>
-      {items.map((x: V, i: number) => (
+      {items.map((x, i: number) => (
         <button type="button" key={i} onClick={x.tap} aria-pressed={x.bg !== "transparent"} className={cx("font-semibold", itemClass)} style={{ background: x.bg, color: x.fg, boxShadow: x.shadow }}>{x.label}</button>
       ))}
     </div>
   );
 }
 
-export function Keypad({ keys, tall }: { keys: V[]; tall?: boolean }) {
+export function Keypad({ keys, tall }: { keys: KeyModel[]; tall?: boolean }) {
   return (
     <div className="grid flex-none grid-cols-3 gap-px border-t border-line bg-line">
-      {keys.map((k: V, i: number) => (
+      {keys.map((k, i: number) => (
         <button type="button" key={i} onClick={k.tap} style={{ color: k.fg }}
           className={cx("press-bg flex items-center justify-center bg-canvas font-display font-semibold", tall ? "h-[58px] text-[24px]" : "h-[54px] text-[24px]")}>
           {k.isBack && <Icon d={P.backspace} size={24} sw={1.9} />}{k.label}
@@ -216,7 +221,7 @@ export const Amount = ({ fg, className = "text-[15px]", children }: { fg?: strin
 
 /** Icon tile, a title over a sub-line, and whatever goes on the right. `look` has icon/tint/ifg. */
 export function ItemRow({ look, title, sub, subFg = "var(--ink3)", right, onClick, className }: {
-  look: V; title: ReactNode; sub: ReactNode; subFg?: string; right?: ReactNode; onClick: () => void; className?: string;
+  look: { icon: string; tint?: string; ifg?: string }; title: ReactNode; sub: ReactNode; subFg?: string; right?: ReactNode; onClick: () => void; className?: string;
 }) {
   return (
     <button type="button" onClick={onClick} className={cx("press flex w-full items-center gap-3", className)}>
@@ -233,19 +238,6 @@ export function ItemRow({ look, title, sub, subFg = "var(--ink3)", right, onClic
 export const Bar = ({ width, color, className }: { width: string; color: string; className: string }) => (
   <div className={cx("overflow-hidden bg-bar-track", className)}>
     <div className="h-full" style={{ width, background: color }} />
-  </div>
-);
-
-/** The ✓ list of what sync keeps. */
-export const Includes = ({ v, title, className }: { v: V; title: string; className: string }) => (
-  <div className={cx(CARD, "flex flex-col gap-2", className)}>
-    <span className={LABEL}>{title}</span>
-    {v.syncIncludes.map((x: V, i: number) => (
-      <div key={i} className="flex items-start gap-2">
-        <Icon d={P.check} size={13} sw={3} className="mt-1" style={{ color: x.fg }} />
-        <span className="text-pretty text-[13px] leading-[1.55] text-ink-2">{x.text}</span>
-      </div>
-    ))}
   </div>
 );
 
@@ -268,29 +260,31 @@ export const HeadLink = ({ onClick, children }: { onClick: () => void; children:
 );
 
 /** Hide/show-balance eye, 36px target. Its handler stops the tap reaching whatever row it sits in. */
-export const BalEye = ({ v }: { v: V }) => (
+export const BalEye = ({ v }: { v: Pick<V, "toggleBal" | "balEyeLabel" | "balEyeD"> }) => (
   <button type="button" onClick={v.toggleBal} aria-label={v.balEyeLabel} className="press -m-1.5 flex size-[36px] flex-none items-center justify-center rounded-full text-ink-3">
     <Icon d={v.balEyeD} size={18} sw={1.9} />
   </button>
 );
 
 /** Labelled name + "+977" mobile fields, as Register and Profile both use them. */
-export function PersonFields({ name, onName, nameBorder, namePh, phone, onPhone, phoneBorder, hint, hintFg, labels }: {
-  name: string; onName: (e: V) => void; nameBorder: string; namePh?: string; phone: string; onPhone: (e: V) => void;
-  phoneBorder: string; hint: string; hintFg: string; labels: { name: string; phone: string };
+export function PersonFields({ name, onName, nameBorder, namePh, phone, onPhone, phoneBorder, hint, hintFg, labels, editingLabel = "Editing" }: {
+  name: string; onName: import("react").ChangeEventHandler<HTMLInputElement>; nameBorder: string; namePh?: string; phone: string; onPhone: import("react").ChangeEventHandler<HTMLInputElement>;
+  phoneBorder: string; hint: string; hintFg: string; labels: { name: string; phone: string }; editingLabel?: string;
 }) {
+  const [focused, setFocused] = useState<"name" | "phone" | null>(null);
+  const editing = <span aria-hidden="true" className="rounded-lg bg-action px-2 py-0.5 text-[12px] font-bold text-on-action">{editingLabel}</span>;
   return (
     <div className="flex flex-col gap-5">
       <label className="flex flex-col gap-2">
-        <span className={LABEL}>{labels.name}</span>
-        <input value={name} onChange={onName} placeholder={namePh} autoComplete="name"
-          className="rounded-2xl border bg-surface px-4 py-4 text-[16px] text-ink outline-none placeholder:text-ink-3" style={{ borderColor: nameBorder }} />
+        <span className="flex min-h-[24px] items-center justify-between gap-2"><span className={LABEL}>{labels.name}</span>{focused === "name" && editing}</span>
+        <input value={name} onChange={onName} placeholder={namePh} autoComplete="name" aria-label={labels.name} onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
+          className={cx("rounded-2xl border-2 px-4 py-4 text-[16px] text-ink outline-none placeholder:text-ink-3", focused === "name" ? "bg-tint-r" : "bg-surface")} style={{ borderColor: focused === "name" ? "var(--action)" : nameBorder }} />
       </label>
       <label className="flex flex-col gap-2">
-        <span className={LABEL}>{labels.phone}</span>
-        <div className="flex items-stretch overflow-hidden rounded-2xl border bg-surface" style={{ borderColor: phoneBorder }}>
+        <span className="flex min-h-[24px] items-center justify-between gap-2"><span className={LABEL}>{labels.phone}</span>{focused === "phone" && editing}</span>
+        <div className={cx("flex items-stretch overflow-hidden rounded-2xl border-2", focused === "phone" ? "bg-tint-r" : "bg-surface")} style={{ borderColor: focused === "phone" ? "var(--action)" : phoneBorder }}>
           <span className="flex flex-none items-center border-r border-line pr-3 pl-4 text-[16px] font-semibold text-ink-2">+977</span>
-          <input value={phone} onChange={onPhone} inputMode="numeric" autoComplete="tel-national" placeholder="98XXXXXXXX"
+          <input value={phone} onChange={onPhone} inputMode="numeric" autoComplete="tel-national" aria-label={labels.phone} onFocus={() => setFocused("phone")} onBlur={() => setFocused(null)} placeholder="98XXXXXXXX"
             className="min-w-0 flex-1 bg-transparent px-4 py-4 text-[16px] tracking-[.02em] text-ink outline-none placeholder:text-ink-3" />
         </div>
         <span className="text-[13px] leading-normal" style={{ color: hintFg }}>{hint}</span>
@@ -309,7 +303,7 @@ export const Hero = ({ value, fs = "52px", fg, rs = "text-[22px]" }: { value: Re
 
 
 /** One transaction as a card: kind-tinted icon, title over kind and account, amount over category. `r` comes from rowLook(). */
-export function TxCard({ r }: { r: V }) {
+export function TxCard({ r }: { r: TransactionCardModel }) {
   return <button type="button" onClick={r.tap} className="press flex min-h-[72px] w-full items-center gap-3 border-b border-line py-3 text-left">
     <span className="flex size-[38px] flex-none items-center justify-center rounded-xl bg-surface-2 text-ink-2"><Icon d={r.icon} size={19} sw={1.8} /></span>
     <span className="flex min-w-0 flex-1 flex-col gap-1"><strong className="truncate text-[15px] font-semibold leading-snug">{r.title}</strong><span className={cx("text-[13px] leading-snug",r.isUncat ? "text-uncat" : "text-ink-3")}>{r.chip} · {r.meta}</span></span>
@@ -317,7 +311,7 @@ export function TxCard({ r }: { r: V }) {
   </button>;
 }
 
-/** A scrolling column you can pull down from the top to sync. onRefresh runs once per pull. */
+/** A scrolling column you can pull down from the top to refresh. onRefresh runs once per pull. */
 export function Pull({ onRefresh, className, children }: { onRefresh: () => unknown; className?: string; children: ReactNode }) {
   const box = useRef<HTMLDivElement>(null);
   const start = useRef<number | null>(null);
@@ -346,14 +340,14 @@ export function Pull({ onRefresh, className, children }: { onRefresh: () => unkn
       onTouchEnd={end} onTouchCancel={end}>
       <div aria-live="polite" className="flex flex-none items-center justify-center overflow-hidden text-[13px] font-semibold text-ink-3"
         style={{ height: pull, transition: dragging ? "none" : "height .2s" }}>
-        {busy ? "Syncing…" : pull >= READY ? "Release to sync" : "Pull to sync"}
+        {busy ? "Refreshing…" : pull >= READY ? "Release to refresh" : "Pull to refresh"}
       </div>
       {children}
     </div>
   );
 }
 
-export function GoalCard({ v }: { v: V }) {
+export function GoalCard({ v }: { v: Pick<V, "toGoal" | "goalName" | "goalLabel" | "goalWidth" | "goalNote"> }) {
   return (
     <button type="button" onClick={v.toGoal} className="press flex flex-col gap-3 rounded-card bg-tint-g px-5 py-5">
       <div className="flex items-baseline justify-between gap-3">

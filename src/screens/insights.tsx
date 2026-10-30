@@ -1,7 +1,8 @@
+import type { InsightsScreenModel as V } from "../features/insights/screen-model";
 // Insights: one calm scroll for today, this week or this BS month — kept, income and expenses, leaks, savings, where it went.
 // Income/Expenses and Leaks open their own screens; the savings baseline is set on its own screen too.
+import { AmountEntry,Chevron,Chips,Cta,HeadLink,Hero,Icon,Keypad,P,Section,Seg,TopBar,TxCard,cx } from "@/components/ui";
 import type { ReactNode } from "react";
-import { AmountEntry, Chevron, Chips, Cta, HeadLink, Hero, Icon, Keypad, P, Section, Seg, TopBar, TxCard, cx, type V } from "@/components/ui";
 
 const NUM = "font-display tabular-nums";
 const ROW_TOP = "border-t border-line";
@@ -66,7 +67,7 @@ export function Insights({ v }: { v: V }) {
         <Section title="Spending over time" className="gap-3">
           <p className="text-[13px] text-ink-3">{v.trendCaption}</p>
           <div className="flex h-[128px] items-end gap-2" role="img" aria-label={v.trendSummary}>
-            {v.spendingTrend.map((d: V,i: number) => <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5"><span className="text-[12px] tabular-nums text-ink-2">{d.value}</span><div className="flex h-[80px] w-full items-end rounded-t-md bg-surface-2"><div className="w-full rounded-t-md bg-navy" style={{height:d.height}} /></div><span className="text-[12px] text-ink-3">{d.label}</span></div>)}
+            {v.spendingTrend.map((d,i: number) => <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5"><span className="text-[12px] tabular-nums text-ink-2">{d.value}</span><div className="flex h-[80px] w-full items-end rounded-t-md bg-surface-2"><div className="w-full rounded-t-md bg-navy" style={{height:d.height}} /></div><span className="text-[12px] text-ink-3">{d.label}</span></div>)}
           </div>
         </Section>
         <button onClick={v.toLeaks} className="press flex flex-col gap-3 rounded-2xl bg-tint-w p-4 text-left">
@@ -105,7 +106,7 @@ export function Insights({ v }: { v: V }) {
             <div className="flex flex-col gap-3 pb-1">
               <span className="text-pretty text-[14px] leading-[1.6] text-ink-2">{v.savExplainLine}</span>
               <div className="flex flex-col">
-                {v.savSteps.map((x: V, i: number) => (
+                {v.savSteps.map((x, i: number) => (
                   <div key={i} className={cx(ROW_TOP, "flex min-h-[50px] items-center gap-3")}>
                     <span className="flex size-[22px] flex-none items-center justify-center rounded-full bg-surface-2 font-display text-[12px] font-bold text-ink-2">{x.n}</span>
                     <span className="min-w-0 flex-1 text-[15px] leading-[1.35]">{x.label}</span>
@@ -125,10 +126,10 @@ export function Insights({ v }: { v: V }) {
         <Section title={v.whereTitle}>
           <div className="flex flex-col gap-3 pt-1 pb-5">
             <div className="flex h-[10px] gap-0.5 overflow-hidden rounded-[5px] bg-bar-track">
-              {v.splitRows.map((g: V, i: number) => <div key={i} className="h-full" style={{ width: g.width, background: g.color }} />)}
+              {v.splitRows.map((g, i: number) => <div key={i} className="h-full" style={{ width: g.width, background: g.color }} />)}
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {v.splitRows.map((g: V, i: number) => (
+              {v.splitRows.map((g, i: number) => (
                 <div key={i} className="flex min-w-0 flex-col gap-0.5">
                   <span className={cx(NUM, "text-[28px] font-extrabold leading-[1.1]")}>{g.pct}</span>
                   <span className="flex items-center gap-1.5 whitespace-nowrap text-[13px] text-ink-2"><Dot color={g.color} />{g.label}</span>
@@ -136,7 +137,7 @@ export function Insights({ v }: { v: V }) {
               ))}
             </div>
           </div>
-          {v.catRowsShown.map((c: V,i: number) => <button key={i} onClick={c.tap} className="press flex w-full flex-col gap-2 border-t border-line py-4 text-left"><span className="flex w-full items-center justify-between gap-3"><strong className="min-w-0 text-[15px] font-medium">{c.label}</strong><span className="whitespace-nowrap font-display text-[20px] font-semibold">{c.amount}</span></span><span className="flex w-full items-center justify-between text-[13px] text-ink-3"><span>{c.share} of spending</span><span style={{color:c.dFg}}>{c.dWord}</span></span><span className="h-[6px] w-full overflow-hidden rounded-full bg-bar-track"><span className="block h-full rounded-full" style={{width:c.width,background:c.color}} /></span></button>)}
+          {v.catRowsShown.map((c,i: number) => <button key={i} onClick={c.tap} className="press flex w-full flex-col gap-2 border-t border-line py-4 text-left"><span className="flex w-full items-center justify-between gap-3"><strong className="min-w-0 text-[15px] font-medium">{c.label}</strong><span className="whitespace-nowrap font-display text-[20px] font-semibold">{c.amount}</span></span><span className="flex w-full items-center justify-between text-[13px] text-ink-3"><span>{c.share} of spending</span><span style={{color:c.dFg}}>{c.dWord}</span></span><span className="h-[6px] w-full overflow-hidden rounded-full bg-bar-track"><span className="block h-full rounded-full" style={{width:c.width,background:c.color}} /></span></button>)}
           {v.catMore && (
             <button onClick={v.toggleCatsAll} className={cx(ROW_TOP, "flex min-h-[48px] items-center text-[14px] font-semibold text-action")}>{v.catMoreLabel}</button>
           )}
@@ -161,7 +162,7 @@ export function Flow({ v }: { v: V }) {
         {v.flowSub && <span className="text-[14px]" style={{ color: v.flowSubFg }}>{v.flowSub}</span>}
       </div>
       <Section title={v.flowListTitle} action={<span className="text-[13px] text-ink-3">{v.flowCount}</span>}>
-        {v.flowRows.map((r: V, i: number) => <TxCard key={i} r={r} />)}
+        {v.flowRows.map((r, i: number) => <TxCard key={i} r={r} />)}
         {v.flowEmptyLine && <span className={cx(ROW_TOP, "flex min-h-[60px] items-center text-[14px] text-ink-3")}>{v.flowEmptyLine}</span>}
       </Section>
     </RangeScreen>
@@ -192,18 +193,18 @@ export function Leaks({ v }: { v: V }) {
             <Icon d={P.check} size={18} sw={2.4} />{v.leaksNoneLabel}
           </div>
         )}
-        {v.leakRows.map((l: V, i: number) => <BarLine key={i} label={l.label} note={l.per} amount={l.amount} width={l.width} color="var(--warn)" />)}
+        {v.leakRows.map((l, i: number) => <BarLine key={i} label={l.label} note={l.per} amount={l.amount} width={l.width} color="var(--warn)" />)}
       </Section>
 
       {v.leakTxRows.length > 0 && (
         <Section title="Optional transactions" action={<span className="text-[13px] text-ink-3">{v.leakTxCount}</span>}>
-          {v.leakTxRows.map((r: V, i: number) => <TxCard key={i} r={r} />)}
+          {v.leakTxRows.map((r, i: number) => <TxCard key={i} r={r} />)}
         </Section>
       )}
 
       <Section title="Patterns">
         <div className={cx(ROW_TOP, "grid grid-cols-2 gap-4 pt-4")}>
-          {v.leakStats.map((m: V, i: number) => (
+          {v.leakStats.map((m, i: number) => (
             <div key={i} className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[13px] text-ink-3">{m.label}</span>
               <span className={cx(NUM, "truncate text-[24px] font-extrabold leading-[1.2]")}>{m.value}</span>

@@ -1,0 +1,74 @@
+import type { AppViewModel } from "../view-model";
+
+/** Only the values and actions consumed by this feature’s screens. */
+export type HomeScreenModel = Pick<AppViewModel,
+  "addAccount" |
+  "addAccountSet" |
+  "addAccounts" |
+  "addAmount" |
+  "addAmountType" |
+  "addCancel" |
+  "addCategory" |
+  "addCategoryOptions" |
+  "addCategorySet" |
+  "addCta" |
+  "addDateLabel" |
+  "addDirection" |
+  "addDirectionSet" |
+  "addError" |
+  "addNote" |
+  "addNoteType" |
+  "addReady" |
+  "balEyeD" |
+  "balEyeLabel" |
+  "balFs" |
+  "bsMonth" |
+  "budgetBar" |
+  "budgetLine" |
+  "cardAmount" |
+  "cardCats" |
+  "cardMerchant" |
+  "cardMeta" |
+  "cardOpen" |
+  "cardSkip" |
+  "commitAdd" |
+  "dayOfLine" |
+  "editPlan" |
+  "floorLine" |
+  "floorPending" |
+  "hasReview" |
+  "haveLabel" |
+  "haveMeta" |
+  "homeBalances" |
+  "homeGoals" |
+  "homeLeft" |
+  "homeSpent" |
+  "leftFg" |
+  "leftWord" |
+  "monthlyTarget" |
+  "noGoals" |
+  "recent" |
+  "reviewCount" |
+  "settingsLabel" |
+  "spentWord" |
+  "stackDone" |
+  "stackExit" |
+  "stackHasCard" |
+  "stackProgress" |
+  "suggestAmt" |
+  "suggestHow" |
+  "suggestLead" |
+  "suggestTail" |
+  "refreshTransactions" |
+  "t" |
+  "targetWidth" |
+  "toAccounts" |
+  "toGoal" |
+  "toGoalNew" |
+  "toReviewStack" |
+  "toSettings" |
+  "toTxns" |
+  "toggleBal" |
+  "totalBal" |
+  "userInitials"
+>;

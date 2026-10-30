@@ -1,19 +1,18 @@
+import type { Screen as ScreenName } from "../application/routes";
 // Picks the screen for v.screen and draws what floats above it: tab bar, sheets, toast.
-import type { ComponentType } from "react";
-import { Btn, Icon, P, Tile, cx, type V } from "@/components/ui";
 import { Sheet } from "@/components/sheet";
-import { Accounts, SourceDetail, SrcNew } from "./accounts";
-import { GoalNew, Goals } from "./goals";
-import { Add, Home, Stack } from "./home";
-import { Baseline, Flow, Insights, Leaks } from "./insights";
-import { Cats, Detect, Permission, Register, Scan, Source, Welcome } from "./onboarding";
-import { Profile, Settings } from "./settings";
-import { Merge, Restore, Signup, Sync } from "./sync";
-import { Detail, Rules, Txns } from "./transactions";
+import { Btn,Icon,P,cx,type V } from "@/components/ui";
+import type { ComponentType } from "react";
+import { Accounts,SourceDetail,SrcNew } from "./accounts";
+import { GoalNew,Goals } from "./goals";
+import { Add,Home,Stack } from "./home";
+import { Baseline,Flow,Insights,Leaks } from "./insights";
+import { Cats,Detect,Permission,Register,Scan,Source,Welcome } from "./onboarding";
+import { Profile,Settings } from "./settings";
+import { Detail,Rules,Txns } from "./transactions";
 
-const SCREENS: Record<string, ComponentType<{ v: V }>> = {
+const SCREENS: Record<ScreenName, ComponentType<{ v: V }>> = {
   welcome: Welcome, register: Register, permission: Permission, detect: Detect, source: Source, "src-new": SrcNew, scan: Scan, cats: Cats,
-  signup: Signup, restore: Restore, merge: Merge, sync: Sync,
   home: Home, txns: Txns, stack: Stack, detail: Detail, insights: Insights, flow: Flow, leaks: Leaks, baseline: Baseline, add: Add, rules: Rules,
   accounts: Accounts, "source-detail": SourceDetail, goals: Goals, "goal-new": GoalNew, settings: Settings, profile: Profile,
 };
@@ -26,11 +25,14 @@ export default function Screens({ v }: { v: V }) {
     {v.discardAdd && <Sheet title="Discard this entry?" onClose={v.keepAdd}><p className="text-[14px] text-ink-2">Your unfinished transaction has not been saved.</p><Btn onClick={v.keepAdd}>Keep editing</Btn><Btn kind="secondary" onClick={v.discardEntry}>Discard entry</Btn></Sheet>}
     {v.discardGoal && <Sheet title="Discard this goal?" onClose={v.keepGoal}><p className="text-[14px] text-ink-2">Your goal has not been saved.</p><Btn onClick={v.keepGoal}>Keep editing</Btn><Btn kind="secondary" onClick={v.discardGoalEntry}>Discard goal</Btn></Sheet>}
     {v.deleting && <DeleteSheet v={v} />}
-    {v.hasStopSheet && <StopSheet v={v} />}
     {v.hasToast && (
-      <div className="absolute inset-x-[16px] flex items-center justify-between gap-3 rounded-[16px] bg-toast-bg px-5 py-4 text-toast-fg shadow-[0_10px_26px_rgba(0,0,0,.28)]" style={{ bottom: v.toastBottom }}>
-        <span className="text-[13px] leading-[1.45]">{v.toast}</span>
-        {v.canUndo && <button onClick={v.undo} className="flex-none text-[13px] font-bold text-toast-accent">Undo</button>}
+      <div className="pointer-events-none absolute inset-x-[16px] flex items-center justify-between gap-2 rounded-[16px] bg-toast-bg py-2 pr-2 pl-4 text-toast-fg shadow-[0_10px_26px_rgba(0,0,0,.28)]" style={{ bottom: v.toastBottom }}>
+        <span role="status" aria-atomic="true" className="min-w-0 flex-1 text-[13px] leading-[1.45] break-words">{v.toast}</span>
+        {v.canUndo && <button type="button" onClick={v.undo} className="pointer-events-auto min-h-[44px] min-w-[44px] flex-none px-2 text-[13px] font-bold text-toast-accent">Undo</button>}
+        <button type="button" onClick={v.dismissToast} aria-label={v.dismissToastLabel}
+          className="pointer-events-auto flex size-[44px] flex-none items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2">
+          <Icon d={P.close} size={18} />
+        </button>
       </div>
     )}
   </>);
@@ -42,7 +44,7 @@ const TABS = [
   { key: "txns", label: "txns", d: "M5 3.5h14v17l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6L7.4 19 5 20.5ZM9 9h6M9 13h4" },
   { key: "insights", label: "insights", d: "M5 20v-6M12 20V7M19 20v-9" },
   { key: "accounts", label: "accounts", d: P.wallet },
-];
+] as const;
 
 function TabBar({ v }: { v: V }) {
   const tab = (t: (typeof TABS)[number]) => {
@@ -80,30 +82,6 @@ function DeleteSheet({ v }: { v: V }) {
         <button onClick={v.cancelDelete} className="flex-1 rounded-xl border border-line bg-surface-2 p-4 text-center text-[14px] font-semibold text-ink-2">Cancel</button>
         <Btn onClick={v.confirmDelete} className="flex-1">Delete entry</Btn>
       </div>
-    </Sheet>
-  );
-}
-
-function StopSheet({ v }: { v: V }) {
-  const option = "flex items-center gap-3 rounded-2xl border p-4";
-  return (
-    <Sheet title={v.t.stopTitle} onClose={v.cancelStop}>
-
-      <button onClick={v.stopThis} className={cx(option, "border-line")}>
-        <Tile d={P.cloudOff} className="size-[36px] bg-surface-2 text-ink-2" />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[14px] font-semibold">{v.t.stopThis}</span>
-          <span className="text-[13px] leading-[1.45] text-ink-3">{v.t.stopThisMeta}</span>
-        </div>
-      </button>
-      <button onClick={v.deleteSynced} className={cx(option, "border-action")}>
-        <Tile d={P.trash} className="size-[36px] bg-tint-r text-action" />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[14px] font-semibold text-action">{v.t.delSynced}</span>
-          <span className="text-[13px] leading-[1.45] text-ink-3">{v.t.delSyncedMeta}</span>
-        </div>
-      </button>
-      <button onClick={v.cancelStop} className="p-4 text-center text-[14px] font-semibold text-ink-2">{v.t.cancel}</button>
     </Sheet>
   );
 }

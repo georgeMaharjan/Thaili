@@ -1,5 +1,6 @@
+import { Chevron,Cta,Icon,PersonFields,Section,Seg,TopBar,cx } from "@/components/ui";
 import type { ReactNode } from "react";
-import { Chevron, Cta, Icon, PersonFields, Section, Seg, TopBar, cx, type V } from "@/components/ui";
+import type { SettingsScreenModel as V } from "../features/settings/screen-model";
 
 const SEG_ITEM = "rounded-[8px] px-4 py-2 text-[13px]";
 const ROW = "flex min-h-[64px] w-full items-center gap-4 border-t border-line";
@@ -37,16 +38,7 @@ export function Settings({ v }: { v: V }) {
             <span className="text-[14px] font-semibold">{v.storageTitle}</span>
             <span className="text-[13px] leading-[1.45] text-ink-3">{v.storageLine}</span>
           </div>
-          {v.storageRetry && <button onClick={v.retryStorage} className="press flex-none text-[13px] font-semibold text-action">{v.retryStorageLabel}</button>}
         </div>
-        <button onClick={v.toSync} className="press flex items-center gap-4 rounded-2xl px-4 py-4 text-left" style={{ background: v.acctCardBg }}>
-          <Icon d={v.syncIconD} sw={1.9} style={{ color: v.acctCardFg }} />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="wrap-anywhere text-[16px] font-semibold leading-[1.3]">{v.acctCardTitle}</span>
-            <span className="text-[13px] leading-[1.45] text-ink-2">{v.acctCardLine}</span>
-          </div>
-          <Chevron />
-        </button>
         </div>
 
         <Section title={v.prefsTitle}>
@@ -78,7 +70,7 @@ export function Settings({ v }: { v: V }) {
         </Section>
 
         <Section title={v.manageTitle}>
-          {v.settingRows.map((s: V, i: number) => (
+          {v.settingRows.map((s, i: number) => (
             <button key={i} onClick={s.tap} className={cx(ROW, "press text-left")}>
               <Icon d={s.icon} size={20} sw={1.8} className="text-ink-3" />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -109,7 +101,7 @@ export function Profile({ v }: { v: V }) {
           <Initials text={v.profInitials} className="size-[84px] text-[32px]" />
           <span className="text-[13px] text-ink-3">{v.profSince}</span>
         </div>
-        <PersonFields labels={v.regLabels} name={v.profName} onName={v.profNameType} nameBorder={v.profNameBorder}
+        <PersonFields editingLabel={v.numericEditingLabel} labels={v.regLabels} name={v.profName} onName={v.profNameType} nameBorder={v.profNameBorder}
           phone={v.profPhone} onPhone={v.profPhoneType} phoneBorder={v.profPhoneBorder} hint={v.profPhoneHint} hintFg={v.profPhoneHintFg} />
       </div>
       <div className="flex-none px-5 pt-3 pb-5">
