@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { numericEntry } from "./numeric-entry.ts";
+
+const amount = (value: string, caret = value.length) => numericEntry(value, caret, "amount", 9);
+const digits = (value: string, caret = value.length) => numericEntry(value, caret, "digits", 4);
+assert.deepEqual(amount("05"), { value: "5", caret: 1 });
+assert.deepEqual(amount("00"), { value: "0", caret: 1 });
+assert.deepEqual(amount("0."), { value: "0.", caret: 2 });
+assert.deepEqual(amount("0.05"), { value: "0.05", caret: 4 });
+assert.deepEqual(amount("."), { value: "0.", caret: 2 });
+assert.deepEqual(amount("001,234.50"), { value: "1234.50", caret: 7 });
+assert.deepEqual(amount("12945.67", 3), { value: "12945.67", caret: 3 });
+assert.deepEqual(amount("1245.67", 2), { value: "1245.67", caret: 2 });
+assert.deepEqual(amount("०.२५"), { value: "0.25", caret: 4 });
+assert.deepEqual(amount(""), { value: "", caret: 0 });
+assert.deepEqual(amount("1.234"), { error: "precision" });
+assert.deepEqual(amount("1.2.3"), { error: "characters" });
+assert.deepEqual(amount("-12"), { error: "characters" });
+assert.deepEqual(amount("1000000000"), { error: "length" });
+assert.deepEqual(digits("0482", 2), { value: "0482", caret: 2 });
+assert.deepEqual(digits("०४८२"), { value: "0482", caret: 4 });
+assert.deepEqual(digits("12345"), { error: "length" });
+assert.deepEqual(digits("1.23"), { error: "characters" });
+console.log("numeric entry: cursor-preserving edits, zero replacement, decimals, account zeros, paste and bounds pass");
