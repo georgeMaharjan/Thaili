@@ -1,3 +1,4 @@
+import type { Database } from "../infrastructure/database";
 import assert from "node:assert/strict";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createCloudDriver } from "./cloud-store.ts";
@@ -34,7 +35,7 @@ const db = { from(table: string) {
       return { data: null, error: writeFailure ? new Error("upload failed") : null };
     },
   };
-} } as unknown as SupabaseClient;
+} } as unknown as SupabaseClient<Database>;
 let owner: string | null = "owner";
 const driver = createCloudDriver(db, async () => owner);
 const remote = await driver.read();
@@ -42,13 +43,13 @@ assert.equal(remote.pouch.tx.length, 1201);
 assert.deepEqual(pages, [0, 500, 1000]);
 assert.equal(remote.pouch.sources[0].opening, 10.5); assert.equal(remote.pouch.goals[0].target, 1000.5);
 assert.deepEqual(remote.pouch.sources[0].packages, ["np.fixture.bank"]);
-assert.equal(remote.pouch.prefs.setupComplete, true); assert.equal(remote.pouch.prefs.screen, undefined);
+assert.equal(remote.pouch.prefs.setupComplete, true); assert.equal("screen" in remote.pouch.prefs, false);
 const deletions: Deletions = { sources: {}, tx: {}, rules: {}, goals: {} };
 await driver.write(remote.pouch, remote.pouch, deletions, false);
 assert.equal(operations.length, 0); // Acknowledged unchanged rows need no upload.
 
 const next = structuredClone(remote.pouch);
-next.sources.push({ key: "wallet", name: "Wallet", opening: 0, acct: "9876543210" });
+next.sources.push({ key: "wallet", name: "Wallet", opening: 0, type: "Wallet · notifications", dot: "blue", acct: "9876543210" });
 next.tx = [{ ...next.tx[0], dir: "transfer", to: "gone" }, { ...next.tx[1], ch: "SMS" }];
 next.prefs.syncRaw = false;
 next.tx[0].capture = [{ ch: "App", id: "alert", src: "bank", dir: "debit", at: next.tx[0].at, ref: "REF10001", fingerprint: "digest" }];
@@ -78,7 +79,7 @@ await assert.rejects(driver.read(), /unavailable/);
 
 const ui = { ...next, ...next.prefs, tx: next.tx.map(t => ({ ...t, off: 1, bs: { y: 2083, m: 5, d: 1 }, time: "12 pm" })), screen: "txns", addEntry: "draft" };
 const stored = snapshot(ui);
-assert.equal(stored.tx[0].raw, null); assert.equal(stored.tx[0].off, undefined);
-assert.equal(stored.prefs.screen, undefined); assert.equal(stored.prefs.addEntry, undefined);
+assert.equal(stored.tx[0].raw, null); assert.equal("off" in stored.tx[0], false);
+assert.equal("screen" in stored.prefs, false); assert.equal("addEntry" in stored.prefs, false);
 assert.equal(hydrated(stored).tx[0].bs.y > 2000, true);
 console.log("cloud adapter: pagination, mappings, privacy, deletion replay, errors and owner checks pass");

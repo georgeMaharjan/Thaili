@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient,type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "../infrastructure/database";
 
 // Static SPA + Capacitor: the client talks to Supabase directly from the device.
 // NEXT_PUBLIC_* are inlined at build time. Absent → persistent local mode without cloud sync.
@@ -7,8 +8,8 @@ const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const isConfigured = Boolean(url && anon);
 
-export const supabase: SupabaseClient | null = isConfigured
-  ? createClient(url!, anon!, {
+export const supabase: SupabaseClient<Database> | null = isConfigured
+  ? createClient<Database>(url!, anon!, {
     auth: { persistSession: true, autoRefreshToken: true },
     // Captive portals and stalled connections must release the background retry.
     global: { fetch: (input, init) => fetch(input, { ...init,

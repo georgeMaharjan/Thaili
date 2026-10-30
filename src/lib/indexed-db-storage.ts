@@ -1,3 +1,4 @@
+import { decodeLedgerRecord } from "../infrastructure/hydration";
 // IndexedDB adapter. Resolve only on transaction commit, including reads.
 import type { LocalStorageDriver } from "./local-ledger";
 
@@ -16,7 +17,9 @@ export function indexedDbStorage(): LocalStorageDriver {
       return new Promise((resolve, reject) => {
         const transaction = db.transaction("ledger", "readonly");
         const request = transaction.objectStore("ledger").get("current");
-        transaction.oncomplete = () => resolve(request.result || null);
+        transaction.oncomplete = () => {
+          try { resolve(decodeLedgerRecord(request.result)); } catch (error) { reject(error); }
+        };
         transaction.onabort = () => reject(transaction.error);
         transaction.onerror = () => reject(transaction.error);
       });
