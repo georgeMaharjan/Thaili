@@ -1,0 +1,131 @@
+[
+  {
+    "id": "SYNC_OPT_OUT",
+    "uiAccount": null,
+    "cloudWritesAfterStop": 1,
+    "mobileDataPreference": false
+  },
+  {
+    "id": "SIMULATED_IDENTITY",
+    "anySixDigitCodeAccepted": true,
+    "restoreBefore": 0,
+    "restoreAfter": 0,
+    "restoreToast": "Pouch restored · 214 entries, 4 accounts, 12 rules"
+  },
+  {
+    "id": "SMS_AMOUNT_DIRECTION",
+    "balanceBeforeMovement": 10000,
+    "foreignPaymentParsedAsNpr": 10000,
+    "conflictingDirectionChosen": "credit"
+  },
+  {
+    "id": "UNDO_ERASES_BACKGROUND",
+    "remainingIds": [
+      "original"
+    ]
+  },
+  {
+    "id": "OPENING_EDIT",
+    "balanceBefore": 900,
+    "enteredAndSaved": "1000",
+    "balanceAfter": 900
+  },
+  {
+    "id": "ACCOUNT_REMOVAL",
+    "authCalls": 0,
+    "sources": 1,
+    "retainedTransfer": "transfer",
+    "danglingDestination": "destination"
+  },
+  {
+    "id": "UNSELECTED_ACCOUNT",
+    "watchedPackage": true,
+    "accountsAfterAlert": [
+      "nabil",
+      "prabhu"
+    ]
+  },
+  {
+    "id": "APP_LABEL_SPOOF",
+    "recognizedAs": "nabil",
+    "affectedAccount": "nabil",
+    "balanceAfter": 100
+  },
+  {
+    "id": "BODY_DATE_IGNORED",
+    "bodyTransactionDate": "2026-01-01",
+    "savedTransactionDate": "2026-10-20T16:09:41.758Z",
+    "balanceAfter": 900
+  },
+  {
+    "id": "RAW_DEFAULT_UPLOAD",
+    "syncRaw": true,
+    "rawIncludedInDurableSnapshot": true
+  },
+  {
+    "id": "BUDGET_AND_ETA",
+    "remaining": 6,
+    "recommendedAllowance": 10,
+    "oneGoalShareMonths": 2,
+    "oneGoalQueueMonths": 1
+  },
+  {
+    "id": "NEPALI_RULES",
+    "suggestedKeyword": null,
+    "validNepaliKeywordRejected": true
+  },
+  {
+    "id": "DEVICE_CAPTURE_POLICY_MERGED",
+    "localBoundary": 200,
+    "otherDeviceBoundary": 50,
+    "result": 50
+  },
+  {
+    "id": "LOCAL_SAVE_NO_RETRY",
+    "memoryEntries": 1,
+    "durableEntries": 0,
+    "savePromiseResolvedDespiteFailure": true
+  },
+  {
+    "id": "WALLET_96_RECIPIENT",
+    "savedOwnWalletTail": "4821",
+    "actualPayee": "9612349999",
+    "classified": "transfer",
+    "to": "esewa"
+  },
+  {
+    "id": "INSTITUTION_EDIT_STALE_ID",
+    "displayed": "Kumari Bank",
+    "key": "nabil",
+    "kumariEntriesImported": 0,
+    "orphans": 1
+  },
+  {
+    "id": "AUTO_LEARN_BYPASSES_VALIDATION",
+    "createdKeyword": "TRANSFER",
+    "blockedByNormalRuleEditor": true
+  },
+  {
+    "id": "REVIEW_FABRICATES_REMARK",
+    "savedWithoutTyping": "Typed in the notification"
+  },
+  {
+    "id": "UNBOUNDED_IMPORT",
+    "finiteInvalidDateCrashesBatch": true,
+    "acceptedAmountBeyondNumeric14_2": 1000000000000
+  },
+  {
+    "id": "WRONG_REVIEW_ENTRY",
+    "clickedTransaction": "clicked-entry",
+    "openedTransaction": "unrelated-newer"
+  },
+  {
+    "id": "UNRELATED_WALLET_CREDIT_ABSORBED",
+    "distinctReferences": [
+      "LOAD12345",
+      "GIFT99999"
+    ],
+    "remainingEntries": 1,
+    "remainingDirection": "transfer"
+  }
+]
