@@ -24,6 +24,9 @@ const cases: [string, number, string][] = [
   ["Transaction Type: DR\nAmount: 500", 500, "debit"],
   ["Rs 500 has been added to your wallet", 500, "credit"],
   ["You successfully made a payment of NPR 500", 500, "debit"],
+  ["Load Fund Successful\nYour eSewa account has been loaded with NPR 1,000.00 from Nabil Bank.", 1000, "credit"],
+  ["eSewa\nDear Customer, Fund transfer of NPR 500.00 to 9841234567 is successful.", 500, "debit"],
+  ["eSewa\nYour Fund Transfer of Rs. 500.00 to Ram Bahadur was successful.", 500, "debit"],
 ];
 for (const [body, amt, dir] of cases) {
   const result = parse(body);
