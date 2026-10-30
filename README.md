@@ -1,17 +1,20 @@
 # Thaili
 
 Personal money tracker for Nepal: reads bank SMS and transaction notifications, spots money apps, and runs on the Bikram Sambat calendar.
-Next.js static export wrapped with Capacitor (Android), durable storage on the phone and Supabase for background sync.
+The catalog covers all 20 commercial and 17 development banks in NRB’s Mid-August 2026 directory, plus its finance, microfinance, infrastructure and cooperative institutions.
+Next.js static export wrapped with Capacitor (Android), durable storage on the phone. Cloud sync and recovery features are currently removed.
 
 ```bash
-cp .env.local.example .env.local   # fill in Supabase URL + anon key
+cp .env.local.example .env.local   # optional; the app runs locally without backend setup
 npm run dev                        # browser preview (no device features)
 npm run android                    # build, sync and open in Android Studio
-npm test                           # transaction/notification parsers and app logic checks
+npm run typecheck                  # application and test fixture type checking
+npm test                           # domain, application, adapter and screen flow checks
 bash supabase/test.sh supabase/migrations/*.sql   # migrations + RLS on a throwaway Postgres 17
 ```
 
-- `src/lib/logic.tsx` — device/screen orchestration and the view model (`renderVals()`) the screens read.
+- `src/application/` — typed application state, controller, capture/discovery/lifecycle coordinators and ledger retry coordination. `src/lib/logic.tsx` keeps the app entry point compatible.
+- `src/features/` — feature view models, selectors, transaction commands and feature-specific screen contracts (MVVM). `src/domain/` holds shared models; `src/infrastructure/` holds saved-data validation and the database schema.
 - `src/lib/finance.ts`, `goals.ts`, `rules.ts` — typed financial calculations and filing rules. Goal funding uses Queue/Share allocation strategies; money is allocated in integer paisa.
 - `src/lib/import-transactions.ts` — shared SMS/notification import pipeline with an explicit clock and ID generator.
 - `src/screens/*.tsx` — the screens, hand-written with Tailwind. Shared pieces live in `src/components/ui.tsx`;
@@ -28,15 +31,16 @@ Setup, accounts, transactions, goals, rules, preferences and SMS/notification im
 The app bundles its fonts and interface assets. Changes and deletion markers are saved together,
 so they survive closing the app or restarting the phone while offline.
 
-When connectivity returns, background sync merges remote updates with local edits and retries failed
-or partially completed uploads. Local edits take precedence on conflicts; deleting and undoing also
-work across retries. Settings shows whether data is saved locally, waiting to sync, or synced.
-Without Supabase configuration the same local storage still works.
+Production storage is local-only, even if Supabase environment variables are configured.
+Sync/OTP/restore/merge/backup/device controls and remote push registration are removed.
+Existing on-device records remain available; backend adapters remain disconnected for future development.
+This version does not download cloud-only history or delete copies uploaded by earlier versions.
+Clearing app data or uninstalling removes the local copy; cloud recovery and export are unavailable.
+Settings reports local storage status. SMS/notification permissions still apply.
 
-Upgrading from a cloud-only version requires one successful connection to download existing cloud data
-onto this phone before that history is available offline. Device notification/SMS permissions still apply.
-Clearing app data or uninstalling removes this device's local copy and any changes not yet synced.
-`local-ledger.check.ts` covers offline reopening, pending deletions, failed uploads, undo and concurrent edits.
+See the [logic audit](docs/LOGIC-AUDIT-2026-10-20.md) and [recommended fixes](docs/LOGIC-REMEDIATION.md)
+for confirmed limitations and the removal decisions. Current capture heuristics have known defects;
+the descriptions below are intended behavior, not verified support for every bank format.
 
 ## Transaction notifications
 
@@ -64,4 +68,4 @@ in `notification-transactions.check.ts`; Android text extraction has local unit 
 
 - **Export everything** — CSV of every entry, account, rule and goal. Hidden from Settings until built.
 - **Archive** — browse and restore deleted entries (rows keep `archived_at` for 30 days). Hidden from Settings until built.
-- **Spend prompts** — Settings → Notifications and Quiet hours are saved but nothing sends a push yet; `supabase/functions/send-push` has no caller.
+- **Cloud/recovery and receipts** — removed until their real behavior, consent and recovery are implemented. Local transaction-review notifications still work.
