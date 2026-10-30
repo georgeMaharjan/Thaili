@@ -61,9 +61,18 @@ final class Capture {
                 JSONArray t = txn.getJSONArray(i);
                 if (re(t.getString(0)).matcher(body).find()) dir = t.getString(1);
             }
+            // Wallet/bank app wording ("Fund transfer of NPR 500 … is successful") rarely matches the
+            // SMS sentences; the app parses those with the generic notification rules, so nudge on them too.
+            JSONObject n = c.optJSONObject("notification");
+            if (dir == null && n != null && !re(n.getString("ignore")).matcher(body).find()) {
+                if (re(n.getString("credit")).matcher(body).find()) dir = "credit";
+                else if (re(n.getString("debit")).matcher(body).find()) dir = "debit";
+            }
             if (!"debit".equals(dir)) return; // only spends need a category
             Matcher a = re(c.getString("amount")).matcher(body);
-            if (!a.find()) return;
+            if (!a.find() && (n == null || !(a = re(n.getString("amount")).matcher(body)).find())) return;
+            String amt = a.group(1);
+            for (int g = 2; amt == null && g <= a.groupCount(); g++) amt = a.group(g);
             Matcher r = re(c.getString("remark")).matcher(body);
             String rem = r.find() ? (r.group(1) != null ? r.group(1) : r.group(2)) : null;
             if (rem != null && re(c.getString("wallets")).matcher(rem).find()) return; // a wallet load: a transfer
@@ -73,7 +82,7 @@ final class Capture {
                 String kw = rules.optString(i);
                 if (!kw.isEmpty() && hay.contains(kw)) return; // a rule files it
             }
-            post(ctx, "NPR " + a.group(1), rem == null ? null : rem.trim(), at);
+            post(ctx, "NPR " + amt, rem == null ? null : rem.trim(), at);
         } catch (Exception ignored) {
             // A bad pattern from an older app version must never crash the receiver.
         }

@@ -7,21 +7,21 @@ import { importTransactions, applyImportResult, type CapturedMessage } from "./i
 import { snapshot, hydrated } from "./pouch.ts";
 import { emptyPouch, LocalLedger, type LedgerRecord } from "./local-ledger.ts";
 import { accountBalances } from "./finance.ts";
-import type { CapturedEntry } from "./transaction-capture.ts";
+import type { Account, DatedTransaction } from "../domain/models";
 
 const now = new Date("2026-10-11T12:00:00Z"), at = now.getTime();
-const sources = [{ key: "manual-bank", name: "Nabil Bank", base: "Nabil Bank", acct: "4821", opening: 1000, type: "Bank · SMS" },
-  { key: "other-bank", name: "Nabil Bank", base: "Nabil Bank", acct: "1234", opening: 0, type: "Bank · SMS" },
-  { key: "esewa", name: "eSewa", acct: null, opening: 0, type: "Wallet · notifications" }];
+const sources: Account[] = [{ key: "manual-bank", name: "Nabil Bank", base: "Nabil Bank", acct: "4821", opening: 1000, dot: "red", type: "Bank · SMS" },
+  { key: "other-bank", name: "Nabil Bank", base: "Nabil Bank", acct: "1234", opening: 0, dot: "red", type: "Bank · SMS" },
+  { key: "esewa", name: "eSewa", acct: null, opening: 0, dot: "blue", type: "Wallet · notifications" }];
 let sequence = 0;
-const run = (messages: CapturedMessage[], existing: CapturedEntry[] = []) => importTransactions(messages, {
+const run = (messages: CapturedMessage[], existing: DatedTransaction[] = []) => importTransactions(messages, {
   sources, existing, rules: [], now, newId: () => `generated-${++sequence}`,
 });
 const sms = (id: string, ref = "TXN10001", time = at): CapturedMessage => ({ id, sender: "NABIL", at: time,
   body: `NPR 100 has been debited from A/C XXXX4821. Remarks: SHOP.${ref ? " Ref: " + ref : ""}` });
 const app = (id: string, ref = "TXN10001", time = at): CapturedMessage => ({ id, ch: "App", bank: "nabil", at: time,
   body: `Account XXXX4821 was debited NPR 100. Merchant: SHOP.${ref ? " Ref: " + ref : ""}` });
-const commit = (messages: CapturedMessage[], existing: CapturedEntry[] = []) => applyImportResult(existing, run(messages, existing));
+const commit = (messages: CapturedMessage[], existing: DatedTransaction[] = []) => applyImportResult(existing, run(messages, existing));
 
 // Every explicit label has a fixture; only truly installed apps are returned.
 const detected = detectMoneyApps(INSTITUTIONS.map(i => ({ pkg: `np.fixture.${i.key}`, label: i.name })));
@@ -65,7 +65,7 @@ assert.equal(commit([sms("a", ""), sms("b", "")]).length, 2);
 assert.equal(commit([sms("a", ""), sms("b", ""), app("c", ""), app("d", "")]).length, 2);
 assert.equal(commit([sms("s", ""), { ...app("a", ""), body: "Account XXXX4821 debited NPR 100. Merchant: DIFFERENT SHOP" }]).length, 2);
 assert.equal(commit([{ ...sms("rails", ""), body: "NPR 100 has been debited from A/C XXXX4821. Remarks: MPAY FPQR,123456" }, app("merchant", "")]).length, 1);
-const manual = { id: "hand", src: "manual-bank", amt: 100, at: now.toISOString(), dir: "debit", ch: "Manual" };
+const manual: DatedTransaction = { off: 0, time: "12 pm", bs: { y: 2083, m: 5, d: 25 }, m: "Manual", id: "hand", src: "manual-bank", amt: 100, at: now.toISOString(), dir: "debit", ch: "Manual" };
 assert.equal(commit([sms("real")], [manual]).length, 2);
 
 // Minimal matching evidence survives raw retention off, disk restart and a later alert.
@@ -75,7 +75,7 @@ const disk = { async read() { return structuredClone(record); }, async write(r: 
 const ledger = new LocalLedger(disk, null), pouch = emptyPouch();
 pouch.sources = sources; pouch.tx = first; pouch.prefs.syncRaw = false;
 const saved = snapshot({ ...pouch, syncRaw: false });
-assert.equal(saved.tx[0].raw, null); assert.equal(saved.tx[0].capture[0].ref, "TXN10001");
+assert.equal(saved.tx[0].raw, null); assert.equal(saved.tx[0].capture![0].ref, "TXN10001");
 await ledger.save(saved);
 const reopened = hydrated((await new LocalLedger(disk, null).load())!);
 assert.equal(commit([app("after-restart", "TXN10001", at + 30 * 60000)], reopened.tx).length, 1);

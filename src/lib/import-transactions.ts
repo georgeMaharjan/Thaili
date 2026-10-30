@@ -1,9 +1,9 @@
+import type { Transaction } from "../domain/models";
 import { dated } from "./bs.ts";
-import { parseNotification } from "./notification-transactions.ts";
-import { parseSms, sourceFor, transferTo } from "./sms.ts";
-import { autoFile, type FilingRule } from "./rules.ts";
-import { duplicateIndex, evidenceFor, mergeEvidence, textFingerprint, type CapturedEntry, type CaptureEvidence } from "./transaction-capture.ts";
-import { transactionReference } from "./notification-transactions.ts";
+import { parseNotification,transactionReference } from "./notification-transactions.ts";
+import { autoFile,type FilingRule } from "./rules.ts";
+import { parseSms,sourceFor,transferTo } from "./sms.ts";
+import { duplicateIndex,evidenceFor,mergeEvidence,textFingerprint,type CapturedEntry,type CaptureEvidence } from "./transaction-capture.ts";
 
 export type CapturedMessage = { id?: string; sender?: string; bank?: string; body: string; at: number; ch?: string };
 type ImportAccount = { key: string; name: string; base?: string; acct?: string | null };
@@ -31,11 +31,11 @@ export function importTransactions(messages: CapturedMessage[], context: {
     const match = duplicateIndex(t, [...existing, ...out]);
     if (match >= 0 && match < existing.length) {
       const row = existing[match];
-      row.capture = mergeEvidence(row.capture, t.capture);
+      row.capture = mergeEvidence(row.capture || [], t.capture || []);
       if (row.id) updates.set(row.id, row.capture);
     } else if (match >= 0) {
       const row = out[match - existing.length];
-      row.capture = mergeEvidence(row.capture, t.capture);
+      row.capture = mergeEvidence(row.capture || [], t.capture || []);
     }
     else out.push(t);
   }
@@ -60,12 +60,12 @@ export function importTransactions(messages: CapturedMessage[], context: {
 }
 
 function capturedEntry(msg: CapturedMessage, p: NonNullable<ReturnType<typeof parseSms>>, source: string, to: string | null,
-  context: { now: Date; newId: () => string }) {
+  context: { now: Date; newId: () => string }): Transaction {
   const at = new Date(p.at).toISOString(), ch = msg.ch === "App" ? "App" : "SMS";
   const capture: CaptureEvidence[] = [{ ch, id: msg.id || null, src: source, dir: p.dir, at,
     ref: transactionReference(p.raw), fingerprint: textFingerprint(p.raw) }];
   return { id: msg.id || context.newId(), m: p.m, amt: p.amt, dir: to ? "transfer" : p.dir, to, src: source, capture,
-    cat: null as string | null, auto: null as string | null, rem: p.rem, ch: msg.ch || "SMS", raw: p.raw,
+    cat: null as string | null, auto: null as string | null, rem: p.rem, ch: msg.ch === "App" ? "App" : "SMS", raw: p.raw,
     at, added: context.now.toISOString() };
 }
 
