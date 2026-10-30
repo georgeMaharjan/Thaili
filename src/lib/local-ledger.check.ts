@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { LocalLedger, emptyPouch, COLLECTIONS, mergePouches, type LedgerRecord, type Pouch, type CloudDriver } from "./local-ledger.ts";
 const copy = <T>(v: T): T => structuredClone(v);
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-const fixture = (): Pouch => ({
+const fixture = (): Pouch & { user: NonNullable<Pouch["user"]> } => ({
   user: { name: "Offline User", phone: "+9779800000000", createdAt: "2026-10-07T00:00:00Z" },
-  sources: [{ key: "bank", name: "Bank", opening: 5000 }], roles: { bank: "spending" },
-  tx: [{ id: "debit", src: "bank", amt: 100, dir: "debit", at: "2026-10-07T01:00:00Z", ch: "App" },
-    { id: "credit", src: "bank", amt: 200, dir: "credit", at: "2026-10-07T02:00:00Z", ch: "SMS" }],
+  sources: [{ key: "bank", name: "Bank", opening: 5000, type: "Bank · SMS", dot: "red" }], roles: { bank: "spending" },
+  tx: [{ id: "debit", m: "Shop", src: "bank", amt: 100, dir: "debit", at: "2026-10-07T01:00:00Z", ch: "App" },
+    { id: "credit", m: "Income", src: "bank", amt: 200, dir: "credit", at: "2026-10-07T02:00:00Z", ch: "SMS" }],
   rules: [{ id: "rule", kw: "SHOP", cat: "grocery" }], goals: [{ id: "goal", name: "Laptop", target: 50000 }],
   prefs: { lang: "EN", setupComplete: true, smsSince: 1, notificationSince: 2 },
 });
@@ -30,16 +30,20 @@ function cloud(seed = emptyPouch()) {
     async write(next, baseline, deleted, full) {
       writes++;
       // Model independent database operations, including a failure after partial commit.
-      for (const key of COLLECTIONS) {
-        const id = (row: { key?: string; id?: string }) => key === "sources" ? row.key : row.id;
-        for (const row of next[key]) {
-          if (!full && same(row, baseline[key].find(old => id(old) === id(row)))) continue;
-          const index = pouch[key].findIndex(old => id(old) === id(row));
-          if (index < 0) pouch[key].push(copy(row)); else pouch[key][index] = copy(row);
+      const apply = <T extends { key?: string; id?: string }>(key: typeof COLLECTIONS[number], current: T[], nextRows: T[], old: T[]) => {
+        const id = (row: T) => key === "sources" ? row.key : row.id;
+        for (const row of nextRows) {
+          if (!full && same(row, old.find(previous => id(previous) === id(row)))) continue;
+          const index = current.findIndex(previous => id(previous) === id(row));
+          if (index < 0) current.push(copy(row)); else current[index] = copy(row);
         }
-        const removed = new Set([...Object.keys(deleted[key]), ...baseline[key].filter(row => !next[key].some(x => id(x) === id(row))).map(id)]);
-        pouch[key] = pouch[key].filter(row => !removed.has(id(row)) || next[key].some(x => id(x) === id(row)));
-      }
+        const removed = new Set([...Object.keys(deleted[key]), ...old.filter(row => !nextRows.some(x => id(x) === id(row))).map(id)]);
+        return current.filter(row => !removed.has(id(row)) || nextRows.some(x => id(x) === id(row)));
+      };
+      pouch.sources = apply("sources", pouch.sources, next.sources, baseline.sources);
+      pouch.tx = apply("tx", pouch.tx, next.tx, baseline.tx);
+      pouch.rules = apply("rules", pouch.rules, next.rules, baseline.rules);
+      pouch.goals = apply("goals", pouch.goals, next.goals, baseline.goals);
       if (failure) { failure = false; throw new Error("connection lost after partial commit"); }
       pouch.prefs = copy(next.prefs); pouch.roles = copy(next.roles); pouch.user = copy(next.user);
     },
@@ -86,8 +90,8 @@ const deferred = () => {
 {
   const storage = disk(), remote = cloud(fixture()), ledger = new LocalLedger(storage, remote.driver);
   await ledger.initialize(emptyPouch()); await ledger.sync();
-  const withNew = fixture(); withNew.sources.push({ key: "wallet", name: "Wallet", opening: 0 }); withNew.roles.wallet = "spending";
-  withNew.tx.push({ id: "wallet-debit", src: "wallet", amt: 50, dir: "debit" });
+  const withNew = fixture(); withNew.sources.push({ key: "wallet", name: "Wallet", opening: 0, type: "Wallet · notifications", dot: "blue" }); withNew.roles.wallet = "spending";
+  withNew.tx.push({ id: "wallet-debit", m: "Shop", at: "2026-10-07T01:00:00Z", ch: "App", src: "wallet", amt: 50, dir: "debit" });
   await ledger.save(withNew); remote.failNext = true;
   await assert.rejects(ledger.sync(), /partial commit/);
   await ledger.save(fixture());
@@ -140,7 +144,7 @@ const deferred = () => {
 // Existing cloud accounts replace untouched first-run defaults, rather than duplicating seeds.
 {
   const storage = disk(), remote = cloud(fixture()), ledger = new LocalLedger(storage, remote.driver);
-  const defaults = emptyPouch(); defaults.rules = [{ id: "fresh-seed", kw: "SHOP" }]; defaults.prefs.lang = "EN";
+  const defaults = emptyPouch(); defaults.rules = [{ id: "fresh-seed", kw: "SHOP", cat: "grocery" }]; defaults.prefs.lang = "EN";
   await ledger.initialize(defaults); await ledger.sync();
   assert.deepEqual(await ledger.load(), fixture());
   assert.equal(remote.writes, 0);
@@ -152,7 +156,7 @@ const deferred = () => {
 {
   const storage = disk(), remote = cloud(fixture()), ledger = new LocalLedger(storage, remote.driver);
   await ledger.initialize(emptyPouch()); await ledger.sync();
-  const edit = fixture(); edit.tx.push({ id: "offline-new", src: "bank", amt: 75, dir: "debit" });
+  const edit = fixture(); edit.tx.push({ id: "offline-new", m: "Shop", at: "2026-10-07T01:00:00Z", ch: "App", src: "bank", amt: 75, dir: "debit" });
   await ledger.save(edit);
   const elsewhere = fixture(); elsewhere.sources = []; elsewhere.roles = {}; elsewhere.tx = []; remote.remote = elsewhere;
   await ledger.sync();
@@ -165,7 +169,7 @@ const deferred = () => {
   incoming.goals.push({ id: "remote-goal", name: "Remote", target: 1000 });
   typing.tx = typing.tx.slice(1); typing.user.name = "Latest edit";
   const combined = mergePouches(incoming, before, typing, { sources: {}, tx: {}, rules: {}, goals: {} });
-  assert.deepEqual(combined.tx, typing.tx); assert.equal(combined.user.name, "Latest edit");
+  assert.deepEqual(combined.tx, typing.tx); assert.equal(combined.user!.name, "Latest edit");
   assert.equal(combined.goals.length, 2);
 }
 // Failed disk writes never replace the last durable snapshot or pretend the edit is saved.

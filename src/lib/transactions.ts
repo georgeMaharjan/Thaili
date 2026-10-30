@@ -1,3 +1,4 @@
+import type { Transaction } from "../domain/models";
 /** Shared rules for manual entry and the transaction filters. Amounts are always
  * positive; direction alone determines whether an account gains or loses money. */
 export type Entry = { amt: number; dir: string; cat?: string | null; src: string; m: string; rem?: string | null; off: number; at: string };
@@ -23,7 +24,7 @@ export const flowTotals = (entries: Pick<Entry, "amt" | "dir">[]) => entries.red
 }), { income: 0, expenses: 0 });
 
 export function manualEntry(draft: { amount: string; direction: string; category: string; account: string; note: string },
-  accounts: { key: string; name: string }[], categories: { key: string; label: string }[], at: string, id: string) {
+  accounts: { key: string; name: string }[], categories: { key: string; label: string }[], at: string, id: string): Transaction {
   if (!/^(0|[1-9]\d{0,8})(\.\d{1,2})?$/.test(draft.amount) || Number(draft.amount) <= 0) throw new Error("Enter an amount greater than zero, with up to two decimal places.");
   if (draft.direction !== "credit" && draft.direction !== "debit") throw new Error("Choose income or expense.");
   const account = accounts.find(a => a.key === draft.account);

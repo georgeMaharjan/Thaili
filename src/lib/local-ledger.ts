@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // The local snapshot and pending cloud work are committed together. Network calls
 // never sit in the local write queue, so slow sync cannot hold up offline changes.
-export type Pouch = { user: any; sources: any[]; tx: any[]; rules: any[]; goals: any[]; roles: Record<string, string>; prefs: Record<string, any> };
+import type { Pouch } from "../domain/models";
+export type { Pouch } from "../domain/models";
 export const COLLECTIONS = ["sources", "tx", "rules", "goals"] as const;
 type Collection = typeof COLLECTIONS[number];
 export type Deletions = Record<Collection, Record<string, number>>;
@@ -11,40 +11,47 @@ export type CloudDriver = {
   read(): Promise<{ pouch: Pouch; owner: string }>;
   write(pouch: Pouch, baseline: Pouch, deleted: Deletions, full: boolean): Promise<void>;
 };
-const id = (key: Collection, row: any): string => String(key === "sources" ? row.key : row.id);
-const equal = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
+const id = (key: Collection, row: { key?: string; id?: string }): string => String(key === "sources" ? row.key : row.id);
+const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 const emptyDeletions = (): Deletions => ({ sources: {}, tx: {}, rules: {}, goals: {} });
 export const emptyPouch = (): Pouch => ({ user: null, sources: [], tx: [], rules: [], goals: [], roles: {}, prefs: {} });
 
 export function mergePouches(remote: Pouch, before: Pouch, local: Pouch, deleted: Deletions, force = false): Pouch {
   const result = clone(remote);
-  for (const key of COLLECTIONS) {
-    const previous = new Map(before[key].map((row) => [id(key, row), row]));
-    const current = new Map(local[key].map((row) => [id(key, row), row]));
-    const merged = new Map(remote[key].map((row) => [id(key, row), row]));
+  const mergeCollection = <T extends { key?: string; id?: string }>(key: Collection, old: T[], currentRows: T[], remoteRows: T[]): T[] => {
+    const previous = new Map(old.map(row => [id(key, row), row]));
+    const current = new Map(currentRows.map(row => [id(key, row), row]));
+    const merged = new Map(remoteRows.map(row => [id(key, row), row]));
     for (const [identifier, row] of current) if (force || !equal(row, previous.get(identifier))) merged.set(identifier, row);
     for (const identifier of previous.keys()) if (!current.has(identifier)) merged.delete(identifier);
     for (const identifier of Object.keys(deleted[key])) if (!current.has(identifier)) merged.delete(identifier);
-    const reordered = !equal(local[key].map((row) => id(key, row)), before[key].map((row) => id(key, row)));
+    const reordered = !equal(currentRows.map(row => id(key, row)), old.map(row => id(key, row)));
     const order = reordered ? [...current.keys(), ...merged.keys()] : [...merged.keys()];
-    result[key] = [...new Set(order)].filter((identifier) => merged.has(identifier)).map((identifier) => merged.get(identifier));
-  }
-  for (const key of ["prefs", "roles"] as const) {
-    result[key] = { ...remote[key] };
-    for (const field of new Set([...Object.keys(before[key]), ...Object.keys(local[key])])) {
-      if (force || !equal(before[key][field], local[key][field])) {
-        if (local[key][field] === undefined) delete result[key][field];
-        else result[key][field] = local[key][field];
+    return [...new Set(order)].filter(identifier => merged.has(identifier)).map(identifier => merged.get(identifier)!);
+  };
+  result.sources = mergeCollection("sources", before.sources, local.sources, remote.sources);
+  result.tx = mergeCollection("tx", before.tx, local.tx, remote.tx);
+  result.rules = mergeCollection("rules", before.rules, local.rules, remote.rules);
+  result.goals = mergeCollection("goals", before.goals, local.goals, remote.goals);
+  const mergeFields = <T extends object>(old: T, current: T, remoteFields: T): T => {
+    const fields = { ...remoteFields };
+    for (const field of new Set([...Object.keys(old), ...Object.keys(current)]) as Set<keyof T>) {
+      if (force || !equal(old[field], current[field])) {
+        if (current[field] === undefined) delete fields[field];
+        else fields[field] = current[field];
       }
     }
-  }
+    return fields;
+  };
+  result.prefs = mergeFields(before.prefs, local.prefs, remote.prefs);
+  result.roles = mergeFields(before.roles, local.roles, remote.roles);
   if (force || !equal(before.user, local.user)) result.user = local.user;
   // A new/edited offline transaction must keep its account if another device
   // removed that account meanwhile. Untouched transactions follow remote deletes.
   const oldTx = new Map(before.tx.map(t => [t.id, t]));
   for (const t of local.tx) if (force || !equal(t, oldTx.get(t.id))) {
-    for (const key of [t.src, t.to].filter(Boolean)) {
+    for (const key of [t.src, t.to].filter((key): key is string => !!key)) {
       if (result.sources.some(source => source.key === key)) continue;
       const source = local.sources.find(source => source.key === key);
       if (source) { result.sources.push(source); result.roles[key] = local.roles[key] || "spending"; }
