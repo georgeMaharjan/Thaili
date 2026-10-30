@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { calendarRollover } from "./calendar-clock.ts";
+import { initialState } from "./state.ts";
+import { adOf, bsOf, dated } from "../lib/bs.ts";
+import { calendarAt } from "../lib/calendar.ts";
+const today = new Date("2026-10-11T12:00:00Z"), month = bsOf(today);
+const old = adOf(month.y, month.m, 1), next = adOf(month.y, month.m + 1, 1);
+const tx = dated({ id: "t", m: "Shop", src: "cash", dir: "debit" as const, ch: "Manual" as const, amt: 100, at: old.toISOString() }, old);
+const state = { ...initialState(), calendarDay: old.toDateString(), calKey: calendarAt(old).MONTH_KEY, tx: [tx], txFrom: 7, txTo: 2 };
+const patch = calendarRollover(state, next)!;
+assert.equal(patch.calKey, calendarAt(next).MONTH_KEY); assert.ok(patch.tx![0].off > 0);
+assert.equal(patch.txFrom! - patch.txTo!, 5); assert.equal(patch.txFrom, patch.tx![0].off + 7);
+assert.equal(calendarRollover(state, old), null);
+assert.equal(calendarRollover({ ...state, calKey: state.calKey - 4 }, next)!.calKey, state.calKey - 4);
+console.log("calendar clock: resume/month rollover preserves selected dates and past browsing pass");
