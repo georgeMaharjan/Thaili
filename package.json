@@ -8,7 +8,8 @@
     "lint": "eslint",
     "sync": "next build && cap sync",
     "android": "npm run sync && cap open android",
-    "test": "node src/lib/sms.check.ts && node src/lib/nav.check.ts && node src/lib/format.check.ts && node src/lib/scale.check.ts && node src/lib/transactions.check.ts && node src/lib/goals.check.ts && node src/lib/money-apps.check.ts && node src/lib/notification-transactions.check.ts && node src/lib/local-ledger.check.ts && node src/lib/finance.check.ts && node src/lib/rules.check.ts && node src/lib/import-transactions.check.ts && node src/lib/cloud-store.check.ts && node src/lib/capture-integration.check.ts && node src/lib/authentication.check.ts"
+    "test": "tsx --test src/lib/*.check.ts src/application/*.check.ts src/infrastructure/*.check.ts src/features/*.check.ts",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.checks.json"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -31,6 +32,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
-  }
+  },
+  "type": "module"
 }
