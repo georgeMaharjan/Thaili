@@ -69,3 +69,16 @@ in `notification-transactions.check.ts`; Android text extraction has local unit 
 - **Export everything** — CSV of every entry, account, rule and goal. Hidden from Settings until built.
 - **Archive** — browse and restore deleted entries (rows keep `archived_at` for 30 days). Hidden from Settings until built.
 - **Cloud/recovery and receipts** — removed until their real behavior, consent and recovery are implemented. Local transaction-review notifications still work.
+
+## Download
+
+Get the latest signed APK from [Releases](https://github.com/georgeMaharjan/Thaili/releases/latest).
+
+## Release build
+
+`npm run sync`, then `cd android && ./gradlew assembleRelease`. Without `android/keystore.properties`
+(`storeFile`, `storePassword`, `keyAlias`, `keyPassword`; git-ignored) the release APK is built unsigned.
+
+## License
+
+[MIT](LICENSE)
