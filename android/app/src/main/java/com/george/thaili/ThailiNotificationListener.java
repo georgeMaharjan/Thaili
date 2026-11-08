@@ -78,6 +78,9 @@ public class ThailiNotificationListener extends NotificationListenerService {
         if (!AMOUNT.matcher(normalized).find() || OTP.matcher(normalized).find()) return;
         JSONObject rules = c.optJSONObject("notification");
         if (rules != null && Pattern.compile(rules.optString("ignore", "(?!)"), Pattern.CASE_INSENSITIVE).matcher(normalized).find()) return;
+        // An amount alone is a promo ("win Rs. 10,000"); keep only money that moved in or out.
+        if (rules != null && !Pattern.compile(rules.optString("credit", "(?!)"), Pattern.CASE_INSENSITIVE).matcher(normalized).find()
+            && !Pattern.compile(rules.optString("debit", "(?!)"), Pattern.CASE_INSENSITIVE).matcher(normalized).find()) return;
         long at = sbn.getNotification().when > 0 ? sbn.getNotification().when : sbn.getPostTime();
         String identity = sbn.getPackageName() + "|" + sbn.getKey() + "|" + at + "|" + body;
         if (occurrence > 0) identity += "|occurrence:" + occurrence;

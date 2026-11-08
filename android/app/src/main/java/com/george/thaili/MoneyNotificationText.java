@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 /** Text extraction shared by the listener and unit tests; no Android dependencies. */
 final class MoneyNotificationText {
-    static final Pattern AMOUNT = Pattern.compile("(?i)(NPR|NRs?\\.?|Rs\\.?|रु\\.?|रू\\.?)\\s*[:=-]?\\s*[0-9,]+|[0-9,]+(?:\\.[0-9]{1,2})?\\s*(NPR|NRs?\\.?|Rs\\.?|रु\\.?|रू\\.?)|\\b(amount|amt)\\s*[:=]\\s*[0-9,]+");
+    static final Pattern AMOUNT = Pattern.compile("(?i)(NPR\\.?|NRs?\\.?|Rs\\.?|रु\\.?|रू\\.?)\\s*[:=-]?\\s*[0-9,]+|[0-9,]+(?:\\.[0-9]{1,2})?\\s*(NPR\\.?|NRs?\\.?|Rs\\.?|रु\\.?|रू\\.?)|\\b(amount|amt)\\s*[:=]\\s*[0-9,]+");
     static final Pattern OTP = Pattern.compile("(?i)(OTP|one[- ]?time password|verification code|passcode|code)\\W{0,8}(is\\W*)?[0-9]{4,8}\\b|\\b[0-9]{4,8}\\s+(is your\\s+)?(OTP|verification code)\\b");
 
     static String normalize(String body) {

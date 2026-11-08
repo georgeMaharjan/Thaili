@@ -6,7 +6,7 @@ import org.junit.Test;
 
 public class MoneyNotificationTextTest {
     @Test public void currenciesAndNepaliDigitsReachTheParser() {
-        for (String body : Arrays.asList("रु १,२५०.५० भुक्तानी भयो", "You received 500 NPR", "NRs. 500 paid", "Amount: 400")) {
+        for (String body : Arrays.asList("रु १,२५०.५० भुक्तानी भयो", "You have received NPR. 50.0 from NABIL BANK LTD.", "You received 500 NPR", "NRs. 500 paid", "Amount: 400")) {
             assertTrue(body, MoneyNotificationText.AMOUNT.matcher(MoneyNotificationText.normalize(body)).find());
         }
         assertEquals("Rs 500", MoneyNotificationText.normalize("Rs\u00a0५\u200b००"));

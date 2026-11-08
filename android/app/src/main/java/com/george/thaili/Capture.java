@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +17,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * "Review this transaction" while Thaili is closed. The patterns come from the web layer
+ * A notification for each money message while Thaili is closed. The patterns come from the web layer
  * (src/lib/sms.ts nativeRules, sent through ThailiPlugin.setCapture) so the sender, wording
  * and rule checks match what the app itself will import. The app still does the real import
  * on its next catch-up; this only decides whether to nudge.
@@ -50,7 +51,7 @@ final class Capture {
         return null;
     }
 
-    /** A new money message from one of the user's accounts: notify if it's a spend no rule will file. */
+    /** A new money message from one of the user's accounts: say what it was; spends no rule files ask for review. */
     static void onMessage(Context ctx, JSONObject c, String body, long at) {
         if (!c.optBoolean("notify") || body == null) return;
         try {
@@ -68,30 +69,38 @@ final class Capture {
                 if (re(n.getString("credit")).matcher(body).find()) dir = "credit";
                 else if (re(n.getString("debit")).matcher(body).find()) dir = "debit";
             }
-            if (!"debit".equals(dir)) return; // only spends need a category
+            if (dir == null) return;
             Matcher a = re(c.getString("amount")).matcher(body);
             if (!a.find() && (n == null || !(a = re(n.getString("amount")).matcher(body)).find())) return;
             String amt = a.group(1);
             for (int g = 2; amt == null && g <= a.groupCount(); g++) amt = a.group(g);
             Matcher r = re(c.getString("remark")).matcher(body);
             String rem = r.find() ? (r.group(1) != null ? r.group(1) : r.group(2)) : null;
-            if (rem != null && re(c.getString("wallets")).matcher(rem).find()) return; // a wallet load: a transfer
-            String hay = body.toUpperCase().replaceAll("[^A-Z0-9&]+", " ");
-            JSONArray rules = c.optJSONArray("rules");
-            for (int i = 0; rules != null && i < rules.length(); i++) {
-                String kw = rules.optString(i);
-                if (!kw.isEmpty() && hay.contains(kw)) return; // a rule files it
-            }
-            post(ctx, "NPR " + amt, rem == null ? null : rem.trim(), at);
+            String title = "credit".equals(dir) ? "Money received"
+                : rem != null && re(c.getString("wallets")).matcher(rem).find() ? "Wallet load" // yours or someone else's: the app decides once the wallet reports
+                : filedByRule(c, body) ? "Spend recorded" : "Review this transaction";
+            // "50.0" (eSewa) and "50.00" (Nabil) are one amount, so both sides of a load share one notification.
+            amt = new BigDecimal(amt.replace(",", "")).stripTrailingZeros().toPlainString();
+            post(ctx, title, "NPR " + amt, rem == null ? null : rem.trim(), at);
         } catch (Exception ignored) {
             // A bad pattern from an older app version must never crash the receiver.
         }
     }
 
-    private static void post(Context ctx, String amount, String remark, long at) {
+    private static boolean filedByRule(JSONObject c, String body) {
+        String hay = body.toUpperCase().replaceAll("[^A-Z0-9&]+", " ");
+        JSONArray rules = c.optJSONArray("rules");
+        for (int i = 0; rules != null && i < rules.length(); i++) {
+            String kw = rules.optString(i);
+            if (!kw.isEmpty() && hay.contains(kw)) return true;
+        }
+        return false;
+    }
+
+    private static void post(Context ctx, String title, String amount, String remark, long at) {
         NotificationManager nm = ctx.getSystemService(NotificationManager.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm.getNotificationChannel(CHANNEL) == null) {
-            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Spends to review", NotificationManager.IMPORTANCE_DEFAULT));
+            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Transactions", NotificationManager.IMPORTANCE_DEFAULT));
         }
         // SMS and the bank app's own notification for one spend share an id, so only one shows.
         int id = (amount + (at / 180000)).hashCode();
@@ -103,7 +112,7 @@ final class Capture {
         try {
             NotificationManagerCompat.from(ctx).notify(id, new NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_thaili)
-                .setContentTitle("Review this transaction")
+                .setContentTitle(title)
                 .setContentText(text)
                 .setContentIntent(tap)
                 .setAutoCancel(true)
