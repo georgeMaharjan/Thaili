@@ -1,4 +1,4 @@
-import { SRC_KINDS, isManualSrc } from "../application/config";
+import { SRC_KINDS, isManualSrc, needsAcctNumber } from "../application/config";
 import type { AppController } from "../application/controller";
 import { sourceForMoneyApp } from "../lib/money-apps";
 import type { GoalContext } from "./goal-context";
@@ -9,9 +9,9 @@ export function setupContext(_app: Pick<AppController, "patch">, context: Pick<S
   const newKind = SRC_KINDS.filter(k => k.key === s.newSrcKind)[0] || SRC_KINDS[0];
   const newSrcAmtNum = parseFloat(s.newSrcAmt || "0");
   const newSrcAmtValid = s.newSrcAmt.trim() !== "" && Number.isFinite(Number(s.newSrcAmt)) && newSrcAmtNum >= 0;
-  const needAcct = newKind.key !== "manual";
+  const needAcct = newKind.key === "bank";
   const acctOk = !needAcct || s.newSrcAcct.length === 4;
-  const srcMissing = s.sources.filter(x => !isManualSrc(x) && (!x.acct || !x.openedAt));
+  const srcMissing = s.sources.filter(x => !isManualSrc(x) && ((needsAcctNumber(x) && !x.acct) || !x.openedAt));
   const detectAccounts = s.detFrom === "accounts";
   const detAvailable = s.detFound.filter(d => !detectAccounts || !sourceForMoneyApp(d, s.sources));
   const detOnKeys = detAvailable.filter(d => s.detOn[d.key]).map(d => d.key);

@@ -1,4 +1,4 @@
-import { CI, ESS_DEFAULT, IC, L, categoryLists, NO_SRC, NO_TX, SI, isManualSrc } from "../application/config";
+import { CI, ESS_DEFAULT, IC, L, categoryLists, NO_SRC, NO_TX, SI, isManualSrc, needsAcctNumber } from "../application/config";
 import type { AppController } from "../application/controller";
 import type { Account, DatedTransaction } from "../domain/models";
 import { monthKey } from "../lib/bs";
@@ -58,7 +58,7 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
     return Object.assign(g, {
       sum: sum, total: balRs(sum, s.hideBal),
       rows: list.map(x => ({
-        name: x.name, icon: acctLook(x, [IC.bank]).icon, meta: !isManualSrc(x) && (!x.acct || !x.openedAt) ? (np ? "खाताको विवरण थप्नुहोस्" : "Add account details") : x.type.split(" · ")[0], balance: balRs(balance(x.key), s.hideBal),
+        name: x.name, icon: acctLook(x, [IC.bank]).icon, meta: !isManualSrc(x) && ((needsAcctNumber(x) && !x.acct) || !x.openedAt) ? (np ? "खाताको विवरण थप्नुहोस्" : "Add account details") : x.type.split(" · ")[0], balance: balRs(balance(x.key), s.hideBal),
         tap: () => app.go("source-detail", { srcKey: x.key, srcFrom: "accounts" })
       }))
     });

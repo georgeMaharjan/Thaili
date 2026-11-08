@@ -1,4 +1,4 @@
-import { CASH, SRC_KINDS, isManualSrc, now, tailName } from "../../application/config";
+import { CASH, SRC_KINDS, isManualSrc, needsAcctNumber, now, tailName } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import type { Account, Category } from "../../domain/models";
 import { isDevice, openAppSettings, openNotificationAccess, readSms, requestSms } from "../../lib/device";
@@ -148,12 +148,12 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
         });
         return;
       }
-      app.flash("Tap " + srcMissing[0].name + " to add its account number and balance");
+      app.flash("Tap " + srcMissing[0].name + " to add its " + (needsAcctNumber(srcMissing[0]) ? "account number and balance" : "balance"));
     },
     setupSources: s.sources.map(x => ({
       name: x.name, detail: x.type, dot: x.dot,
-      acct: isManualSrc(x) ? "No number needed" : /Wallet/.test(x.type) ? (x.acct ? "Mobile ending " + x.acct.slice(-4) : "Last 4 of the wallet mobile needed") : x.acct ? "A/C ending " + x.acct.slice(-4) : "Last 4 digits needed",
-      acctFg: isManualSrc(x) || x.acct ? "var(--ink3)" : "var(--warnInk)",
+      acct: isManualSrc(x) ? "No number needed" : /Wallet/.test(x.type) ? (x.acct ? "Mobile ending " + x.acct.slice(-4) : "No number needed") : x.acct ? "A/C ending " + x.acct.slice(-4) : "Last 4 digits needed",
+      acctFg: !needsAcctNumber(x) || x.acct ? "var(--ink3)" : "var(--warnInk)",
       opening: isManualSrc(x) || x.openedAt ? rs(x.opening) : "Rs —",
       openFg: isManualSrc(x) || x.openedAt ? "var(--ink2)" : "var(--action)",
       openLabel: isManualSrc(x) || x.openedAt ? "opening" : "set balance",

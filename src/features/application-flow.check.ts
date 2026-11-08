@@ -68,6 +68,15 @@ for (const institution of NEPAL_BFIS) assert.ok(accountForm.includes('value="' +
 app.renderVals().newSrcCreate();
 assert.equal(institutionForAccount(app.state.sources.at(-1)!)?.key, "prime");
 
+// Wallets never ask for a phone number: no field, and the balance alone completes the account.
+app.go("src-new", { newSrcKind: "wallet", newSrcName: "eSewa", newSrcAmt: "300", newSrcAcct: "", srcNewFrom: "accounts" });
+assert.equal(app.renderVals().srcNeedsAcct, false);
+assert.ok(!renderToStaticMarkup(createElement(Screens, { v: app.renderVals() })).includes("last 4 digits"));
+app.renderVals().newSrcCreate();
+const wallet = app.state.sources.at(-1)!;
+assert.equal(wallet.base, "eSewa"); assert.equal(wallet.acct, null);
+assert.equal(app.renderVals().setupSources.find(x => x.name === "eSewa")!.acct, "No number needed");
+
 // Retired prototypes cannot be reached or invoked. Review notes use Details' real editor.
 for (const retired of ["signup", "restore", "merge", "sync"]) {
   assert.equal(isScreen(retired), false); assert.throws(() => app.go(retired), /Unknown screen/);

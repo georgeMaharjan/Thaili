@@ -1,4 +1,4 @@
-import { SRC_KINDS, isManualSrc, tailName } from "../../application/config";
+import { SRC_KINDS, isManualSrc, needsAcctNumber, tailName } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import { openNotificationAccess } from "../../lib/device";
 import { balRs, fmt, rs } from "../../lib/format";
@@ -63,7 +63,7 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
       ? "Balance — what is in " + s.newSrcName + " right now. Change it and the account is counted from this moment."
       : "Opening balance — what is in " + s.newSrcName + " right now. Every later figure is counted from here, and it locks once the first transaction lands.",
     srcNeedsAcct: needAcct,
-    acctFieldLabel: newKind.key === "wallet" ? (np ? "वालेट मोबाइल · अन्तिम ४ अङ्क" : "Wallet mobile · last 4 digits") : (np ? "खाता नम्बर · अन्तिम ४ अङ्क" : "Account number · last 4 digits"),
+    acctFieldLabel: np ? "खाता नम्बर · अन्तिम ४ अङ्क" : "Account number · last 4 digits",
     pickAcctField: () => app.patch({ newSrcField: "acct" }),
     pickAmtField: () => app.patch({ newSrcField: "amt" }),
     newSrcKinds: SRC_KINDS.map(k => ({
@@ -89,7 +89,7 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     newSrcFeedNote: newKind.key === "manual"
       ? "Nothing to read here — no SMS, no notifications. You add entries by hand, so this balance only moves when you move it."
       : newKind.key === "wallet"
-        ? "Thaili watches " + s.newSrcName + " notifications. Enter the last four digits of your wallet mobile to match alerts to this account."
+        ? "Thaili watches " + s.newSrcName + " notifications and matches its alerts to this account."
         : "Thaili reads recognized " + s.newSrcName + " SMS and transaction notifications from its detected app. Set the last four digits to match your account. SMS sender names and alert wording vary by bank.",
     newSrcCta: !newSrcAmtValid ? "Type the opening balance" : !acctOk ? "Add the last 4 digits" : s.editSrcKey ? "Save " + s.newSrcName : "Add " + s.newSrcName,
     newSrcCtaBg: newSrcAmtValid && acctOk ? "var(--action)" : "var(--surface2)",
@@ -97,7 +97,8 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     newSrcCreate: () => {
       if (!newSrcAmtValid || !acctOk) return;
       const prevS = s.sources, prevR = s.roles;
-      const acct = needAcct ? s.newSrcAcct : null;
+      // A wallet number Thaili detected itself is kept; it is never asked for.
+      const acct = needAcct ? s.newSrcAcct : newKind.key === "wallet" ? s.sources.find(x => x.key === s.editSrcKey)?.acct ?? null : null;
       const shown = tailName(s.newSrcName, acct);
       const back = s.srcNewFrom || "accounts";
       if (s.editSrcKey) {
@@ -135,8 +136,8 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     srcName: shownSrc.name,
     srcBalance: balRs(balance(s.srcKey), s.hideBal, true),
     srcMeta: shownSrc.type,
-    srcAcctLine: isManualSrc(shownSrc) ? "Manual account · no number to match" : shownSrc.acct ? (/Wallet/.test(shownSrc.type) ? "Mobile ending " : "A/C ending ") + shownSrc.acct.slice(-4) : "Last 4 digits not set",
-    srcAcctFg: isManualSrc(shownSrc) || shownSrc.acct ? "var(--ink3)" : "var(--warnInk)",
+    srcAcctLine: isManualSrc(shownSrc) ? "Manual account · no number to match" : shownSrc.acct ? (/Wallet/.test(shownSrc.type) ? "Mobile ending " : "A/C ending ") + shownSrc.acct.slice(-4) : /Wallet/.test(shownSrc.type) ? "Matched by wallet app" : "Last 4 digits not set",
+    srcAcctFg: !needsAcctNumber(shownSrc) || shownSrc.acct ? "var(--ink3)" : "var(--warnInk)",
     srcEdit: () => app.editSource(s.srcKey),
     srcIn: fmt(srcList.filter(intoSrc).reduce((a, t) => a + t.amt, 0)),
     srcOut: fmt(srcList.filter(t => !intoSrc(t)).reduce((a, t) => a + t.amt, 0)),

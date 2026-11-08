@@ -41,6 +41,8 @@ export const SEED_RULES = [
 export const OB_STEPS = 5;
 export const CASH: Account = { key: "cash", base: "Cash", name: "Cash", short: "Cash", type: "Manual entry", dot: "#B4721F", opening: 0, acct: null };
 export const isManualSrc = (x: Account) => /Manual|manual/.test(x.type);
+// Only banks ask for a number: wallets match by institution, manual accounts by hand.
+export const needsAcctNumber = (x: Account) => !isManualSrc(x) && !/Wallet/.test(x.type);
 export const tailName = (base: string, acct: string | null | undefined) => acct && acct.length >= 4 ? base + " ••" + acct.slice(-4) : base;
 export const WD_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 export const newId = () => crypto.randomUUID();
