@@ -5,6 +5,11 @@ export type OnboardingScreenModel = Pick<AppViewModel,
   "numericEditingLabel" |
   "addCatNote" |
   "addCustomCat" |
+  "catDeleteOpen" |
+  "catDeleteTitle" |
+  "catDeleteLine" |
+  "catDeleteCancel" |
+  "catDeleteConfirm" |
   "catCta" |
   "catCtaBg" |
   "catCtaFg" |

@@ -45,6 +45,9 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     discardGoalEntry: () => app.patch({ discardGoal: false, goalName: "", goalAmt: "" }, () => app.back()),
     hasReview: review.length > 0,
     reviewCount: review.length,
+    // Dismissed, it stays away until more entries need sorting.
+    showReviewBanner: review.length > s.reviewHidden,
+    dismissReviewBanner: () => app.patch({ reviewHidden: review.length }),
     reviewCountBig: review.length + (review.length === 1 ? " item" : " items"),
     reviewChip: {
       label: T.review + " · " + review.length,

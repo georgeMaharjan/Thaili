@@ -356,7 +356,7 @@ export function GoalCard({ v }: { v: Pick<V, "toGoal" | "goalName" | "goalLabel"
       </div>
       <Bar width={v.goalWidth} color="var(--pos)" className="h-[8px] rounded-sm" />
       <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-[13px] leading-[1.5] text-ink-2">{v.goalNote}</span>
+        <span className="min-w-0 text-pretty text-[13px] leading-[1.5] text-ink-2">{v.goalNote}</span>
         <Icon d={P.next} size={18} className="text-pos" />
       </div>
     </button>

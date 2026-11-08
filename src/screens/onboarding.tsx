@@ -1,4 +1,5 @@
 import type { OnboardingScreenModel as V } from "../features/onboarding/screen-model";
+import { Sheet } from "@/components/sheet";
 // First run: welcome → register → SMS permission → app scan → accounts → 90-day history → categories.
 import { Btn,CARD,Cta,Icon,IconBtn,P,PersonFields,SUB,Seg,StepHead,Stepper,Toggle,cx } from "@/components/ui";
 
@@ -188,7 +189,7 @@ export function Cats({ v }: { v: V }) {
       <div className={cx(CARD, "flex flex-col gap-3 p-4")}>
         <Seg items={v.catDirs} itemClass="flex-1 rounded-lg px-3 py-2 text-[13px]" />
         <div className="flex items-center gap-2">
-          <input value={v.newCatName} onChange={v.newCatType} placeholder={v.newCatIn ? "Rent received, side work" : "School fees, loan EMI, puja"}
+          <input value={v.newCatName} onChange={v.newCatType} placeholder="New category name" aria-label="New category name"
             className="min-w-0 flex-1 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] text-ink outline-none" />
           <button onClick={v.addCustomCat} className="flex-none rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] font-semibold" style={{ color: v.newCatFg }}>Add</button>
         </div>
@@ -227,6 +228,13 @@ export function Cats({ v }: { v: V }) {
         <span className="text-pretty text-[13px] leading-[1.5] text-ink-3">{v.saveTargetNote}</span>
       </div>
       <Cta onClick={v.catsNext} bg={v.catCtaBg} fg={v.catCtaFg} className="p-4 text-[15px]">{v.catCta}</Cta>
+      {v.catDeleteOpen && <Sheet title={v.catDeleteTitle} onClose={v.catDeleteCancel}>
+        <p role="alert" className="text-pretty text-[14px] leading-[1.6] text-ink-2">{v.catDeleteLine}</p>
+        <div className="flex gap-3 pt-1">
+          <button onClick={v.catDeleteCancel} className="flex-1 rounded-xl border border-line bg-surface-2 p-4 text-center text-[14px] font-semibold text-ink-2">Cancel</button>
+          <Btn onClick={v.catDeleteConfirm} className="flex-1">Delete category</Btn>
+        </div>
+      </Sheet>}
     </div>
   );
 }

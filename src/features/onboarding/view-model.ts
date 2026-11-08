@@ -8,6 +8,19 @@ import { appendMoneyAccounts, sourceForMoneyApp } from "../../lib/money-apps";
 import type { ViewContext } from "../context";
 export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "state" | "flash" | "startSetup" | "smsToTx" | "editSource">, context: Pick<ViewContext, "s" | "DAYS_IN_MONTH" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
   const { s, DAYS_IN_MONTH, income, freeToSpend, T, np, allCats, incomeCats, clabel, scanAccts, scanGroups, isEss, essMonthly, baseFor, srcMissing, detectAccounts, detAvailable, detOnKeys } = context;
+  // "Food", "food " and "FOOD" are one category.
+  const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
+  // Deleted categories keep their label on past transactions; rules filing into them go.
+  const deleteCat = (c: Category) => {
+    const save = s.customCats.some(x => x.key === c.key) ? s.customCats.map(x => x.key === c.key ? { ...x, gone: true } : x) : s.customCats.concat([{ ...c, gone: true }]);
+    const undo = { customCats: s.customCats, picked: s.picked, rules: s.rules };
+    app.patch({ customCats: save, picked: s.picked.filter(k => k !== c.key), rules: s.rules.filter(r => r.cat !== c.key), catDeleting: null });
+    app.flash(c.label + " deleted", undo);
+  };
+  const pendingCat = allCats.concat(incomeCats).find(c => c.key === s.catDeleting);
+  const pendingTx = pendingCat ? s.tx.filter(t => t.cat === pendingCat.key).length : 0;
+  const pendingRules = pendingCat ? s.rules.filter(r => r.cat === pendingCat.key).length : 0;
+  const dupLine = (name: string) => np ? "“" + name + "” पहिल्यै छ" : "“" + name + "” already exists";
   return {
     obBack: () => {
       if (s.screen === "cats") { app.go(s.catsMode === "edit" ? (s.catsFrom || "settings") : "scan"); return; }
@@ -201,11 +214,11 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       bg: s.newCatIn === isIn ? "var(--surface)" : "transparent", fg: s.newCatIn === isIn ? "var(--ink)" : "var(--ink3)",
     })),
     addCatNote: s.newCatIn
-      ? "Where money comes from — salary, rent received, side work. Offered when you log money in."
-      : "Anything the list misses — school fees, a loan EMI, puja. Rules can file into it.",
+      ? "Where your money comes from. Offered when you log money in."
+      : "Anything the list misses. Rules can file into it.",
     // Renames and deletes of built-ins are stored in customCats under the same key; deleted
     // categories keep their label on past transactions, and rules filing into them are removed.
-    catRows: (s.newCatIn ? incomeCats : allCats).map(c => {
+    catRows: (s.newCatIn ? incomeCats : allCats).map((c, _, list) => {
       const save = (change: Partial<Category>) => s.customCats.some(x => x.key === c.key)
         ? s.customCats.map(x => x.key === c.key ? { ...x, ...change } : x)
         : s.customCats.concat([{ ...c, ...change }]);
@@ -217,19 +230,26 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
         ess: isEss(c.key),
         toggleEss: () => app.patch({ ess: Object.assign({}, s.ess, { [c.key]: !isEss(c.key) }) }),
         rename: (e: { target: { value: string } }) => {
-          const label = e.target.value.trim();
-          if (label && label !== c.label) app.patch({ customCats: save({ label }) });
+          const label = e.target.value.trim().replace(/\s+/g, " ");
+          if (!label || label === c.label) return;
+          if (list.some(x => x.key !== c.key && sameName(x.label, label))) { e.target.value = c.label; app.flash(dupLine(label)); return; }
+          app.patch({ customCats: save({ label }) });
         },
-        remove: () => {
-          const undo = { customCats: s.customCats, picked: s.picked, rules: s.rules };
-          app.patch({ customCats: save({ gone: true }), picked: s.picked.filter(k => k !== c.key), rules: s.rules.filter(r => r.cat !== c.key) });
-          app.flash(c.label + " deleted", undo);
-        },
+        // In use: confirm first, so nobody loses a category their entries and rules rely on.
+        remove: () => s.tx.some(t => t.cat === c.key) || s.rules.some(r => r.cat === c.key) ? app.patch({ catDeleting: c.key }) : deleteCat(c),
       };
     }),
+    catDeleteOpen: !!pendingCat,
+    catDeleteTitle: pendingCat ? (np ? pendingCat.label + " मेटाउने?" : "Delete " + pendingCat.label + "?") : "",
+    catDeleteLine: np
+      ? pendingTx + " कारोबार यो वर्गमा छन्। तिनले यही नाम राख्छन्" + (pendingRules ? ", तर यसमा फाइल गर्ने " + pendingRules + " नियम हट्नेछन्।" : "।")
+      : pendingTx + (pendingTx === 1 ? " transaction is" : " transactions are") + " filed under it. They keep this label" + (pendingRules ? ", but " + pendingRules + (pendingRules === 1 ? " rule that files" : " rules that file") + " into it will be removed." : ", but you can't pick it for new entries."),
+    catDeleteCancel: () => app.patch({ catDeleting: null }),
+    catDeleteConfirm: () => { if (pendingCat) deleteCat(pendingCat); },
     addCustomCat: () => {
-      const name = s.newCatName.trim();
+      const name = s.newCatName.trim().replace(/\s+/g, " ");
       if (!name) return;
+      if ((s.newCatIn ? incomeCats : allCats).some(c => sameName(c.label, name))) { app.flash(dupLine(name)); return; }
       const key = "c" + Date.now();
       app.patch({
         customCats: s.customCats.concat([s.newCatIn ? { key, label: name, in: true } : { key, label: name }]),
@@ -244,7 +264,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       const ph = digits10(s.regPhone), phoneOk = validPhone(ph), nameOk = s.regName.trim().length >= 2, ready = phoneOk && nameOk;
       return {
         regLabels: np ? { name: "नाम", phone: "मोबाइल नम्बर" } : { name: "Name", phone: "Mobile number" },
-        regNamePh: np ? "जस्तै: सीता श्रेष्ठ" : "e.g. Sita Shrestha",
+        regNamePh: np ? "तपाईंको पूरा नाम" : "Your full name",
         regCanBack: s.regThen === "permission",
         regBack: () => app.go("welcome"),
         regStepLabel: np ? "तपाईंको खाता" : "Your account",

@@ -50,7 +50,9 @@ export function Detail({ v }: { v: V }) {
 }
 
 // Bottom sheet: pick a start day and an end day in one BS month at a time.
-function CalSheet({ v }: { v: V }) {
+type CalKeys = "calClose" | "calPickFrom" | "calPickTo" | "calFromLabel" | "calToLabel" | "calFromFg" | "calToFg" | "calFromBorder" | "calToBorder"
+  | "calTitle" | "calPrev" | "calNext" | "calHasNext" | "calCells" | "calCta" | "calCtaBg" | "calCtaFg" | "calApply";
+export function CalSheet({ v }: { v: Pick<V, CalKeys> }) {
   const field = "flex min-w-0 flex-col gap-0.5 rounded-[16px] border-[1.5px] px-4 py-3 text-left";
   return (
     <Sheet title="Custom range" onClose={v.calClose}>
@@ -125,7 +127,7 @@ function RuleSheet({ v }: { v: V }) {
       <div className="flex flex-col gap-2">
         <span className="text-[13px] font-semibold text-ink-3">When the bank message contains</span>
         <div className="flex min-h-[52px] items-center gap-1 rounded-[16px] border-[1.5px] bg-surface pr-1 pl-4" style={{ borderColor: v.ruleKwBorder }}>
-          <input autoFocus value={v.ruleKw} onChange={v.ruleKwType} placeholder="e.g. DARAZ" autoComplete="off" spellCheck={false}
+          <input autoFocus value={v.ruleKw} onChange={v.ruleKwType} placeholder="Word from the message" autoComplete="off" spellCheck={false}
             onKeyDown={(e) => { if (e.key === "Enter") v.ruleSave(); if (e.key === "Escape") v.ruleClose(); }}
             className="min-w-0 flex-1 bg-transparent py-3 font-mono text-[16px] tracking-[.03em] text-ink outline-none placeholder:text-ink-3" />
           {v.ruleKw && <IconBtn d={P.close} label="Clear" onClick={v.ruleKwClear} size={18} sw={2.2} className="text-ink-3" />}

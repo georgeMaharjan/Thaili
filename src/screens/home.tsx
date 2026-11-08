@@ -1,7 +1,7 @@
 import type { HomeScreenModel as V } from "../features/home/screen-model";
 // Balance-led Home and native manual-entry form.
 import { Picker } from "@/components/sheet";
-import { Bar,Btn,CARD,Chevron,Chips,HeadLink,Hero,Icon,P,Pull,Section,TopBar,TxCard,cx } from "@/components/ui";
+import { Bar,Btn,CARD,Chevron,Chips,HeadLink,Hero,Icon,IconBtn,P,Pull,Section,TopBar,TxCard,cx } from "@/components/ui";
 
 export function Home({ v }: { v: V }) {
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -21,9 +21,9 @@ export function Home({ v }: { v: V }) {
           </div>
           <button onClick={v.toAccounts} className="press mt-2 flex min-h-[44px] items-center gap-2 text-[14px] font-semibold">View accounts<Icon d={P.next} size={16} /></button>
         </section>
-        {v.hasReview && <button onClick={v.toReviewStack} className="press flex items-center gap-3 rounded-2xl bg-tint-u p-4 text-left"><span className="flex min-w-[32px] items-center justify-center rounded-lg bg-uncat px-2 py-1 text-[16px] font-semibold text-canvas">{v.reviewCount}</span><span className="flex-1"><strong className="block text-[15px]">Ready to sort</strong><span className="text-[13px] text-ink-2">Give new entries a category or note</span></span><Chevron /></button>}
-        <details className="border-b border-line pb-3">
-          <summary className="min-h-[48px] cursor-pointer text-[16px] font-semibold">This month’s plan<span className="mt-1 block text-[13px] font-normal text-ink-3">{v.monthlyTarget} savings target</span></summary>
+        {v.showReviewBanner && <div className="flex items-center rounded-2xl bg-tint-u"><button onClick={v.toReviewStack} className="press flex min-w-0 flex-1 items-center gap-3 p-4 pr-1 text-left"><span className="flex min-w-[32px] items-center justify-center rounded-lg bg-uncat px-2 py-1 text-[16px] font-semibold text-canvas">{v.reviewCount}</span><span className="flex-1"><strong className="block text-[15px]">Ready to sort</strong><span className="text-[13px] text-ink-2">Give new entries a category or note</span></span><Chevron /></button><IconBtn d={P.close} label="Dismiss" onClick={v.dismissReviewBanner} size={18} className="mr-1 text-ink-3" /></div>}
+        <details className="group border-b border-line pb-3">
+          <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><span className="text-[16px] font-semibold">This month’s plan<span className="mt-1 block text-[13px] font-normal text-ink-3">{v.monthlyTarget} savings target</span></span><Icon d={P.expand} size={18} className="flex-none text-ink-3 transition-transform group-open:rotate-180" /></summary>
           <div className="flex flex-col gap-3 pt-4"><div className="grid grid-cols-2 gap-3"><div><span className="text-[13px] text-ink-3">{v.spentWord}</span><div className="font-display text-[24px] font-bold">{v.homeSpent}</div></div><div><span className="text-[13px] text-ink-3">{v.leftWord}</span><div className="font-display text-[24px] font-bold" style={{ color: v.leftFg }}>{v.homeLeft}</div></div></div><Bar width={v.targetWidth} color={v.budgetBar} className="h-[6px] rounded-full" /><p className="text-[13px] text-ink-3">{v.budgetLine} · {v.dayOfLine}</p><p className="text-[14px] text-ink-2">{v.suggestLead}<strong>{v.suggestAmt}</strong>{v.suggestTail}</p><p className="text-[13px] text-ink-3">{v.suggestHow}</p><HeadLink onClick={v.editPlan}>Edit monthly plan</HeadLink></div>
         </details>
         <Section title={v.t.goals} action={<HeadLink onClick={v.toGoal}>Manage</HeadLink>} className="gap-3">
@@ -45,7 +45,7 @@ export function Add({ v }: { v: V }) {
       <label className="flex flex-col gap-2 rounded-[20px] bg-surface-2 p-5"><span className="text-[14px] text-ink-2">{v.addDirection === "credit" ? "Amount received" : "Amount paid"}</span><span className="flex min-w-0 items-baseline gap-2"><span className="font-display text-[22px] text-ink-3">Rs</span><input aria-label="Amount" inputMode="decimal" autoComplete="off" placeholder="0.00" value={v.addAmount} onChange={v.addAmountType} className="min-w-0 w-full bg-transparent font-display text-[44px] font-bold tabular-nums outline-none" /></span></label>
       <Picker label={v.addDirection === "credit" ? "Received into" : "Paid from"} placeholder="Choose account" value={v.addAccount} onChange={v.addAccountSet} options={v.addAccounts.map((a) => ({ value: a.key, label: a.name }))} />
       <Picker label="Category" placeholder="Choose category" value={v.addCategory} onChange={v.addCategorySet} options={v.addCategoryOptions.map((c) => ({ value: c.key, label: c.label }))} />
-      <label className="field">Note <span className="sr-only">optional</span><textarea rows={2} value={v.addNote} onChange={v.addNoteType} maxLength={80} placeholder={v.addDirection === "credit" ? "Salary, a refund, a gift… (optional)" : "What was this for? (optional)"} /></label>
+      <label className="field">Note <span className="sr-only">optional</span><textarea rows={2} value={v.addNote} onChange={v.addNoteType} maxLength={80} placeholder="Add a note (optional)" /></label>
       <div className="flex items-center gap-2 text-[13px] text-ink-3"><Icon d={P.calendar} size={17} />Today · {v.addDateLabel}</div>
       {v.addError && <p role="alert" className="text-[14px] text-action">{v.addError}</p>}
       {!v.addAccounts.length && <p role="status" className="text-[14px] text-ink-2">Add an account in Accounts before recording a transaction.</p>}

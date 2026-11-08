@@ -37,6 +37,8 @@ export type HomeScreenModel = Pick<AppViewModel,
   "floorLine" |
   "floorPending" |
   "hasReview" |
+  "showReviewBanner" |
+  "dismissReviewBanner" |
   "haveLabel" |
   "haveMeta" |
   "homeBalances" |
