@@ -64,6 +64,11 @@ export function Welcome({ v }: { v: V }) {
       </div>
       <div className="thaili-intro flex flex-col gap-3" style={{ animationDelay: "510ms" }}>
         <Btn onClick={v.toPermission}>{v.t.getStarted}</Btn>
+        {/* After a reinstall: pick the file saved with Settings → Export all data. */}
+        <label className="press flex min-h-[52px] cursor-pointer items-center justify-center rounded-2xl border border-line bg-surface px-6 text-center text-[15px] font-semibold text-ink">
+          {v.restoreLabel}
+          <input type="file" className="sr-only" onChange={v.restorePick} />
+        </label>
       </div>
     </div>
   );

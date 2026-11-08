@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { IncomingPouch as Pouch } from "./ledger-store.ts";
+import { encodeBackup } from "../lib/backup.ts";
 import { AppController } from "./controller.ts";
 import { initialState, type StatePatch } from "./state.ts";
 
@@ -119,4 +120,33 @@ test("startSetup registers first when there is no user", () => {
   const known = controller();
   known.startSetup();
   assert.equal(known.state.screen, "permission");
+});
+
+test("restoring a backup on a fresh install brings everything back; it never overwrites existing data", async () => {
+  const user = { name: "U", phone: "+9779800000000", createdAt: "2026-10-01T00:00:00.000Z" };
+  const backup = await encodeBackup({
+    user, roles: { cash: "spending" }, rules: [], goals: [{ id: "g", name: "Bike", target: 9000 }], prefs: { setupComplete: true, theme: "dark" },
+    sources: [{ key: "cash", name: "Cash", type: "Manual entry", dot: "#000", opening: 500 }],
+    tx: [{ id: "t", m: "Tea", amt: 50, dir: "debit", src: "cash", ch: "Manual", at: "2026-10-02T00:00:00.000Z" }],
+  });
+  const fresh = controller({ user: null, screen: "welcome" });
+  await fresh.importData(new Blob([backup]));
+  assert.equal(fresh.state.screen, "home");
+  assert.equal(fresh.state.user!.name, "U");
+  assert.equal(fresh.state.tx[0].amt, 50);
+  assert.equal(fresh.state.goals[0].name, "Bike");
+  assert.equal(fresh.state.theme, "dark");
+  assert.equal(fresh.state.toast, "Restored 1 transactions and 1 accounts");
+
+  const existing = controller({ setupComplete: true });
+  const before = existing.state.tx;
+  await existing.importData(new Blob([backup]));
+  assert.equal(existing.state.tx, before);
+  assert.match(existing.state.toast!, /already has Thaili data/);
+
+  const bad = controller({ user: null, screen: "welcome" });
+  await bad.importData(new Blob(["{\"app\":\"thaili\",\"format\":1,\"checksum\":\"x\",\"data\":{}}"]));
+  assert.equal(bad.state.screen, "welcome");
+  assert.equal(bad.state.toast, "The backup file is damaged or was changed");
+  for (const app of [fresh, existing, bad]) clearTimeout(app._t);
 });

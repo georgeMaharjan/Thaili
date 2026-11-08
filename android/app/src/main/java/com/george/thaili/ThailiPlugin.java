@@ -1,6 +1,7 @@
 package com.george.thaili;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -20,6 +21,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
+import java.io.OutputStream;
+import androidx.activity.result.ActivityResult;
 import java.lang.ref.WeakReference;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
@@ -33,6 +36,7 @@ import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
@@ -73,6 +77,32 @@ public class ThailiPlugin extends Plugin {
     @PermissionCallback
     private void smsResult(PluginCall call) {
         status(call);
+    }
+
+    /** Android's own "Save as" screen: the user picks where the backup goes (Downloads by default), so it outlives the app. */
+    @PluginMethod
+    public void saveFile(PluginCall call) {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, call.getString("name", "thaili-backup.json"));
+        startActivityForResult(call, intent, "saveFileResult");
+    }
+
+    @ActivityCallback
+    private void saveFileResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSObject r = new JSObject();
+        Uri uri = result.getData() == null ? null : result.getData().getData();
+        if (result.getResultCode() != Activity.RESULT_OK || uri == null) { r.put("saved", false); call.resolve(r); return; }
+        try (OutputStream out = getContext().getContentResolver().openOutputStream(uri, "wt")) {
+            if (out == null) throw new java.io.IOException("No output stream");
+            out.write(call.getString("text", "").getBytes(StandardCharsets.UTF_8));
+            r.put("saved", true);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("Couldn't write the backup file", e);
+        }
     }
 
     /** Notification access has no dialog — it's a system settings page. Android 11+ opens straight to Thaili's switch. */

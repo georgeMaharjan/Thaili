@@ -8,7 +8,10 @@ import { TransactionCommands } from "../features/transactions/commands";
 import { createAppViewModel } from "../features/view-model";
 import { AuthenticationSession, authenticationMessage } from "../lib/authentication";
 import type { Sms } from "../lib/device";
-import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, setCapture } from "../lib/device";
+import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, saveFile, setCapture } from "../lib/device";
+import { BackupError, backupName, decodeBackup, encodeBackup } from "../lib/backup";
+import { npDigits } from "../lib/bs";
+import { hydrated, snapshot } from "../lib/pouch";
 import { importTransactions } from "../lib/import-transactions";
 import { rememberMoneyPackages } from "../lib/money-apps";
 import { TABS, backDismissal, gate, nextStack } from "../lib/nav";
@@ -113,6 +116,43 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     } catch (e) {
       console.warn("[thaili] update check failed", e);
       if (manual) this.flash(np ? "अपडेट जाँच्न सकिएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।" : "Couldn't check for updates. Check your connection and try again.");
+    }
+  };
+  /** Saves everything to a file the user places outside the app, so it survives an uninstall. */
+  exportData = async () => {
+    const np = this.state.lang === "NP";
+    if (!isDevice) { this.flash(np ? "निर्यात Android एपमा मात्र हुन्छ" : "Export works in the Android app"); return; }
+    try {
+      if (await saveFile(backupName(), await encodeBackup(snapshot(this.state))))
+        this.flash(np ? "सबै डेटा फाइलमा सुरक्षित भयो" : "All data saved to the backup file");
+    } catch (e) {
+      console.error("[thaili] export failed", e);
+      this.flash(np ? "फाइल सुरक्षित गर्न सकिएन। फेरि प्रयास गर्नुहोस्।" : "Couldn't save the backup file. Try again.");
+    }
+  };
+  /** Restores a backup into a fresh install only; it never replaces data already on this phone. */
+  importData = async (file: Blob | undefined) => {
+    const s = this.state, np = s.lang === "NP";
+    if (!file) return;
+    if (s.user || s.setupComplete || s.tx.length) { this.flash(np ? "यो फोनमा पहिले नै डेटा छ" : "This phone already has Thaili data, so nothing was restored"); return; }
+    try {
+      const pouch = await decodeBackup(await file.text());
+      this.stack = [];
+      this.applySavedPouch(hydrated(pouch), true, () => {
+        this.flash(np ? npDigits(pouch.tx.length) + " कारोबार र " + npDigits(pouch.sources.length) + " खाता फिर्ता आए" : "Restored " + pouch.tx.length + " transactions and " + pouch.sources.length + " accounts");
+        if (this.state.locked) this.unlock();
+      });
+    } catch (e) {
+      console.warn("[thaili] import rejected", e);
+      const problem = e instanceof BackupError ? e.problem : "notJson";
+      this.flash({
+        notJson: np ? "यो फाइल पढ्न सकिएन" : "That file can't be read",
+        notThaili: np ? "यो थैलीको ब्याकअप फाइल होइन" : "That isn't a Thaili backup file",
+        newer: np ? "यो ब्याकअप नयाँ थैलीबाट हो। पहिले एप अपडेट गर्नुहोस्।" : "This backup is from a newer Thaili. Update the app first.",
+        damaged: np ? "ब्याकअप फाइल बिग्रिएको वा बदलिएको छ" : "The backup file is damaged or was changed",
+        invalid: np ? "ब्याकअपको डेटा मिलेन" : "The backup's data doesn't check out",
+        empty: np ? "ब्याकअपमा कुनै खाता छैन" : "The backup has no accounts in it",
+      }[problem]);
     }
   };
   refreshPerms = () => permStatus().then(p => this.patch({ perms: [p.sms, p.notifications] }));

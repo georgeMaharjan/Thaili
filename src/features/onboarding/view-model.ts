@@ -6,7 +6,7 @@ import { digits10, fmt, rs, validPhone } from "../../lib/format";
 import { applyImportResult } from "../../lib/import-transactions";
 import { appendMoneyAccounts, sourceForMoneyApp } from "../../lib/money-apps";
 import type { ViewContext } from "../context";
-export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "state" | "flash" | "startSetup" | "smsToTx" | "editSource">, context: Pick<ViewContext, "s" | "DAYS_IN_MONTH" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
+export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "state" | "flash" | "startSetup" | "smsToTx" | "editSource" | "importData">, context: Pick<ViewContext, "s" | "DAYS_IN_MONTH" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
   const { s, DAYS_IN_MONTH, income, freeToSpend, T, np, allCats, incomeCats, clabel, scanAccts, scanGroups, isEss, essMonthly, baseFor, srcMissing, detectAccounts, detAvailable, detOnKeys } = context;
   // "Food", "food " and "FOOD" are one category.
   const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
@@ -121,6 +121,11 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       app.go("baseline", { baseSetup: true, baseFrom: "cats", baseAmt: String(essMonthly ? baseFor(3) : s.savingsGoal), baseFresh: true });
     },
     toPermission: () => app.startSetup(),
+    restoreLabel: np ? "ब्याकअपबाट फिर्ता ल्याउनुहोस्" : "Restore from a backup",
+    restorePick: (event: { target: { files?: FileList | null; value: string } }) => {
+      void app.importData(event.target.files?.[0]);
+      event.target.value = ""; // picking the same file again still fires
+    },
     toCats: () => {
       if (s.screen === "scan" && s.scanResult) { // "Import them"
         app.patch({ tx: applyImportResult(s.tx, s.scanResult), scanTx: [], scanResult: null,

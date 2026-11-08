@@ -5,7 +5,7 @@ import { bsOf, monthKey, monthName, npDigits } from "../../lib/bs";
 import { digits10, fmtPhone, initials, rs, validPhone } from "../../lib/format";
 import { captureNotifications } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
+export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
   const { s, T, np, dark, surplus, openBaseline, autoFiled, segBg, segFg, segSh } = context;
   return {
     setLight: () => app.patch({ theme: "light" }),
@@ -59,6 +59,11 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
         tap: openBaseline
       },
       { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) },
+      {
+        icon: IC.exportI, label: np ? "सबै डेटा निर्यात" : "Export all data",
+        meta: np ? "ब्याकअप फाइल — एप हटाएर फेरि हाल्दा फिर्ता ल्याउन" : "Backup file to restore from if you reinstall Thaili",
+        value: "", tap: () => void app.exportData()
+      },
       {
         icon: IC.importI, label: np ? "एप अपडेट" : "App update",
         meta: s.update ? (np ? "संस्करण " + s.update.version + " आयो — डाउनलोड गर्न थिच्नुहोस्" : "Version " + s.update.version + " is ready — tap to download")

@@ -19,6 +19,7 @@ type Native = {
   addListener(e: "moneyNotification", cb: () => void): Promise<{ remove: () => void }>;
   readNotifications(o: { sinceMs: number }): Promise<{ notifications: MoneyNotification[] }>;
   tap(): Promise<void>;
+  saveFile(o: { name: string; text: string }): Promise<{ saved: boolean }>;
 };
 
 export type Sms = { id?: string; sender: string; body: string; at: number };
@@ -51,3 +52,6 @@ export const readNotifications = (sinceMs: number) =>
   isDevice ? native.readNotifications({ sinceMs }).then((r) => r.notifications) : Promise.resolve([] as MoneyNotification[]);
 // Light haptic tick for taps; silent in a browser.
 export const hapticTap = () => { if (isDevice) native.tap().catch(() => {}); };
+// Opens Android's "Save as" screen; false when the user backs out. No device, nothing to save to.
+export const saveFile = (name: string, text: string) =>
+  isDevice ? native.saveFile({ name, text }).then((r) => r.saved) : Promise.resolve(false);

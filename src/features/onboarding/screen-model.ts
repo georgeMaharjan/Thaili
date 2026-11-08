@@ -94,5 +94,7 @@ export type OnboardingScreenModel = Pick<AppViewModel,
   "toCats" |
   "toDetect" |
   "toPermission" |
+  "restoreLabel" |
+  "restorePick" |
   "toSrcNew"
 >;
