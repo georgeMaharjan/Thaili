@@ -1,9 +1,11 @@
 import { useRef } from "react";
+import { Picker } from "@/components/sheet";
 import { NumericField } from "../components/numeric-field";
+import { CalSheet } from "./transactions";
 import type { AccountsScreenModel as V } from "../features/accounts/screen-model";
 // Accounts, one account, and the add/edit account form.
 import {
-Amount,BalEye,CARD,Chevron,Chips,Cta,GoalCard,Hero,Icon,IconBtn,ItemRow,LABEL,P,Seg,Tile,TopBar,cx,
+Amount,BalEye,CARD,Chevron,Chips,Cta,GoalCard,Hero,Icon,IconBtn,LABEL,P,Seg,Tile,TopBar,TxCard,cx,
 } from "@/components/ui";
 
 export function Accounts({ v }: { v: V }) {
@@ -34,13 +36,16 @@ export function Accounts({ v }: { v: V }) {
 
         <GoalCard v={v} />
 
-        <button onClick={v.enableTransactionNotifications} className="press flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-left">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[14px] font-semibold">{v.transactionNotificationsLabel}</span>
-            <span className="text-[12px] leading-[1.5] text-ink-3">{v.transactionNotificationsNote}</span>
-          </div>
-          <span className="flex-none text-[13px] font-semibold text-action">{v.transactionNotificationsStatus}</span>
-        </button>
+        {v.showNotifCard && <div className="flex items-center rounded-2xl border border-line bg-surface">
+          <button onClick={v.enableTransactionNotifications} className="press flex min-w-0 flex-1 items-center justify-between gap-3 py-3 pl-4 pr-1 text-left">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-[14px] font-semibold">{v.transactionNotificationsLabel}</span>
+              <span className="text-[12px] leading-[1.5] text-ink-3">{v.transactionNotificationsNote}</span>
+            </div>
+            <span className="flex-none text-[13px] font-semibold text-action">{v.transactionNotificationsStatus}</span>
+          </button>
+          <IconBtn d={P.close} label="Dismiss" onClick={v.dismissNotifCard} size={18} className="mr-1 text-ink-3" />
+        </div>}
 
         {v.acctGroups.map((grp) => (
           <div key={grp.key} className="flex flex-col gap-1.5 pt-2">
@@ -95,11 +100,11 @@ export function SourceDetail({ v }: { v: V }) {
         </div>
         <div className="flex gap-3">
           <div className={cx(flow, "bg-tint-g text-pos")}>
-            <span className={flowLabel}><Icon d={P.arrowDown} size={15} sw={2.2} />{v.t.inL}</span>
+            <span className={flowLabel}><Icon d={P.arrowDown} size={15} sw={2.2} />{v.t.inL} · {v.srcFlowWhen}</span>
             <span className="font-display text-[22px] font-bold">{v.srcIn}</span>
           </div>
           <div className={cx(flow, "bg-tint-n text-navy")}>
-            <span className={flowLabel}><Icon d={P.arrowUp} size={15} sw={2.2} />{v.t.outL}</span>
+            <span className={flowLabel}><Icon d={P.arrowUp} size={15} sw={2.2} />{v.t.outL} · {v.srcFlowWhen}</span>
             <span className="font-display text-[22px] font-bold">{v.srcOut}</span>
           </div>
         </div>
@@ -107,12 +112,18 @@ export function SourceDetail({ v }: { v: V }) {
           <span className={LABEL}>Purpose</span>
           <Seg items={v.roleChips} itemClass="flex-1 rounded-[8px] p-2 text-center text-[13px]" />
         </div>
-        <div className={cx(CARD, "-mt-px flex flex-col px-5")}>
-          {v.srcTxns.map((x, i: number) => (
-            <ItemRow key={i} look={x} title={x.title} sub={x.meta} onClick={x.tap} className="min-h-[60px] border-b border-line" right={<Amount fg={x.fg}>{x.amount}</Amount>} />
-          ))}
+        <div className="flex min-w-0 items-center rounded-full border border-line pr-3">
+          <IconBtn d={P.calendar} label="Choose custom dates" onClick={v.calShow} size={17} />
+          <Picker placeholder="Date range" value={v.txRange} onChange={v.txRangeSet} options={v.dateChips.map((c, i: number) => ({ value: ["today", "week", "month", "custom"][i], label: c.label }))} className="min-h-[44px] text-[14px]" />
+        </div>
+        <div>
+          {v.srcRows.map((r, i: number) => "isHeader" in r
+            ? <h2 key={i} className="pt-4 pb-1 text-[13px] font-semibold text-ink-3">{r.label}</h2>
+            : <TxCard key={i} r={r} />)}
+          {v.srcEmpty && <p className="py-8 text-center text-[14px] text-ink-3">{v.srcEmptyLine}</p>}
         </div>
       </div>
+      {v.calOpen && <CalSheet v={v} />}
     </div>
   );
 }

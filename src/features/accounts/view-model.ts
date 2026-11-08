@@ -4,8 +4,20 @@ import { openNotificationAccess } from "../../lib/device";
 import { balRs, fmt, rs } from "../../lib/format";
 import type { ViewContext } from "../context";
 
-export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "startDetection" | "flash" | "editSource" | "openDetail">, context: Pick<ViewContext, "s" | "dayLabel" | "balance" | "np" | "shownSrc" | "amtStr" | "txLook" | "amtFg" | "acctGrand" | "acctGroups" | "chip" | "savingsPot" | "newKind" | "newSrcAmtNum" | "newSrcAmtValid" | "needAcct" | "acctOk">) {
-  const { s, dayLabel, balance, np, shownSrc, amtStr, txLook, amtFg, acctGrand, acctGroups, chip, savingsPot, newKind, newSrcAmtNum, newSrcAmtValid, needAcct, acctOk } = context;
+export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "startDetection" | "flash" | "editSource" | "openDetail">, context: Pick<ViewContext, "s" | "dayLabel" | "balance" | "np" | "shownSrc" | "amtStr" | "txLook" | "amtFg" | "acctGrand" | "acctGroups" | "chip" | "savingsPot" | "newKind" | "newSrcAmtNum" | "newSrcAmtValid" | "needAcct" | "acctOk" | "inTxWin" | "txCard">) {
+  const { s, dayLabel, balance, np, shownSrc, acctGrand, acctGroups, chip, savingsPot, newKind, newSrcAmtNum, newSrcAmtValid, needAcct, acctOk, inTxWin, txCard } = context;
+  // Everything that moved this account's money in the chosen dates — transfers into it included.
+  const srcList = s.tx.filter(t => (t.src === s.srcKey || (t.dir === "transfer" && t.to === s.srcKey)) && inTxWin(t));
+  const intoSrc = (t: { src: string; dir: string }) => t.dir === "credit" || (t.dir === "transfer" && t.src !== s.srcKey);
+  const srcRows: ({ isHeader: true; label: string } | ReturnType<ReturnType<typeof txCard>>)[] = [];
+  let lastHeader: string | null = null;
+  srcList.forEach(t => {
+    const label = dayLabel(t.off);
+    if (label !== lastHeader) { srcRows.push({ isHeader: true, label }); lastHeader = label; }
+    const card = txCard("source-detail")(t);
+    // From this account's side a transfer is money in or out, not an arrow.
+    srcRows.push(t.dir === "transfer" ? { ...card, amount: (intoSrc(t) ? "+" : "−") + fmt(t.amt), fg: intoSrc(t) ? "var(--pos)" : "var(--ink)" } : card);
+  });
   return {
     totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + balRs(savingsPot, s.hideBal) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
     acctGroups: acctGroups,
@@ -16,6 +28,8 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     srcNewCancel: () => { app.patch({ editSrcKey: null }); app.go(s.srcNewFrom || "accounts"); },
     scanAccountApps: () => app.startDetection("accounts"),
     enableTransactionNotifications: () => openNotificationAccess(),
+    showNotifCard: !s.perms[1] && !s.notifCardHidden,
+    dismissNotifCard: () => app.patch({ notifCardHidden: true }),
     transactionNotificationsLabel: np ? "कारोबारका सूचनाहरू" : "Transaction notifications",
     transactionNotificationsNote: np ? "बैंक र वालेटका सूचनाबाट आम्दानी र खर्च टिपिन्छ" : "Logs money in and out from all detected banks and wallets",
     transactionNotificationsStatus: s.perms[1] ? (np ? "चालु" : "On") : (np ? "खोल्नुहोस्" : "Enable"),
@@ -124,8 +138,12 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     srcAcctLine: isManualSrc(shownSrc) ? "Manual account · no number to match" : shownSrc.acct ? (/Wallet/.test(shownSrc.type) ? "Mobile ending " : "A/C ending ") + shownSrc.acct.slice(-4) : "Last 4 digits not set",
     srcAcctFg: isManualSrc(shownSrc) || shownSrc.acct ? "var(--ink3)" : "var(--warnInk)",
     srcEdit: () => app.editSource(s.srcKey),
-    srcIn: fmt(s.tx.filter(t => t.src === s.srcKey && t.dir === "credit").reduce((a, t) => a + t.amt, 0)),
-    srcOut: fmt(s.tx.filter(t => t.src === s.srcKey && t.dir !== "credit").reduce((a, t) => a + t.amt, 0)),
+    srcIn: fmt(srcList.filter(intoSrc).reduce((a, t) => a + t.amt, 0)),
+    srcOut: fmt(srcList.filter(t => !intoSrc(t)).reduce((a, t) => a + t.amt, 0)),
+    srcRows,
+    srcFlowWhen: { today: np ? "आज" : "today", week: np ? "यो हप्ता" : "this week", month: np ? "यो महिना" : "this month", custom: np ? "छानिएका मिति" : "selected dates" }[s.txRange as "today"] ?? "",
+    srcEmpty: !srcList.length,
+    srcEmptyLine: np ? "यो मितिमा कुनै कारोबार छैन" : "No transactions in these dates",
     roleChips: [["savings", "Saving"], ["spending", "Spending"], ["", "Not set"]].map(r => ({
       label: r[1],
       bg: (s.roles[s.srcKey || ""] || "") === r[0] ? "var(--navy)" : "var(--surface2)",
@@ -137,9 +155,5 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
       }
     })),
     sourceBack: () => app.go(s.srcFrom || "insights"),
-    srcTxns: s.tx.filter(t => t.src === s.srcKey).map(t => Object.assign(txLook(t), {
-      title: t.m, meta: dayLabel(t.off) + " · " + t.time, amount: amtStr(t), fg: amtFg(t),
-      tap: () => app.openDetail(t.id, "source-detail")
-    }))
   };
 }

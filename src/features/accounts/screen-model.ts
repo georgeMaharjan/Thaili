@@ -25,6 +25,8 @@ export type AccountsScreenModel = Pick<AppViewModel,
   "balEyeLabel" |
   "balFs" |
   "enableTransactionNotifications" |
+  "showNotifCard" |
+  "dismissNotifCard" |
   "goalLabel" |
   "goalName" |
   "goalNote" |
@@ -63,7 +65,33 @@ export type AccountsScreenModel = Pick<AppViewModel,
   "srcNewCancel" |
   "srcNewTitle" |
   "srcOut" |
-  "srcTxns" |
+  "srcRows" |
+  "srcFlowWhen" |
+  "srcEmpty" |
+  "srcEmptyLine" |
+  "txRange" |
+  "txRangeSet" |
+  "dateChips" |
+  "calShow" |
+  "calOpen" |
+  "calClose" |
+  "calPickFrom" |
+  "calPickTo" |
+  "calFromLabel" |
+  "calToLabel" |
+  "calFromFg" |
+  "calToFg" |
+  "calFromBorder" |
+  "calToBorder" |
+  "calTitle" |
+  "calPrev" |
+  "calNext" |
+  "calHasNext" |
+  "calCells" |
+  "calCta" |
+  "calCtaBg" |
+  "calCtaFg" |
+  "calApply" |
   "t" |
   "toGoal" |
   "toSrcNew" |
