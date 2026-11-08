@@ -18,7 +18,7 @@ const txToRow = (t: Transaction, keepRaw: boolean, keys: Set<string>) => ({
 });
 const srcToRow = (x: Account, i: number, roles: Record<string, string>) => ({
   key: x.key, name: x.name, base: x.base || x.name, short: x.short || x.name, type: x.type, dot: x.dot, packages: x.packages || [],
-  opening: x.opening || 0, opening_at: x.openedAt || new Date(0).toISOString(), acct: x.acct ? String(x.acct).slice(-4) : null,
+  opening: x.opening || 0, opening_at: x.openedAt ?? null, acct: x.acct ? String(x.acct).slice(-4) : null,
   role: roles[x.key] === "savings" ? "savings" : "spending", sort: i,
 });
 

@@ -56,6 +56,9 @@ next.tx[0].capture = [{ ch: "App", id: "alert", src: "bank", dir: "debit", at: n
 await driver.write(next, remote.pouch, { ...deletions, tx: { "failed-delete": 1 } }, true);
 assert.equal(operations[0].table, "sources");
 assert.equal(operations[0].rows?.[1].acct, "3210");
+// A balance not yet set stays unset in the cloud instead of becoming a 1970 date.
+assert.equal(operations[0].rows?.[1].opening_at, null);
+assert.equal(remote.pouch.sources[0].openedAt, null);
 assert.deepEqual(operations[0].rows?.[0].packages, ["np.fixture.bank"]);
 const archiveIndex = operations.findIndex(o => o.action === "archive");
 const uploadIndex = operations.findIndex(o => o.table === "transactions" && o.action === "upsert");

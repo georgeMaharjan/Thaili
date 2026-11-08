@@ -1,6 +1,6 @@
 // Checked against the committed migrations. JSON is decoded before entering the application.
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json | undefined };
-export type SourceRow = { user_id: string; key: string; name: string; base: string; short: string; type: string; dot: string; opening: number; opening_at: string; acct: string | null; role: string; sort: number; created_at: string; packages: string[] };
+export type SourceRow = { user_id: string; key: string; name: string; base: string; short: string; type: string; dot: string; opening: number; opening_at: string | null; acct: string | null; role: string; sort: number; created_at: string; packages: string[] };
 export type TransactionRow = { user_id: string; id: string; src: string; to_src: string | null; merchant: string; amount: number; dir: "debit" | "credit" | "transfer"; cat: string | null; remarks: string | null; auto_rule: string | null; channel: string; capture: Json; raw: string | null; occurred_at: string; archived_at: string | null; created_at: string };
 export type RuleRow = { user_id: string; id: string; kw: string; cat: string; own: boolean; sort: number };
 export type GoalRow = { user_id: string; id: string; name: string; target: number; sort: number };
