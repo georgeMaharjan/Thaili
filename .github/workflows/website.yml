@@ -1,0 +1,22 @@
+name: Refresh website
+
+# Tells thaili-chi.vercel.app to re-read the latest release (version, size, date)
+# whenever main changes or a release is published.
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published, edited, deleted]
+  workflow_dispatch:
+
+jobs:
+  revalidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping website
+        env:
+          SECRET: ${{ secrets.WEBSITE_REVALIDATE_SECRET }}
+        run: |
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $SECRET" \
+            https://thaili-chi.vercel.app/api/revalidate
