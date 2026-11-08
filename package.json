@@ -8,7 +8,7 @@
     "lint": "eslint",
     "sync": "next build && cap sync",
     "android": "npm run sync && cap open android",
-    "test": "tsx --test src/lib/*.check.ts src/application/*.check.ts src/infrastructure/*.check.ts src/features/*.check.ts",
+    "test": "TZ=Asia/Kathmandu tsx --test src/lib/*.check.ts src/application/*.check.ts src/infrastructure/*.check.ts src/features/*.check.ts",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.checks.json"
   },
   "dependencies": {
