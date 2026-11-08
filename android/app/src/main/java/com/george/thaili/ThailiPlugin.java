@@ -82,6 +82,15 @@ public class ThailiPlugin extends Plugin {
     /** Android's own "Save as" screen: the user picks where the backup goes (Downloads by default), so it outlives the app. */
     @PluginMethod
     public void saveFile(PluginCall call) {
+        // Android keeps the call's options in the saved activity state while "Save as" is open, and that
+        // state is capped near 1 MB: a real backup crashed the app. Park the text in a private file instead.
+        try (OutputStream out = new java.io.FileOutputStream(pendingBackup())) {
+            out.write(call.getString("text", "").getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            call.reject("Couldn't prepare the backup file", e);
+            return;
+        }
+        call.getData().remove("text");
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/json");
@@ -94,15 +103,24 @@ public class ThailiPlugin extends Plugin {
         if (call == null) return;
         JSObject r = new JSObject();
         Uri uri = result.getData() == null ? null : result.getData().getData();
-        if (result.getResultCode() != Activity.RESULT_OK || uri == null) { r.put("saved", false); call.resolve(r); return; }
-        try (OutputStream out = getContext().getContentResolver().openOutputStream(uri, "wt")) {
+        java.io.File pending = pendingBackup();
+        if (result.getResultCode() != Activity.RESULT_OK || uri == null) { pending.delete(); r.put("saved", false); call.resolve(r); return; }
+        try (java.io.InputStream in = new java.io.FileInputStream(pending);
+             OutputStream out = getContext().getContentResolver().openOutputStream(uri, "wt")) {
             if (out == null) throw new java.io.IOException("No output stream");
-            out.write(call.getString("text", "").getBytes(StandardCharsets.UTF_8));
+            byte[] buf = new byte[65536];
+            for (int n; (n = in.read(buf)) > 0; ) out.write(buf, 0, n);
             r.put("saved", true);
             call.resolve(r);
         } catch (Exception e) {
             call.reject("Couldn't write the backup file", e);
+        } finally {
+            pending.delete();
         }
+    }
+
+    private java.io.File pendingBackup() {
+        return new java.io.File(getContext().getCacheDir(), "pending-backup.json");
     }
 
     /** Notification access has no dialog — it's a system settings page. Android 11+ opens straight to Thaili's switch. */
