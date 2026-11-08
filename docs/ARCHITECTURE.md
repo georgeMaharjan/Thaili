@@ -77,7 +77,7 @@ Live bank alerts, background capture and biometric prompts still require physica
 
 On 20 October 2026, the unenforced sync/recovery feature was removed, including its routes, actions and production cloud connection. The app is local-only even with backend environment variables present. Native capture and local review notifications remain enabled. The fake review note/receipt actions were removed; Details retains its working note editor. See [remediation decisions and recommendations](LOGIC-REMEDIATION.md).
 
-Other existing product gaps include transfer destination cleanup when removing an account, incomplete localization/balance masking and empty-income budget wording. Export, archive browsing and spend prompts remain unimplemented as listed in the README.
+Other existing product gaps include transfer destination cleanup when removing an account, incomplete localization/balance masking and empty-income budget wording. CSV export, archive browsing and spend prompts remain unimplemented as listed in the README (a JSON backup export exists).
 
 For future changes, add domain behavior and its checks first, wire it through the owning application/feature module, then update that feature's screen contract. Keep platform and transport details in adapters.
 

@@ -72,7 +72,7 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
         // Opens in the phone's browser; Android installs the APK over this one.
         tap: () => { if (s.update) window.location.href = s.update.url; else void app.checkUpdate(true); }
       }
-      // Export everything and Archive are hidden until they work — see "To do" in README.md.
+      // CSV export and Archive are hidden until built — see "Limitations" in README.md.
     ],
     ...(() => {
       const u = s.user || { name: "", phone: "", createdAt: now() };

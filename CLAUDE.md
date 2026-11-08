@@ -1,6 +1,6 @@
 # Thaili
 
-Overview and module map: @README.md. Module contracts and invariants: docs/ARCHITECTURE.md.
+Overview: @README.md. Commands, module map and release steps: @docs/SETUP.md. Module contracts and invariants: docs/ARCHITECTURE.md.
 
 ## Checks
 
