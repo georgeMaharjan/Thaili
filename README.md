@@ -2,15 +2,13 @@
 
 Personal money tracker for Nepal: reads bank SMS and transaction notifications, spots money apps, and runs on the Bikram Sambat calendar.
 The catalog covers all 20 commercial and 17 development banks in NRB’s Mid-August 2026 directory, plus its finance, microfinance, infrastructure and cooperative institutions.
-Next.js static export wrapped with Capacitor (Android), durable storage on the phone. Cloud sync and recovery features are currently removed.
+Next.js static export wrapped with Capacitor (Android). **All data stays on the phone** — there is no account, server or cloud sync.
 
 ```bash
-cp .env.local.example .env.local   # optional; the app runs locally without backend setup
 npm run dev                        # browser preview (no device features)
 npm run android                    # build, sync and open in Android Studio
 npm run typecheck                  # application and test fixture type checking
 npm test                           # domain, application, adapter and screen flow checks
-bash supabase/test.sh supabase/migrations/*.sql   # migrations + RLS on a throwaway Postgres 17
 ```
 
 - `src/application/` — typed application state, controller, capture/discovery/lifecycle coordinators and ledger retry coordination. `src/lib/logic.tsx` keeps the app entry point compatible.
@@ -19,24 +17,38 @@ bash supabase/test.sh supabase/migrations/*.sql   # migrations + RLS on a throwa
 - `src/lib/import-transactions.ts` — shared SMS/notification import pipeline with an explicit clock and ID generator.
 - `src/screens/*.tsx` — the screens, hand-written with Tailwind. Shared pieces live in `src/components/ui.tsx`;
   colour/font/radius tokens are in the `@theme` block of `src/app/globals.css`. `design/Thaili v9.dc.html` is a visual reference only.
-- `src/lib/store.ts` — persistence composition and background retries. `local-ledger.ts` — durable snapshot, pending changes and merge rules; `indexed-db-storage.ts` and `cloud-store.ts` implement its storage drivers. `pouch.ts` selects durable data and applies raw-text retention. `sms.ts` — SMS parser. `bs.ts`/`calendar.ts` — BS dates and render-time calendar context. `nav.ts` — back stack.
-- `android/.../ThailiPlugin.java` — native bridge: SMS, installed apps, biometrics, haptics.
+- `src/lib/store.ts` — persistence composition and background retries. `local-ledger.ts` — durable snapshot, pending changes and merge rules; `indexed-db-storage.ts` is its storage driver. `backup.ts` — export file format and import validation. `pouch.ts` selects durable data and applies raw-text retention. `sms.ts` — SMS parser. `bs.ts`/`calendar.ts` — BS dates and render-time calendar context. `nav.ts` — back stack.
+- `android/.../ThailiPlugin.java` — native bridge: SMS, installed apps, biometrics, haptics, saving the backup file.
 
 See [architecture and refactor review](docs/ARCHITECTURE.md) for module interfaces, design patterns, checks and remaining findings.
 
-## Offline use
+## Your data
 
-The Android app starts from its on-device IndexedDB copy without waiting for authentication or the server.
-Setup, accounts, transactions, goals, rules, preferences and SMS/notification import work locally.
-The app bundles its fonts and interface assets. Changes and deletion markers are saved together,
-so they survive closing the app or restarting the phone while offline.
+Everything — profile, accounts, transactions, rules, goals and settings — is stored only on the phone, in the
+app's IndexedDB. Nothing is uploaded and the app needs no internet; the only network request is the update check
+against GitHub Releases. Changes are saved as you make them and survive closing the app or restarting the phone.
+Settings shows whether saving is working.
 
-Production storage is local-only, even if Supabase environment variables are configured.
-Sync/OTP/restore/merge/backup/device controls and remote push registration are removed.
-Existing on-device records remain available; backend adapters remain disconnected for future development.
-This version does not download cloud-only history or delete copies uploaded by earlier versions.
-Clearing app data or uninstalling removes the local copy; cloud recovery and export are unavailable.
-Settings reports local storage status. SMS/notification permissions still apply.
+Because the phone holds the only copy, **uninstalling Thaili or clearing its data deletes everything** unless you
+have a backup:
+
+- **Export** — Settings → Export all data opens Android's "Save as" screen. Save the `thaili-backup-<date>.json`
+  file somewhere outside the app (Downloads is the default). Export again whenever you want a newer copy; nothing
+  is backed up automatically. The file is not encrypted, so keep it private.
+- **Restore** — on a fresh install, Welcome → Restore from a backup and pick the file. Restore only runs on an empty
+  install, never over existing data. The file must be a Thaili backup from this or an older app version, pass its
+  SHA-256 checksum (an edited or damaged file is refused), and pass the same field checks the app uses for its own
+  saved data. IDs must be unique and every transaction must belong to an account. Grant SMS and notification
+  access again afterwards.
+
+Cloud sync was removed on purpose (see the [logic audit](docs/LOGIC-AUDIT-2026-10-20.md) and
+[recommended fixes](docs/LOGIC-REMEDIATION.md)). Supabase settings in `.env.local` are ignored. The Supabase
+adapter (`src/lib/supabase.ts`, `cloud-store.ts`) and `supabase/migrations/` are kept up to date with the data model
+but not connected; `bash supabase/test.sh supabase/migrations/*.sql` checks the migrations and RLS on a throwaway
+Postgres 17. Copies uploaded by versions before the removal stay on that server and are not downloaded.
+
+Current capture heuristics have known defects; the descriptions below are intended behavior, not verified support
+for every bank format.
 
 See the [logic audit](docs/LOGIC-AUDIT-2026-10-20.md) and [recommended fixes](docs/LOGIC-REMEDIATION.md)
 for confirmed limitations and the removal decisions. Current capture heuristics have known defects;
@@ -59,16 +71,15 @@ alerts; reference-less alerts use a conservative three-minute, one-to-one match.
 same-channel IDs and same-amount debit/credit transactions stay separate. Identified bank-to-wallet loads
 reconcile against existing history even when their two sides arrive in separate reads.
 Minimal matching evidence and discovered app packages survive restart and raw-text retention being disabled.
-Apply `supabase/migrations/20261011090000_transaction_capture.sql` before syncing this version with Supabase.
 See [provider recognition and capture support](docs/CAPTURE-SUPPORT.md) for the full list, SMS coverage and limitations.
 `src/lib/notification-transactions.ts` contains parsing/import rules, with format and exclusion fixtures
 in `notification-transactions.check.ts`; Android text extraction has local unit tests.
 
 ## To do
 
-- **Export everything** — CSV of every entry, account, rule and goal. Hidden from Settings until built.
+- **Spreadsheet export** — CSV of every entry, alongside the existing JSON backup.
 - **Archive** — browse and restore deleted entries (rows keep `archived_at` for 30 days). Hidden from Settings until built.
-- **Cloud/recovery and receipts** — removed until their real behavior, consent and recovery are implemented. Local transaction-review notifications still work.
+- **Cloud backup and receipts** — removed until opt-in consent, Wi-Fi rules and server security are verified (see `docs/LOGIC-REMEDIATION.md`).
 
 ## Download
 
