@@ -1,6 +1,6 @@
 name: Refresh website
 
-# Tells thaili-chi.vercel.app to re-read the latest release (version, size, date)
+# Tells thaili.georgemaharjan.com.np to re-read the latest release (version, size, date)
 # whenever main changes or a release is published.
 on:
   push:
@@ -19,4 +19,4 @@ jobs:
         run: |
           curl --fail-with-body -sS -X POST \
             -H "Authorization: Bearer $SECRET" \
-            https://thaili-chi.vercel.app/api/revalidate
+            https://thaili.georgemaharjan.com.np/api/revalidate
