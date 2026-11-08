@@ -12,7 +12,7 @@ const BANKS: Record<string, RegExp> = {
   scb: /SCB|STANDARD\s?CHARTERED|STANCHART/i,
   everest: /EVEREST|(?<![A-Z])EBL(?![A-Z])/i,
   gibl: /GIBL|GLOBAL\s?IME/i,
-  esewa: /E-?SEWA/i,
+  esewa: /E-?SEWA|(?<![A-Z])ESW(?![A-Z])/i,
   khalti: /KHALTI/i,
   ime: /IME\s?PAY/i,
 };
@@ -22,7 +22,7 @@ const BANKS: Record<string, RegExp> = {
 const SENDERS = Object.fromEntries(INSTITUTIONS.filter(i => i.sms).map(i => [i.key, i.sms!]));
 export const bankOf = (sender: string) => Object.keys(SENDERS).find((k) => SENDERS[k].test(sender.trim())) || null;
 
-const AMOUNT = /(?:NPR|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)/i;
+const AMOUNT = /(?:NPR\.?|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)/i;
 // The sentence that makes it a transaction, and which way the money went. Credit first:
 // "credited to your A/C" can also mention a "debit card".
 const TXN: [RegExp, "credit" | "debit"][] = [
@@ -85,19 +85,21 @@ export function sourceFor<T extends MatchableSource>(p: Parsed, sources: T[]): T
   return accounts.length === 1 ? accounts[0] : null;
 }
 
-// A debit that loads one of your wallets ("LoadeSewa/…", "eSewa Load …", "Wallet Transfer for Khalti")
-// is a transfer, not a spend. The wallet sends no SMS of its own for it, so the remark is all there is.
-// A mobile number in the remark that isn't the wallet's ("eSewa Load 9851172") loaded someone
-// else's wallet: that's a payment. Nabil cuts the number to 7 digits, so your own load reads as
-// a payment there too — ponytail: store the full wallet number to tell those apart.
+// A wallet load ("LoadeSewa/…", "eSewa Load …", "Load Wallet Khalti") reads the same whether it went to
+// your wallet or to someone you paid. Only your own wallet number in the remark makes it a transfer here;
+// otherwise it stays a payment until your wallet reports the money arriving (the importer pairs them).
 const MOBILE = /(?<!\d)9[78]\d{5}(?:\d{3})?(?!\d)/;
+// The tracked wallet a remark names, whoever's number follows it.
+export function walletNamed<T extends MatchableSource>(rem: string | null | undefined, sources: T[]): T | null {
+  const w = rem && ["esewa", "khalti"].find((k) => BANKS[k].test(rem));
+  return (w && sources.find((x) => x.key === w || BANKS[w].test(x.base || x.name || ""))) || null;
+}
 export function transferTo<T extends MatchableSource>(p: { dir: string; rem: string | null }, sources: T[]): T | null {
   if (p.dir !== "debit" || !p.rem) return null;
-  const w = ["esewa", "khalti"].find((k) => BANKS[k].test(p.rem!));
-  const wallet = w && sources.find((x) => x.key === w || BANKS[w].test(x.base || x.name || ""));
+  const wallet = walletNamed(p.rem, sources);
   if (!wallet) return null;
   const mobile = MOBILE.exec(p.rem)?.[0];
-  return mobile && !(wallet.acct && mobile.endsWith(String(wallet.acct))) ? null : wallet;
+  return mobile && wallet.acct && mobile.endsWith(String(wallet.acct)) ? wallet : null;
 }
 
 // An identified own-wallet transfer plus its destination credit is stored once.

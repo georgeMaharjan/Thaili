@@ -72,11 +72,11 @@ assert.equal(sourceFor(p("NABIL", "A/C ...4821 is debited by NPR 5.00")!, source
 assert.equal(sourceFor(p("NABIL", "A/C ...9999 has been withdrawn by NPR 5.00")!, sources)?.key, "src1");
 assert.equal(sourceFor(p("EBL_ALERT", "A/C ...7777 is debited by NPR 5.00")!, sources), null);
 
-// Wallet loads from a bank are transfers to that wallet, when you have it
+// A wallet load is a transfer only with your own wallet number; a bare reference could be anyone's wallet
 const own = [{ key: "nic", base: "NIC Asia" }, { key: "esewa", base: "eSewa", acct: "1395" }, { key: "khalti", base: "Khalti", acct: "1395" }];
-assert.equal(transferTo(p("NICA_ALERT", "Your 270###52401 has been Debited by NPR 500.00 on 29/03/2026 15:06:40, Remarks: LoadeSewa/412258213.. NIC ASIA")!, own)?.key, "esewa");
+assert.equal(transferTo(p("NICA_ALERT", "Your 270###52401 has been Debited by NPR 500.00 on 29/03/2026 15:06:40, Remarks: LoadeSewa/412258213.. NIC ASIA")!, own), null);
 assert.equal(transferTo(p("NICA_ALERT", "Your 270###52401 has been Debited by NPR 500.00, Remarks: Khalti Load/409108317/9860001395.. NIC ASIA")!, own)?.key, "khalti");
-assert.equal(transferTo(p("NABIL_ALERT", "Your 098##44344 has been withdrawn by NPR 500.00, Remarks: Load Wallet Khalti")!, own)?.key, "khalti");
+assert.equal(transferTo(p("NABIL_ALERT", "Your 098##44344 has been withdrawn by NPR 500.00, Remarks: Load Wallet Khalti")!, own), null);
 // Someone else's mobile number: you paid them through their wallet
 assert.equal(transferTo(p("NABIL_ALERT", "Your 098##44344 has been withdrawn by NPR 500.00 on 31/08/2026 18:38:55, Remarks: eSewa Load 9851172")!, own), null);
 assert.equal(transferTo(p("NICA_ALERT", "Your 270###52401 has been Debited by NPR 500.00, Remarks: Khalti Load/409108317/9851172000.. NIC ASIA")!, own), null);

@@ -7,7 +7,7 @@ export const normalizeMoneyText = (text: string) => text
   .replace(/[\u200b-\u200d\ufeff]/g, "").replace(/\u00a0/g, " ");
 
 const NUMBER = "([0-9]+(?:,[0-9]{2,3})*(?:\\.[0-9]{1,2})?)";
-const CURRENCY = "(?:NPR|NRs?\\.?|Rs\\.?|रु\\.?|रू\\.?)";
+const CURRENCY = "(?:NPR\\.?|NRs?\\.?|Rs\\.?|रु\\.?|रू\\.?)";
 const PREFIX = new RegExp(CURRENCY + "\\s*[:=-]?\\s*" + NUMBER + "(?![0-9]|\\.[0-9])", "gi");
 const SUFFIX = new RegExp(NUMBER + "\\s*" + CURRENCY + "(?![A-Za-z])", "gi");
 const LABELED = new RegExp("\\b(?:amount|amt)\\s*[:=]\\s*" + NUMBER + "(?![0-9]|\\.[0-9])", "gi");
@@ -15,7 +15,7 @@ const LABELED = new RegExp("\\b(?:amount|amt)\\s*[:=]\\s*" + NUMBER + "(?![0-9]|
 // Reject a request, failed payment, OTP or promotion before attempting direction/amount.
 export const NOTIFICATION_IGNORE = /\b(?:failed|declined|unsuccessful|pending|cancelled|canceled|scheduled|processing)\b|\b(?:payment|money|transfer)\s+request\b|\b(?:request|requested)\s+(?:for\s+)?(?:money|payment)\b|\b(?:will be|to be)\s+(?:debited|credited|deducted)\b|\b(?:is due|due date|reminder|pay now|please pay|up to|win|offer|earn cashback)\b|(?:OTP|one[- ]?time password|verification code|passcode)\W{0,8}(?:is\W*)?[0-9]{4,8}\b|\b[0-9]{4,8}\s+(?:is your\s+)?(?:OTP|verification code)\b|असफल|प्रक्रियामा/i;
 const CREDIT = /\b(?:credited|received|deposited|refunded)\b|\b(?:funds?|money|balance)\s+(?:has been\s+|is\s+|was\s+)?(?:added|loaded)\b|\b(?:added|loaded)\s+to\s+your\s+(?:wallet|account|balance)\b|\bloaded\b[^\n]*\b(?:your|wallet)\b|\b(?:has been|was)\s+loaded\s+with\b|\b(?:refund|cashback|deposit|top[- ]?up|load)\s+(?:successful|completed|received)\b|\bcredit\s+(?:alert|transaction)\b|\bcredit\s*[:\n]|\b(?:transaction\s*type|type)\s*[:=-]\s*(?:cr|credit)\b|जम्मा\s*(?:भएको|भयो|गरिएको)|प्राप्त/i;
-const DEBIT = /\b(?:debited|deducted|paid|sent|withdrawn|spent|charged|purchased)\b|\b(?:payment|purchase|withdrawal|bill payment|wallet transfer)\s+(?:was\s+|is\s+)?(?:successful|completed|success)\b|\b(?:made|completed)\s+(?:a\s+)?payment\b|\btransfer\s+of\b[^\n]*?\b(?:is|was|has been)\s+(?:successful|completed)\b|\b(?:successfully\s+(?:paid|sent|transferred)|transferred\s+(?:to|from your))\b|\bdebit\s+(?:alert|transaction)\b|\bdebit\s*[:\n]|\b(?:transaction\s*type|type)\s*[:=-]\s*(?:dr|debit)\b|भुक्तानी\s*(?:भएको|भयो|सफल)|कटौती|खर्च\s*भयो|पठाइएको/i;
+const DEBIT = /\b(?:debited|deducted|paid|sent|withdrawn|spent|charged|purchased)\b|\b(?:payment|purchase|withdrawal|bill payment|wallet transfer)\s+(?:was\s+|is\s+)?(?:successful|completed|success)\b|\b(?:made|completed)\s+(?:a\s+)?payment\b|\b(?:transfer|your\s+transaction)\s+of\b[^\n]*?\b(?:is|was|has been)\s+(?:successfully\s+)?(?:successful|completed)\b|\b(?:successfully\s+(?:paid|sent|transferred)|transferred\s+(?:to|from your))\b|\bdebit\s+(?:alert|transaction)\b|\bdebit\s*[:\n]|\b(?:transaction\s*type|type)\s*[:=-]\s*(?:dr|debit)\b|भुक्तानी\s*(?:भएको|भयो|सफल)|कटौती|खर्च\s*भयो|पठाइएको/i;
 const BALANCE = /(?:\b(?:available|current|remaining|closing|opening|avl)\s*)?\b(?:balance|bal)\.?\s*[:=\-]?\s*$/i;
 const FEE = /\b(?:fee|fees|charge|charges)\s*[:=\-]?\s*$/i;
 const TAIL = /(?:A\/C|account|acct|card)\s*(?:no\.?\s*)?[: ]*[^\n]{0,14}?[xX*#.]([0-9]{4})\b|(?:your|A\/C|account)\s+[0-9xX*#]{2,}?([0-9]{4})\b/i;
@@ -53,6 +53,7 @@ export function parseNotification(msg: { bank: string; body: string; at: number 
   const tail = TAIL.exec(body);
   const remark = (/\b(?:remarks?|rmks|narration|description|merchant)\s*[:\-]\s*([^\n]+?)(?:\.\s|$|\n)/i.exec(body)?.[1]?.trim()
     || /\b(?:paid|payment(?:\s+(?:of|for)\s+[^\n]+?)?)\b[^\n]*?\bto\s+([^\n]+?)(?:[.,]\s|\s+(?:on|ref|txn|transaction|available|balance)\b|$)/i.exec(body)?.[1]?.trim()
+    || /\btransaction\s+of\b[^\n]*?\bfor\s+([^\n]+?)\s+(?:is|was|has been)\b/i.exec(body)?.[1]?.trim()
     || /\b(?:received|credited)\b[^\n]*?\bfrom\s+([^\n]+?)(?:[.,]\s|\s+(?:on|ref|txn|transaction|available|balance)\b|$)/i.exec(body)?.[1]?.trim()
     || null)?.replace(/[.,]$/, "") || null;
   return {
