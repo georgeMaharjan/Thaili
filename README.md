@@ -79,6 +79,10 @@ Get the latest signed APK from [Releases](https://github.com/georgeMaharjan/Thai
 `npm run sync`, then `cd android && ./gradlew assembleRelease`. Without `android/keystore.properties`
 (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`; git-ignored) the release APK is built unsigned.
 
+In-app updates (Settings → App update) read the latest GitHub release. For each release: raise `versionCode`
+and `versionName` in `android/app/build.gradle`, tag it `v<versionName>`, and attach the signed APK as
+`thaili.apk`. Sign every release with the same keystore, or Android refuses to install it over the old one.
+
 ## License
 
 [MIT](LICENSE)

@@ -5,7 +5,7 @@ import { bsOf, monthKey, monthName, npDigits } from "../../lib/bs";
 import { digits10, fmtPhone, initials, rs, validPhone } from "../../lib/format";
 import { captureNotifications } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
+export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
   const { s, T, np, dark, surplus, openBaseline, autoFiled, segBg, segFg, segSh } = context;
   return {
     setLight: () => app.patch({ theme: "light" }),
@@ -58,7 +58,15 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
         icon: IC.vault, label: np ? "बचत आधार" : "Savings baseline", meta: "Protected before any goal is funded", value: rs(s.savingsGoal),
         tap: openBaseline
       },
-      { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) }
+      { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) },
+      {
+        icon: IC.importI, label: np ? "एप अपडेट" : "App update",
+        meta: s.update ? (np ? "संस्करण " + s.update.version + " आयो — डाउनलोड गर्न थिच्नुहोस्" : "Version " + s.update.version + " is ready — tap to download")
+          : (np ? "नयाँ संस्करण जाँच्न थिच्नुहोस्" : "Tap to check for a new version"),
+        value: s.appVersion ? "v" + s.appVersion : "",
+        // Opens in the phone's browser; Android installs the APK over this one.
+        tap: () => { if (s.update) window.location.href = s.update.url; else void app.checkUpdate(true); }
+      }
       // Export everything and Archive are hidden until they work — see "To do" in README.md.
     ],
     ...(() => {

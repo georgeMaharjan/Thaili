@@ -13,6 +13,7 @@ import { importTransactions } from "../lib/import-transactions";
 import { rememberMoneyPackages } from "../lib/money-apps";
 import { TABS, backDismissal, gate, nextStack } from "../lib/nav";
 import { captureNotifications } from "../lib/notifications";
+import { checkForUpdate } from "../lib/update";
 import { initializeStore, load, mergeIncoming, save, subscribeStore } from "../lib/store";
 import { CalendarClock } from "./calendar-clock";
 import { CaptureCoordinator, captureConfiguration } from "./capture";
@@ -99,6 +100,21 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   paintBars = () => {
     if (isDevice) SystemBars.setStyle({ style: this.state.theme === "dark" ? SystemBarsStyle.Dark : SystemBarsStyle.Light });
   };
+  /** Asks GitHub Releases for a newer APK. Quiet on launch; a manual check always answers. */
+  checkUpdate = async (manual = false) => {
+    const np = this.state.lang === "NP";
+    if (!isDevice) { if (manual) this.flash(np ? "अपडेट Android एपमा मात्र जाँचिन्छ" : "Updates are checked in the Android app"); return; }
+    try {
+      const version = this.state.appVersion || (await CapApp.getInfo()).version;
+      const update = await checkForUpdate(version);
+      this.patch({ appVersion: version, update });
+      if (update) this.flash(np ? "थैली " + update.version + " आयो — सेटिङबाट अपडेट गर्नुहोस्" : "Thaili " + update.version + " is available — update from Settings");
+      else if (manual) this.flash(np ? "थैली " + version + " नै नयाँ संस्करण हो" : "Thaili " + version + " is the latest version");
+    } catch (e) {
+      console.warn("[thaili] update check failed", e);
+      if (manual) this.flash(np ? "अपडेट जाँच्न सकिएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।" : "Couldn't check for updates. Check your connection and try again.");
+    }
+  };
   refreshPerms = () => permStatus().then(p => this.patch({ perms: [p.sms, p.notifications] }));
   authentication = new AuthenticationSession(authenticate, () => document.visibilityState === "visible",
     active => this.patch({ unlockBusy: active }));
@@ -150,6 +166,7 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     this.paintBars();
     this._s = setTimeout(() => this.patch({ splash: false }), 2200); // let the mark finish drawing
     this.refreshPerms();
+    void this.checkUpdate();
     this.discovery.refresh().catch(() => { }); // Setup offers a retry if discovery fails.
     this.storeSub = subscribeStore((storageStatus, pouch) => {
       this.patch({ storageStatus });
