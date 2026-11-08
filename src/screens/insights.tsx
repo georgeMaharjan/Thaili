@@ -161,6 +161,7 @@ export function Flow({ v }: { v: V }) {
         <Hero value={v.flowBig} fg={v.flowBigFg} />
         {v.flowSub && <span className="text-[14px]" style={{ color: v.flowSubFg }}>{v.flowSub}</span>}
       </div>
+      {v.flowKinds.length > 0 && <Seg items={v.flowKinds} className="-mt-6 w-full rounded-xl" itemClass="flex min-h-[44px] min-w-0 flex-1 items-center justify-center rounded-[8px] px-1 text-[13px]" />}
       <Section title={v.flowListTitle} action={<span className="text-[13px] text-ink-3">{v.flowCount}</span>}>
         {v.flowRows.map((r, i: number) => <TxCard key={i} r={r} />)}
         {v.flowEmptyLine && <span className={cx(ROW_TOP, "flex min-h-[60px] items-center text-[14px] text-ink-3")}>{v.flowEmptyLine}</span>}

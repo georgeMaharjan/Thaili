@@ -23,7 +23,7 @@ export function insightsViewModel(app: Pick<AppController, "patch" | "go" | "bac
     inMeta: (n => n ? n + (n === 1 ? " deposit" : " deposits") : "Nothing yet")(s.tx.filter(t => t.dir === "credit" && inWin(t)).length),
     spentChip: deltaChip(periodOut, prevTotal),
     spentSentence: vsSentence(periodOut, prevTotal),
-    toFlow: () => app.go("flow", { flowDir: "debit" }),
+    toFlow: () => app.go("flow", { flowDir: "debit", flowKind: "all" }),
     toFlowIn: () => app.go("flow", { flowDir: "credit" }),
     toLeaks: () => app.go("leaks"),
     leaksBack: app.back,
@@ -136,18 +136,26 @@ export function insightsViewModel(app: Pick<AppController, "patch" | "go" | "bac
     })(),
     ...(() => {
       const isIn = s.flowDir === "credit";
-      const list = s.tx.filter(t => t.dir === (isIn ? "credit" : "debit") && inWin(t));
+      const kind = isIn ? "all" : s.flowKind;
+      const ofKind = (k: string) => (t: { cat?: string | null }) => k === "all" || (!!t.cat && (k === "essential") === isEss(t.cat));
+      const list = s.tx.filter(t => t.dir === (isIn ? "credit" : "debit") && inWin(t) && ofKind(kind)(t));
+      const kindTotal = list.reduce((a, t) => a + t.amt, 0);
       return {
         flowName: isIn ? (np ? "आम्दानी" : "Income") : (np ? "खर्च" : "Expenses"),
         flowHeadLabel: (isIn ? (np ? "आम्दानी · " : "Came in · ") : (np ? "खर्च · " : "Spent · ")) + perName,
-        flowBig: whole(isIn ? periodIn : periodOut),
+        flowBig: whole(isIn ? periodIn : kindTotal),
+        flowKinds: isIn ? [] : (["all", "essential", "optional"] as const).map(k => ({
+          label: { all: T.all, essential: np ? "आवश्यक" : "Essential", optional: T.leaks }[k] + " · " + kfmt(debitSum(t => inWin(t) && ofKind(k)(t))),
+          bg: kind === k ? "var(--surface)" : "transparent", fg: kind === k ? "var(--ink)" : "var(--ink3)", shadow: kind === k ? "0 1px 2px rgba(0,0,0,.08)" : "none",
+          tap: () => app.patch({ flowKind: k })
+        })),
         flowBigFg: isIn ? "var(--pos)" : "var(--ink)",
-        flowSub: isIn ? "" : vsSentence(periodOut, prevTotal),
+        flowSub: isIn || kind !== "all" ? "" : vsSentence(periodOut, prevTotal),
         flowSubFg: isIn ? "var(--ink3)" : deltaChip(periodOut, prevTotal).fg,
         flowListTitle: isIn ? (np ? "जम्मा भएका" : "Deposits") : (np ? "खर्चहरू" : "Spends"),
         flowCount: list.length + (isIn ? (list.length === 1 ? " deposit" : " deposits") : (list.length === 1 ? " spend" : " spends")),
         flowRows: list.map(txCard("flow", dayMeta)),
-        flowEmptyLine: list.length ? "" : isIn ? "No income in this period" : "No spending in this period"
+        flowEmptyLine: list.length ? "" : isIn ? "No income in this period" : kind === "all" ? "No spending in this period" : "No " + (kind === "essential" ? "essential" : "optional") + " spending in this period"
       };
     })()
   };

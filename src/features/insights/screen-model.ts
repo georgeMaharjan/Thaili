@@ -25,6 +25,7 @@ export type InsightsScreenModel = Pick<AppViewModel,
   "flowBigFg" |
   "flowCount" |
   "flowEmptyLine" |
+  "flowKinds" |
   "flowFs" |
   "flowHeadLabel" |
   "flowListTitle" |
