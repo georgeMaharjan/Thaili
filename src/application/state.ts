@@ -38,7 +38,7 @@ export type AppState = {
   filtersOpen: boolean; filterDraft: Filters | null; txQuery: string;
   txRange: string; txFrom: number | null; txTo: number | null; calOpen: boolean;
   calA: number | null; calB: number | null; calKey: number;
-  flowDir: "debit" | "credit"; savExplain: boolean; baseAmt: string; baseFresh: boolean;
+  flowDir: "debit" | "credit"; flowKind: "all" | "essential" | "optional"; reviewHidden: number; notifCardHidden: boolean; catDeleting: string | null; savExplain: boolean; baseAmt: string; baseFresh: boolean;
   baseSetup: boolean; baseFrom: Screen | null; density: Density; hideBal: boolean;
   regName: string; regPhone: string; regThen: Screen; profName: string; profPhone: string;
   editSrcKey?: string | null; srcNewFrom?: Screen;
@@ -75,7 +75,7 @@ export function initialState(): AppState {
     remarkDraft: null,
     txCategories: [], txSpending: "all", filtersOpen: false, filterDraft: null,
     txQuery: "", txRange: "month", txFrom: null, txTo: null, calOpen: false, calA: null, calB: null, calKey: calendarAt(new Date()).MONTH_KEY,
-    flowDir: "debit", savExplain: false, baseAmt: "", baseFresh: true, baseSetup: false, baseFrom: null,
+    flowDir: "debit", flowKind: "all", reviewHidden: 0, notifCardHidden: false, catDeleting: null, savExplain: false, baseAmt: "", baseFresh: true, baseSetup: false, baseFrom: null,
     // The local profile: { name, phone: "+977XXXXXXXXXX", createdAt }.
     // Spacing is per device, not synced: it's about this screen and these eyes.
     density: (() => { try { const d = localStorage.getItem("thaili-density"); return d && d in DENSITY ? d as keyof typeof DENSITY : "default"; } catch { return "default"; } })(),

@@ -21,7 +21,7 @@ export function backDismissal(s: Record<string, unknown>): Record<string, unknow
   for (const key of ["discardAdd", "discardGoal", "deleting", "calOpen", "filtersOpen"]) {
     if (s[key]) return { [key]: false };
   }
-  for (const key of ["ruleEdit", "rulePrompt", "remarkDraft"]) {
+  for (const key of ["ruleEdit", "rulePrompt", "remarkDraft", "catDeleting"]) {
     if (s[key] != null) return { [key]: null };
   }
   if (s.editing) return { editing: false };
