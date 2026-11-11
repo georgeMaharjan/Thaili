@@ -38,7 +38,7 @@ public class ReleaseFlowDeviceTest {
             assertEquals("device-fixture-legacy",original.getJSONArray("tx").getJSONObject(0).getString("id"));
             assertEquals(100.5,original.getJSONArray("tx").getJSONObject(0).getDouble("amt"),0);
             assertEquals(1,original.getJSONArray("goals").length());
-            app.tap("button[aria-label='Profile and settings']");app.text("Bank SMS access"); app.text("Read bank SMS"); app.text("Allow SMS permission above first.");
+            app.tap("button[aria-label='Profile and settings']");app.tapText("Bank SMS access"); app.text("SMS permission"); app.text("Allow SMS permission above first.");
             app.waitFor("document.querySelector('[role=switch]').getAttribute('aria-checked')==='false'");
             assertEquals(0,Capture.config(context).getJSONObject("senders").length());
             app.tap("button[role=switch]");
@@ -46,7 +46,8 @@ public class ReleaseFlowDeviceTest {
             waitSender(context,true);
             app.reload();app.text("View accounts");
             assertEquals("nabil",app.record().getJSONObject("snapshot").getJSONObject("prefs").getJSONArray("smsBanks").getString(0));
-            app.tap("button[aria-label='Profile and settings']");app.tap("button[role=switch]");waitSender(context,false);
+            app.tap("button[aria-label='Profile and settings']");app.tapText("Bank SMS access");app.tap("button[role=switch]");waitSender(context,false);
+            app.tap("button[aria-label=Back]");app.text("Thaili transaction alerts");
             app.tapText("Privacy policy");app.text("SMS: choose banks first");
             assertEquals(Boolean.TRUE,app.js("return document.documentElement.scrollWidth<=innerWidth+1;"));
             app.screenshot("device-privacy-en.png");
