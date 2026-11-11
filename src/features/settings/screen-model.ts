@@ -2,6 +2,8 @@ import type { AppViewModel } from "../view-model";
 
 /** Only the values and actions consumed by this feature’s screens. */
 export type SettingsScreenModel = Pick<AppViewModel,
+  "permissionTitle" | "permissionNote" | "permissionRows" |
+  "smsRecoverLabel" | "smsRecoverHint" | "smsCanRecover" | "recoverBankSms" |
   "privacyTitle" | "privacySections" | "privacyBack" |
   "smsAccessTitle" | "smsAccessNote" | "smsBankRows" |
   "numericEditingLabel" |

@@ -69,6 +69,17 @@ export function Settings({ v }: { v: V }) {
           </div>
         </Section>
 
+        <Section title={v.permissionTitle}>
+          <p className="pb-3 text-[13px] leading-[1.6] text-ink-3">{v.permissionNote}</p>
+          {v.permissionRows.map(permission => <button key={permission.key} onClick={permission.tap} className={cx(ROW, "press text-left")}>
+            <div className="flex min-w-0 flex-1 flex-col gap-1 py-3">
+              <span className="text-[15px] font-medium">{permission.label}</span>
+              <span className="text-[13px] leading-[1.5] text-ink-3">{permission.detail}</span>
+            </div>
+            <span className={cx("flex-none text-[14px] font-semibold", permission.on ? "text-pos" : "text-ink-3")}>{permission.state}</span><Chevron />
+          </button>)}
+        </Section>
+
         <Section title={v.smsAccessTitle}>
           <p className="pb-3 text-[13px] leading-[1.6] text-ink-3">{v.smsAccessNote}</p>
           {v.smsBankRows.map(bank => (
@@ -77,6 +88,8 @@ export function Settings({ v }: { v: V }) {
               <span className={cx("flex-none text-[14px] font-semibold", bank.on ? "text-pos" : "text-ink-3")}>{bank.stateLabel}</span>
             </button>
           ))}
+          <button onClick={v.recoverBankSms} disabled={!v.smsCanRecover} className="mt-3 min-h-[48px] rounded-xl border border-line px-4 py-3 text-left text-[14px] font-semibold text-action disabled:opacity-50">{v.smsRecoverLabel}</button>
+          <p className="mt-2 text-[13px] leading-[1.5] text-ink-3">{v.smsRecoverHint}</p>
         </Section>
 
         <Section title={v.manageTitle}>

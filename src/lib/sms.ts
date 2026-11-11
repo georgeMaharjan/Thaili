@@ -147,3 +147,5 @@ export function tailsByBank(msgs: { sender: string; body: string; at: number }[]
 /** A bank must have an account and explicit SMS opt-in; old backups default to no body access. */
 export const enabledSmsBanks = (accounts: (string | MatchableSource)[], selected: string[]) =>
   Object.keys(nativeRules(accounts).senders).filter(key => selected.includes(key));
+
+export const SMS_HISTORY_MS = 90 * 86400000;

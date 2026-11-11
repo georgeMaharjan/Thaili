@@ -15,6 +15,9 @@ app.state = { ...initialState(), loaded: true, splash: false, screen: "permissio
 };
 try {
   const v = app.renderVals();
+  assert.ok(v.permissionRows.some(row => row.key === "sms" && row.state === "Off"));
+  assert.match(v.permissionNote, /backup does not restore Android permissions/);
+  assert.equal(v.smsCanRecover, false);
   v.openPrivacy(); assert.equal(app.state.screen, "privacy");
   assert.ok(app.renderVals().privacySections.length >= 7);
   app.renderVals().privacyBack(); assert.equal(app.state.screen, "permission");
@@ -22,6 +25,7 @@ try {
   app.go("settings");
   const nabil = app.renderVals().smsBankRows.find(bank => bank.key === "nabil")!;
   assert.equal(nabil.on, false); nabil.tap();
+  assert.ok(app.state.smsSince! <= Date.now() - 89 * 86400000, "enabling a bank reopens the recovery window");
   assert.deepEqual(Object.keys(captureConfiguration(app.state).senders), ["nabil"], "account identity works even with a custom account key");
   assert.equal(app.state.sources.length, 2, "turning SMS on must not change accounts");
   const restored = decodePouch(snapshot(app.state)); assert.deepEqual(restored.prefs.smsBanks, ["nabil"]);

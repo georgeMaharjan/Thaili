@@ -5,9 +5,11 @@ import { bsOf, monthKey, monthName, npDigits } from "../../lib/bs";
 import { digits10, fmtPhone, initials, rs, validPhone } from "../../lib/format";
 import { privacyPolicy } from "../../lib/privacy";
 import { INSTITUTIONS, institutionForAccount } from "../../lib/institutions";
+import { enabledSmsBanks, SMS_HISTORY_MS } from "../../lib/sms";
+import { openAppSettings, openNotificationAccess } from "../../lib/device";
 import { captureNotifications } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData" | "back">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
+export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData" | "back" | "openSmsPermission" | "catchUpSms">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
   const { s, T, np, dark, surplus, openBaseline, autoFiled, segBg, segFg, segSh } = context;
   const privacyTitle = np ? "गोपनीयता नीति" : "Privacy policy";
   const smsInstitutions = INSTITUTIONS.filter(bank => bank.sms && s.sources.some(account => institutionForAccount(account)?.key === bank.key));
@@ -16,11 +18,31 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
     privacySections: privacyPolicy(np),
     openPrivacy: () => app.go("privacy"),
     privacyBack: () => { if (!app.back()) app.go(s.setupComplete ? "settings" : "permission"); },
+    permissionTitle: np ? "अनुमतिहरू" : "Permissions",
+    permissionNote: np ? "ब्याकअप फिर्ता ल्याउँदा Android का अनुमति फिर्ता आउँदैनन्। SMS अनुमति दिएर पढ्न दिने बैंकहरू तल छान्नुहोस्।" : "Restoring a backup does not restore Android permissions. Allow SMS here, then choose the banks below.",
+    permissionRows: [
+      { key: "sms", label: np ? "बैंक SMS पढ्ने अनुमति" : "Read bank SMS", on: s.perms[0],
+        state: s.perms[0] ? (np ? "चालु" : "On") : (np ? "बन्द" : "Off"),
+        detail: np ? "Android को SMS अनुमति दिन वा व्यवस्थापन गर्न थिच्नुहोस्" : "Tap to allow or manage Android SMS permission", tap: app.openSmsPermission },
+      { key: "notification", label: np ? "बैंक र वालेट सूचना पहुँच" : "Bank and wallet notification access", on: s.perms[1],
+        state: s.perms[1] ? (np ? "चालु" : "On") : (np ? "बन्द" : "Off"),
+        detail: np ? "Android को छुट्टै सूचना पहुँच सेटिङ" : "Open Android’s separate notification-reading settings", tap: () => void openNotificationAccess() },
+      { key: "android", label: np ? "Android एपका अनुमति" : "Android app permissions", on: false, state: "",
+        detail: np ? "पहिले अस्वीकार गरेका अनुमति यहाँबाट बदल्नुहोस्" : "Manage permissions here if Android no longer shows the prompt", tap: () => void openAppSettings() },
+    ],
+    smsRecoverLabel: np ? "छुटेका बैंक SMS जाँच्नुहोस्" : "Check for missed bank SMS",
+    smsRecoverHint: !s.perms[0] ? (np ? "पहिले माथि SMS अनुमति दिनुहोस्।" : "Allow SMS permission above first.")
+      : !enabledSmsBanks(s.sources, s.smsBanks).length ? (np ? "पहिले कम्तीमा एउटा बैंक छान्नुहोस्।" : "Enable at least one bank below first.")
+        : (np ? "छानिएका बैंकका पछिल्ला ९० दिन फेरि जाँच्छ। पहिल्यै भएका कारोबार दोहोरिँदैनन्।" : "Rechecks selected banks’ last 90 days; existing transactions are not duplicated."),
+    smsCanRecover: s.perms[0] && enabledSmsBanks(s.sources, s.smsBanks).length > 0,
+    recoverBankSms: () => { if (s.perms[0] && enabledSmsBanks(s.sources, s.smsBanks).length) void app.catchUpSms(true); },
     smsAccessTitle: np ? "बैंक SMS पहुँच" : "Bank SMS access",
     smsAccessNote: np ? "अनुमति दिए पनि छानेका बैंकका मात्र सन्देश पढिन्छन्। बैंक खोजमा प्रेषकका नाम मात्र जाँचिन्छन्। एउटै बैंकको प्रेषक सबै खाताको साझा हुन सक्छ। तल बैंक नदेखिए पहिले खाता थप्नुहोस्।" : "Only enabled banks’ message bodies are read, even when Android grants full SMS permission. Discovery checks sender names only. Accounts at the same bank can share a sender. Add an account to see its bank here. After upgrading from v1.3, choose your banks here to resume SMS capture.",
     smsBankRows: smsInstitutions.map(bank => ({
       key: bank.key, label: bank.name, on: s.smsBanks.includes(bank.key),
-      tap: () => app.patch(state => ({ smsBanks: state.smsBanks.includes(bank.key) ? state.smsBanks.filter(key => key !== bank.key) : [...state.smsBanks, bank.key] })),
+      tap: () => app.patch(state => state.smsBanks.includes(bank.key)
+        ? { smsBanks: state.smsBanks.filter(key => key !== bank.key) }
+        : { smsBanks: [...state.smsBanks, bank.key], smsSince: Math.min(state.smsSince ?? Date.now(), Date.now() - SMS_HISTORY_MS) }),
       stateLabel: s.smsBanks.includes(bank.key) ? (np ? "चालु" : "On") : (np ? "बन्द" : "Off"),
     })),
     setLight: () => app.patch({ theme: "light" }),

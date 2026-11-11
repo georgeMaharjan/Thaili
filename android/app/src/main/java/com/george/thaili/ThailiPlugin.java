@@ -340,21 +340,23 @@ public class ThailiPlugin extends Plugin {
     /** Only selected bank sender bodies are queried. OTP/amount filtering then applies locally. */
     @PluginMethod
     public void readSms(PluginCall call) {
+        if (getPermissionState("sms") != PermissionState.GRANTED) {
+            call.reject("SMS permission is required to read selected bank messages", "SMS_PERMISSION_REQUIRED");
+            return;
+        }
         JSArray out = new JSArray();
         try {
-            if (getPermissionState("sms") == PermissionState.GRANTED) {
-                for (SmsInboxReader.Message message : SmsInboxReader.read(smsInbox(), call.getLong("sinceMs", 0L), selectedSmsSenders(call))) {
-                    String body = message.body;
-                    if (body == null) continue;
-                    String normalized = MoneyNotificationText.normalize(body);
-                    if (!AMOUNT.matcher(normalized).find() || OTP.matcher(normalized).find()) continue;
-                    JSObject m = new JSObject();
-                    m.put("id", UUID.nameUUIDFromBytes(("sms|" + message.id + "|" + message.at + "|" + message.sender + "|" + body).getBytes(StandardCharsets.UTF_8)).toString());
-                    m.put("sender", message.sender);
-                    m.put("body", body);
-                    m.put("at", message.at);
-                    out.put(m);
-                }
+            for (SmsInboxReader.Message message : SmsInboxReader.read(smsInbox(), call.getLong("sinceMs", 0L), selectedSmsSenders(call))) {
+                String body = message.body;
+                if (body == null) continue;
+                String normalized = MoneyNotificationText.normalize(body);
+                if (!AMOUNT.matcher(normalized).find() || OTP.matcher(normalized).find()) continue;
+                JSObject m = new JSObject();
+                m.put("id", UUID.nameUUIDFromBytes(("sms|" + message.id + "|" + message.at + "|" + message.sender + "|" + body).getBytes(StandardCharsets.UTF_8)).toString());
+                m.put("sender", message.sender);
+                m.put("body", body);
+                m.put("at", message.at);
+                out.put(m);
             }
         } catch (RuntimeException error) { call.reject("Unable to read selected bank messages", error); return; }
         JSObject r = new JSObject();

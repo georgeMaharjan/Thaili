@@ -8,7 +8,7 @@ import { TransactionCommands } from "../features/transactions/commands";
 import { createAppViewModel } from "../features/view-model";
 import { AuthenticationSession, authenticationMessage } from "../lib/authentication";
 import type { Sms } from "../lib/device";
-import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, readSmsSenders, saveFile, setCapture } from "../lib/device";
+import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, readSmsSenders, requestSms, openAppSettings, saveFile, setCapture } from "../lib/device";
 import { BackupError, backupName, decodeBackup, encodeBackup } from "../lib/backup";
 import { npDigits } from "../lib/bs";
 import { hydrated, snapshot } from "../lib/pouch";
@@ -16,6 +16,7 @@ import { importTransactions } from "../lib/import-transactions";
 import { rememberMoneyPackages } from "../lib/money-apps";
 import { TABS, backDismissal, gate, nextStack } from "../lib/nav";
 import { captureNotifications } from "../lib/notifications";
+import { SMS_HISTORY_MS } from "../lib/sms";
 import { checkForUpdate } from "../lib/update";
 import { initializeStore, load, mergeIncoming, save, subscribeStore } from "../lib/store";
 import { CalendarClock } from "./calendar-clock";
@@ -155,6 +156,19 @@ export class AppController extends React.Component<Record<string, never>, AppSta
       }[problem]);
     }
   };
+  requestSmsPermission = async () => {
+    const np = this.state.lang === "NP";
+    if (!isDevice) { this.flash(np ? "SMS अनुमति Android फोनमा दिनुहोस्" : "Grant SMS permission on your Android phone"); return; }
+    try {
+      const permissions = await requestSms();
+      this.patch(state => ({ perms: [permissions.sms, permissions.notifications],
+        ...(permissions.sms ? { smsSince: Math.min(state.smsSince ?? Date.now(), Date.now() - SMS_HISTORY_MS) } : {}) }));
+      this.flash(permissions.sms
+        ? (np ? "SMS अनुमति चालु छ। पढ्न दिने बैंकहरू छान्नुहोस्।" : "SMS permission is on. Choose the banks Thaili may read.")
+        : (np ? "SMS अनुमति बन्द छ। Android सेटिङ → अनुमति → SMS बाट चालु गर्न सकिन्छ।" : "SMS permission is off. Use Android app settings → Permissions → SMS if the dialog no longer appears."));
+    } catch { this.flash(np ? "SMS अनुमति जाँच्न सकिएन" : "Could not check SMS permission"); }
+  };
+  openSmsPermission = () => this.state.perms[0] ? void openAppSettings() : void this.requestSmsPermission();
   refreshPerms = () => permStatus().then(p => this.patch({ perms: [p.sms, p.notifications] }));
   authentication = new AuthenticationSession(authenticate, () => document.visibilityState === "visible",
     active => this.patch({ unlockBusy: active }));
@@ -272,7 +286,7 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     if (this.saving && prev.loaded) save(prev, this.state);
     const n = this.state;
     if (n.loaded && (prev.sources !== n.sources || prev.smsBanks !== n.smsBanks || prev.rules !== n.rules || prev.notifMode !== n.notifMode || prev.moneyApps !== n.moneyApps || prev.setupComplete !== n.setupComplete || !prev.loaded)) this.syncCapture();
-    if (n.loaded && n.setupComplete && (!prev.setupComplete || prev.captureStartAt !== n.captureStartAt)) void this.catchUpSms().catch(console.warn);
+    if (n.loaded && n.setupComplete && (!prev.setupComplete || prev.captureStartAt !== n.captureStartAt || prev.smsBanks !== n.smsBanks || (!prev.perms[0] && n.perms[0]))) void this.catchUpSms().catch(console.warn);
     if (prev.theme !== this.state.theme) this.paintBars();
     const to = this.state.screen;
     if (prev.screen === to) return;
