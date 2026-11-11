@@ -1,0 +1,281 @@
+[
+  {
+    "id": "DefaultLocale",
+    "severity": "Warning",
+    "message": "Implicitly using the default locale is a common source of bugs: Use `toUpperCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`.",
+    "locations": [
+      {
+        "file": "Capture.java",
+        "line": "91"
+      }
+    ]
+  },
+  {
+    "id": "ManifestOrder",
+    "severity": "Warning",
+    "message": "`<uses-permission>` tag appears after `<application>` tag",
+    "locations": [
+      {
+        "file": "android/app/src/main/AndroidManifest.xml",
+        "line": "53"
+      }
+    ]
+  },
+  {
+    "id": "AndroidGradlePluginVersion",
+    "severity": "Warning",
+    "message": "A newer version of Gradle than 8.14.3 is available: 8.14.7",
+    "locations": [
+      {
+        "file": "android/gradle/wrapper/gradle-wrapper.properties",
+        "line": "3"
+      }
+    ]
+  },
+  {
+    "id": "GradleDependency",
+    "severity": "Warning",
+    "message": "A newer version of androidx.appcompat:appcompat than 1.7.1 is available: 1.8.0",
+    "locations": [
+      {
+        "file": "android/app/build.gradle",
+        "line": "50"
+      }
+    ]
+  },
+  {
+    "id": "PermissionImpliesUnsupportedChromeOsHardware",
+    "severity": "Error",
+    "message": "Permission exists without corresponding hardware `<uses-feature android:name=\"android.hardware.telephony\" required=\"false\">` tag",
+    "locations": [
+      {
+        "file": "android/app/src/main/AndroidManifest.xml",
+        "line": "56"
+      }
+    ]
+  },
+  {
+    "id": "PermissionImpliesUnsupportedChromeOsHardware",
+    "severity": "Error",
+    "message": "Permission exists without corresponding hardware `<uses-feature android:name=\"android.hardware.telephony\" required=\"false\">` tag",
+    "locations": [
+      {
+        "file": "android/app/src/main/AndroidManifest.xml",
+        "line": "57"
+      }
+    ]
+  },
+  {
+    "id": "ObsoleteSdkInt",
+    "severity": "Warning",
+    "message": "This folder configuration (`v24`) is unnecessary; `minSdkVersion` is 24. Merge all the resources in this folder into `drawable`.",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable-v24",
+        "line": null
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.layout.activity_main` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/layout/activity_main.xml",
+        "line": "2"
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.xml.config` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/xml/config.xml",
+        "line": "2"
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.drawable.ic_launcher_background` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable/ic_launcher_background.xml",
+        "line": "2"
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.color.ic_launcher_background` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/values/ic_launcher_background.xml",
+        "line": "3"
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.drawable.ic_launcher_foreground` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml",
+        "line": "1"
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.string.package_name` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/values/strings.xml",
+        "line": "5"
+      }
+    ]
+  },
+  {
+    "id": "UnusedResources",
+    "severity": "Warning",
+    "message": "The resource `R.string.custom_url_scheme` appears to be unused",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/values/strings.xml",
+        "line": "6"
+      }
+    ]
+  },
+  {
+    "id": "MonochromeLauncherIcon",
+    "severity": "Warning",
+    "message": "The application adaptive icon is missing a monochrome tag",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+        "line": "2"
+      }
+    ]
+  },
+  {
+    "id": "MonochromeLauncherIcon",
+    "severity": "Warning",
+    "message": "The application adaptive roundIcon is missing a monochrome tag",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+        "line": "2"
+      }
+    ]
+  },
+  {
+    "id": "IconDipSize",
+    "severity": "Warning",
+    "message": "The image `splash.png` varies significantly in its density-independent (dip) size across the various density versions: drawable-land-hdpi/splash.png: 533x320 dp (800x480 px), drawable-land-ldpi/splash.png: 427x320 dp (320x240 px), drawable-land-mdpi/splash.png: 480x320 dp (480x320 px), drawable-land-xhdpi/splash.png: 640x360 dp (1280x720 px), drawable-land-xxhdpi/splash.png: 533x320 dp (1600x960 px), drawable-land-xxxhdpi/splash.png: 480x320 dp (1920x1280 px)",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable-land-ldpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-xxxhdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-mdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-xxhdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-hdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-xhdpi/splash.png",
+        "line": null
+      }
+    ]
+  },
+  {
+    "id": "IconDipSize",
+    "severity": "Warning",
+    "message": "The image `splash.png` varies significantly in its density-independent (dip) size across the various density versions: drawable-land-night-hdpi/splash.png: 533x320 dp (800x480 px), drawable-land-night-ldpi/splash.png: 427x320 dp (320x240 px), drawable-land-night-mdpi/splash.png: 480x320 dp (480x320 px), drawable-land-night-xhdpi/splash.png: 640x360 dp (1280x720 px), drawable-land-night-xxhdpi/splash.png: 533x320 dp (1600x960 px), drawable-land-night-xxxhdpi/splash.png: 480x320 dp (1920x1280 px)",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable-land-night-ldpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-night-xxxhdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-night-mdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-night-xxhdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-night-hdpi/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-night-xhdpi/splash.png",
+        "line": null
+      }
+    ]
+  },
+  {
+    "id": "IconDuplicatesConfig",
+    "severity": "Warning",
+    "message": "The `splash.png` icon has identical contents in the following configuration folders: drawable-land-night-ldpi, drawable-night",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable-night/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-land-night-ldpi/splash.png",
+        "line": null
+      }
+    ]
+  },
+  {
+    "id": "IconDuplicatesConfig",
+    "severity": "Warning",
+    "message": "The `splash.png` icon has identical contents in the following configuration folders: drawable-port-mdpi, drawable",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable/splash.png",
+        "line": null
+      },
+      {
+        "file": "android/app/src/main/res/drawable-port-mdpi/splash.png",
+        "line": null
+      }
+    ]
+  },
+  {
+    "id": "IconLocation",
+    "severity": "Warning",
+    "message": "Found bitmap drawable `res/drawable/splash.png` in densityless folder",
+    "locations": [
+      {
+        "file": "android/app/src/main/res/drawable/splash.png",
+        "line": null
+      }
+    ]
+  }
+]

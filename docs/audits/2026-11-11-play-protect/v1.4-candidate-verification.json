@@ -1,0 +1,28 @@
+{
+  "versionName": "1.4",
+  "versionCode": "5",
+  "sha256": "c4b0d86f1c337c38639aac70e2b895853f9a8d16a1b4174c34705af792faec78",
+  "bytes": 5825504,
+  "allowBackup": "false",
+  "fullBackupContent": "@ref/0x7f110000",
+  "dataExtractionRules": "@ref/0x7f110002",
+  "debuggable": "false",
+  "permissions": [
+    "android.permission.INTERNET",
+    "android.permission.VIBRATE",
+    "android.permission.READ_SMS",
+    "android.permission.RECEIVE_SMS",
+    "android.permission.POST_NOTIFICATIONS",
+    "android.permission.RECEIVE_BOOT_COMPLETED",
+    "android.permission.WAKE_LOCK",
+    "android.permission.USE_BIOMETRIC",
+    "android.permission.USE_FINGERPRINT",
+    "com.george.thaili.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ],
+  "firebaseDefined": false,
+  "compiledBackupExclusionsVerified": true,
+  "fileProviderPicturesOnlyVerified": true,
+  "signatureSchemeV2Verified": true,
+  "signerSha256": "c581a727f0c4b6e6ca8b93e6dc07bb8daaf3d15e7a3e7cf504c97e399655e9bb",
+  "published": false
+}

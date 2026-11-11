@@ -25,19 +25,25 @@ runs on the Bikram Sambat calendar, and keeps all of your data on your phone.
 
 ## Your data stays on your phone
 
-Thaili has no account, server or cloud sync. Everything is stored on the phone and nothing is uploaded. The only
-network request is the check for a new version on GitHub, and you can also run it from Settings → App update.
+The source in this checkout stores the ledger and local profile on your phone, with no active cloud sync or
+financial-data upload service. GitHub update checks send normal network metadata, such as your IP address,
+but do not send messages or transactions. Review alerts are generated on the phone without Firebase.
+
+**Version scope:** the public v1.3 APK predates these privacy fixes: it includes the Firebase SDK, enables
+Android automatic backup and reads broader SMS body candidates before filtering. These changes need a new
+release; they do not alter an APK already downloaded. See the [privacy policy](docs/PRIVACY.md).
 
 Because the phone holds the only copy, **uninstalling Thaili or clearing its data deletes everything** unless you have
 a backup:
 
 - **Export:** Settings → Export all data saves a `thaili-backup-<date>.json` file wherever you choose (Downloads by
-  default). Export again whenever you want a newer copy; nothing is backed up automatically. The file isn't
-  encrypted, so keep it private.
+  default). A cloud document provider can upload the file if you choose one. The current source opts out of
+  Android automatic backup and device transfer; this cannot delete backups made by older versions. Export
+  again whenever you want a newer copy. The file isn't encrypted by Thaili, so keep it private.
 - **Restore:** after reinstalling, choose **Restore from a backup** on the Welcome screen and pick the file. Thaili
   checks the file before restoring anything: it must be a Thaili backup, pass its checksum (edited or damaged files
   are refused) and contain consistent data. Restore never replaces data already on the phone. Afterwards, turn SMS
-  and notification access back on.
+  and notification access back on, and choose the banks allowed for SMS capture.
 
 Cloud sync was removed on purpose until opt-in consent and server security are in place; see the
 [logic audit](docs/LOGIC-AUDIT-2026-10-20.md) and [recommended fixes](docs/LOGIC-REMEDIATION.md).
@@ -46,8 +52,8 @@ Cloud sync was removed on purpose until opt-in consent and server security are i
 
 1. Download `thaili.apk` from the [latest release](https://github.com/georgeMaharjan/Thaili/releases/latest), open it
    on your phone and allow installs from your browser when Android asks.
-2. Register with your name and mobile number (kept on the phone), then allow SMS access.
-3. Let Thaili find your bank and wallet apps, add each account's balance, and import your SMS history.
+2. Register with your name and mobile number (kept on the phone), review the privacy policy, then optionally allow SMS access.
+3. Discovery checks installed apps and SMS sender names. Select banks to allow body reads, add account balances, and optionally import up to 90 days of history. Settings → Bank SMS access controls each bank separately.
 4. Turn on **Accounts → Transaction notifications** so alerts from bank and wallet apps are captured too.
 
 Thaili checks for new versions when it opens; install updates from Settings → App update.

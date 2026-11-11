@@ -1,0 +1,194 @@
+{
+  "errors": 0,
+  "warnings": 18,
+  "issues": [
+    {
+      "id": "ManifestOrder",
+      "severity": "Warning",
+      "message": "`<uses-feature>` tag appears after `<application>` tag",
+      "category": "Correctness",
+      "priority": "5",
+      "summary": "Incorrect order of elements in manifest",
+      "explanation": "The `<application>` tag should appear after the elements which declare which version you need, which features you need, which libraries you need, and so on. In the past there have been subtle bugs (such as themes not getting applied correctly) when the `<application>` tag appears before some of these other elements, so it's best to order your manifest in the logical dependency order.",
+      "errorLine1": "    <uses-feature android:name=\"android.hardware.telephony\" android:required=\"false\" />",
+      "errorLine2": "     ~~~~~~~~~~~~"
+    },
+    {
+      "id": "AndroidGradlePluginVersion",
+      "severity": "Warning",
+      "message": "A newer version of Gradle than 8.14.3 is available: 8.14.7",
+      "category": "Correctness",
+      "priority": "4",
+      "summary": "Obsolete Android Gradle Plugin Version",
+      "explanation": "This detector looks for usage of the Android Gradle Plugin where the version you are using is not the current stable release. Using older versions is fine, and there are cases where you deliberately want to stick with an older version. However, you may simply not be aware that a more recent version is available, and that is what this lint check helps find.",
+      "errorLine1": "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.3-all.zip",
+      "errorLine2": "                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    },
+    {
+      "id": "GradleDependency",
+      "severity": "Warning",
+      "message": "A newer version of androidx.appcompat:appcompat than 1.7.1 is available: 1.8.0",
+      "category": "Correctness",
+      "priority": "4",
+      "summary": "Obsolete Gradle Dependency",
+      "explanation": "This detector looks for usages of libraries where the version you are using is not the current stable release. Using older versions is fine, and there are cases where you deliberately want to stick with an older version. However, you may simply not be aware that a more recent version is available, and that is what this lint check helps find.",
+      "errorLine1": "    implementation \"androidx.appcompat:appcompat:$androidxAppCompatVersion\"",
+      "errorLine2": "                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    },
+    {
+      "id": "ObsoleteSdkInt",
+      "severity": "Warning",
+      "message": "This folder configuration (`v24`) is unnecessary; `minSdkVersion` is 24. Merge all the resources in this folder into `drawable`.",
+      "category": "Performance",
+      "priority": "6",
+      "summary": "Obsolete SDK_INT Version Check",
+      "explanation": "This check flags version checks that are not necessary, because the `minSdkVersion` (or surrounding known API level) is already at least as high as the version checked for.\n\nSimilarly, it also looks for resources in `-vNN` folders, such as `values-v14` where the version qualifier is less than or equal to the `minSdkVersion`, where the contents should be merged into the best folder."
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.layout.activity_main` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"",
+      "errorLine2": "^"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.xml.config` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "<widget version=\"1.0.0\" xmlns=\"http://www.w3.org/ns/widgets\" xmlns:cdv=\"http://cordova.apache.org/ns/1.0\">",
+      "errorLine2": "^"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.drawable.ic_launcher_background` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\"",
+      "errorLine2": "^"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.color.ic_launcher_background` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "    <color name=\"ic_launcher_background\">#FFFFFF</color>",
+      "errorLine2": "           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.drawable.ic_launcher_foreground` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\"",
+      "errorLine2": "^"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.string.package_name` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "    <string name=\"package_name\">com.george.thaili</string>",
+      "errorLine2": "            ~~~~~~~~~~~~~~~~~~~"
+    },
+    {
+      "id": "UnusedResources",
+      "severity": "Warning",
+      "message": "The resource `R.string.custom_url_scheme` appears to be unused",
+      "category": "Performance",
+      "priority": "3",
+      "summary": "Unused resources",
+      "explanation": "Unused resources make applications larger and slow down builds.\n\n\nThe unused resource check can ignore tests. If you want to include resources that are only referenced from tests, consider packaging them in a test source set instead.\n\nYou can include test sources in the unused resource check by setting the system property lint.unused-resources.include-tests =true, and to exclude them (usually for performance reasons), use lint.unused-resources.exclude-tests =true.\n,",
+      "errorLine1": "    <string name=\"custom_url_scheme\">com.george.thaili</string>",
+      "errorLine2": "            ~~~~~~~~~~~~~~~~~~~~~~~~"
+    },
+    {
+      "id": "MonochromeLauncherIcon",
+      "severity": "Warning",
+      "message": "The application adaptive icon is missing a monochrome tag",
+      "category": "Usability:Icons",
+      "priority": "6",
+      "summary": "Monochrome icon is not defined",
+      "explanation": "If `android:roundIcon` and `android:icon` are both in your manifest, you must either remove the reference to `android:roundIcon` if it is not needed; or, supply the monochrome icon in the drawable defined by the `android:roundIcon` and `android:icon` attribute.\n\nFor example, if `android:roundIcon` and `android:icon` are both in the manifest, a launcher might choose to use `android:roundIcon` over `android:icon` to display the adaptive app icon. Therefore, your themed application iconwill not show if your monochrome attribute is not also specified in `android:roundIcon`.",
+      "errorLine1": "<adaptive-icon xmlns:android=\"http://schemas.android.com/apk/res/android\">",
+      "errorLine2": "^"
+    },
+    {
+      "id": "MonochromeLauncherIcon",
+      "severity": "Warning",
+      "message": "The application adaptive roundIcon is missing a monochrome tag",
+      "category": "Usability:Icons",
+      "priority": "6",
+      "summary": "Monochrome icon is not defined",
+      "explanation": "If `android:roundIcon` and `android:icon` are both in your manifest, you must either remove the reference to `android:roundIcon` if it is not needed; or, supply the monochrome icon in the drawable defined by the `android:roundIcon` and `android:icon` attribute.\n\nFor example, if `android:roundIcon` and `android:icon` are both in the manifest, a launcher might choose to use `android:roundIcon` over `android:icon` to display the adaptive app icon. Therefore, your themed application iconwill not show if your monochrome attribute is not also specified in `android:roundIcon`.",
+      "errorLine1": "<adaptive-icon xmlns:android=\"http://schemas.android.com/apk/res/android\">",
+      "errorLine2": "^"
+    },
+    {
+      "id": "IconDipSize",
+      "severity": "Warning",
+      "message": "The image `splash.png` varies significantly in its density-independent (dip) size across the various density versions: drawable-land-hdpi/splash.png: 533x320 dp (800x480 px), drawable-land-ldpi/splash.png: 427x320 dp (320x240 px), drawable-land-mdpi/splash.png: 480x320 dp (480x320 px), drawable-land-xhdpi/splash.png: 640x360 dp (1280x720 px), drawable-land-xxhdpi/splash.png: 533x320 dp (1600x960 px), drawable-land-xxxhdpi/splash.png: 480x320 dp (1920x1280 px)",
+      "category": "Usability:Icons",
+      "priority": "5",
+      "summary": "Icon density-independent size validation",
+      "explanation": "Checks the all icons which are provided in multiple densities, all compute to roughly the same density-independent pixel (`dip`) size. This catches errors where images are either placed in the wrong folder, or icons are changed to new sizes but some folders are forgotten."
+    },
+    {
+      "id": "IconDipSize",
+      "severity": "Warning",
+      "message": "The image `splash.png` varies significantly in its density-independent (dip) size across the various density versions: drawable-land-night-hdpi/splash.png: 533x320 dp (800x480 px), drawable-land-night-ldpi/splash.png: 427x320 dp (320x240 px), drawable-land-night-mdpi/splash.png: 480x320 dp (480x320 px), drawable-land-night-xhdpi/splash.png: 640x360 dp (1280x720 px), drawable-land-night-xxhdpi/splash.png: 533x320 dp (1600x960 px), drawable-land-night-xxxhdpi/splash.png: 480x320 dp (1920x1280 px)",
+      "category": "Usability:Icons",
+      "priority": "5",
+      "summary": "Icon density-independent size validation",
+      "explanation": "Checks the all icons which are provided in multiple densities, all compute to roughly the same density-independent pixel (`dip`) size. This catches errors where images are either placed in the wrong folder, or icons are changed to new sizes but some folders are forgotten."
+    },
+    {
+      "id": "IconDuplicatesConfig",
+      "severity": "Warning",
+      "message": "The `splash.png` icon has identical contents in the following configuration folders: drawable-land-night-ldpi, drawable-night",
+      "category": "Usability:Icons",
+      "priority": "5",
+      "summary": "Identical bitmaps across various configurations",
+      "explanation": "If an icon is provided under different configuration parameters such as `drawable-hdpi` or `-v11`, they should typically be different. This detector catches cases where the same icon is provided in different configuration folder which is usually not intentional."
+    },
+    {
+      "id": "IconDuplicatesConfig",
+      "severity": "Warning",
+      "message": "The `splash.png` icon has identical contents in the following configuration folders: drawable-port-mdpi, drawable",
+      "category": "Usability:Icons",
+      "priority": "5",
+      "summary": "Identical bitmaps across various configurations",
+      "explanation": "If an icon is provided under different configuration parameters such as `drawable-hdpi` or `-v11`, they should typically be different. This detector catches cases where the same icon is provided in different configuration folder which is usually not intentional."
+    },
+    {
+      "id": "IconLocation",
+      "severity": "Warning",
+      "message": "Found bitmap drawable `res/drawable/splash.png` in densityless folder",
+      "category": "Usability:Icons",
+      "priority": "5",
+      "summary": "Image defined in density-independent drawable folder",
+      "explanation": "The res/drawable folder is intended for density-independent graphics such as shapes defined in XML. For bitmaps, move it to `drawable-mdpi` and consider providing higher and lower resolution versions in `drawable-ldpi`, `drawable-hdpi` and `drawable-xhdpi`. If the icon **really** is density independent (for example a solid color) you can place it in `drawable-nodpi`.",
+      "url": "https://developer.android.com/guide/practices/screens_support.html",
+      "urls": "https://developer.android.com/guide/practices/screens_support.html"
+    }
+  ]
+}

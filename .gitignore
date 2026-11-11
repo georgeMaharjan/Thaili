@@ -44,3 +44,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.local.example
+
+# Private support/account evidence (public audit summaries are tracked).
+/docs/audits/2026-11-11-play-protect/local/

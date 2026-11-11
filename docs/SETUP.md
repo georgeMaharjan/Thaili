@@ -76,6 +76,11 @@ deletes the app's data. Export a backup first (Settings → Export all data).
 The app's update check (Settings → App update) and the website both read the latest GitHub release, so it has to
 follow this naming.
 
+For browser-installation blocks, see the [Play Protect investigation](PLAY-PROTECT.md) and
+[appeal submission record](PLAY-PROTECT-APPEAL.md). A valid signature does not guarantee installation: Play Protect
+can block SMS/notification permissions before the app runs. Preserve the signing key and use the
+exact distributed APK's hash when requesting review.
+
 ## Supabase (disconnected)
 
 Production storage is local-only: Supabase variables in `.env.local` are ignored, and nothing in the app imports the
@@ -86,3 +91,5 @@ reconnected. Check the migrations and RLS on a throwaway Postgres 17 with:
 ```bash
 bash supabase/test.sh supabase/migrations/*.sql
 ```
+
+The unpublished v1.4 privacy candidate is described in [PRIVACY.md](PRIVACY.md) and [PRIVACY-REMEDIATION.md](PRIVACY-REMEDIATION.md). After upgrading from v1.3, choose banks in **Settings → Bank SMS access** to resume SMS capture.
