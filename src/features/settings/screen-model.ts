@@ -3,9 +3,12 @@ import type { AppViewModel } from "../view-model";
 /** Only the values and actions consumed by this feature’s screens. */
 export type SettingsScreenModel = Pick<AppViewModel,
   "permissionTitle" | "permissionNote" | "permissionRows" |
-  "smsRecoverLabel" | "smsRecoverHint" | "smsCanRecover" | "recoverBankSms" |
+  "permissionIntro" | "androidPermissionsLabel" | "openAndroidPermissions" |
+  "smsRecoverTitle" | "smsRecoverLabel" | "smsRecoverHint" | "smsCanRecover" | "recoverBankSms" |
   "privacyTitle" | "privacySections" | "privacyBack" |
   "smsAccessTitle" | "smsAccessNote" | "smsBankRows" |
+  "smsAccessIntro" | "smsAccessDetailsLabel" | "smsBankCount" |
+  "smsEmptyTitle" | "smsEmptyNote" | "smsAccountsLabel" | "openSmsAccounts" |
   "numericEditingLabel" |
   "darkBg" |
   "darkFg" |

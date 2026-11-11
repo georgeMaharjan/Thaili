@@ -19,17 +19,19 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
     openPrivacy: () => app.go("privacy"),
     privacyBack: () => { if (!app.back()) app.go(s.setupComplete ? "settings" : "permission"); },
     permissionTitle: np ? "अनुमतिहरू" : "Permissions",
+    permissionIntro: np ? "कारोबार स्वतः थप्ने तरिका रोज्नुहोस्। दुवै अनुमति ऐच्छिक हुन्।" : "Choose how transactions are added. Both permissions are optional.",
     permissionNote: np ? "ब्याकअप फिर्ता ल्याउँदा Android का अनुमति फिर्ता आउँदैनन्। SMS अनुमति दिएर पढ्न दिने बैंकहरू तल छान्नुहोस्।" : "Restoring a backup does not restore Android permissions. Allow SMS here, then choose the banks below.",
     permissionRows: [
-      { key: "sms", label: np ? "बैंक SMS पढ्ने अनुमति" : "Read bank SMS", on: s.perms[0],
+      { key: "sms", icon: "M4 4h16v12H9l-5 4ZM8 8h8M8 12h5", label: np ? "बैंक SMS पढ्ने अनुमति" : "Read bank SMS", on: s.perms[0],
         state: s.perms[0] ? (np ? "चालु" : "On") : (np ? "बन्द" : "Off"),
-        detail: np ? "Android को SMS अनुमति दिन वा व्यवस्थापन गर्न थिच्नुहोस्" : "Tap to allow or manage Android SMS permission", tap: app.openSmsPermission },
-      { key: "notification", label: np ? "बैंक र वालेट सूचना पहुँच" : "Bank and wallet notification access", on: s.perms[1],
+        detail: np ? "तल छानेका बैंकका SMS बाट कारोबार थप्छ" : "Adds transactions from the banks you choose below", tap: app.openSmsPermission },
+      { key: "notification", icon: IC.bell, label: np ? "बैंक र वालेट सूचना पहुँच" : "Bank and wallet notification access", on: s.perms[1],
         state: s.perms[1] ? (np ? "चालु" : "On") : (np ? "बन्द" : "Off"),
-        detail: np ? "Android को छुट्टै सूचना पहुँच सेटिङ" : "Open Android’s separate notification-reading settings", tap: () => void openNotificationAccess() },
-      { key: "android", label: np ? "Android एपका अनुमति" : "Android app permissions", on: false, state: "",
-        detail: np ? "पहिले अस्वीकार गरेका अनुमति यहाँबाट बदल्नुहोस्" : "Manage permissions here if Android no longer shows the prompt", tap: () => void openAppSettings() },
+        detail: np ? "बैंक र वालेट एपका कारोबार सूचना समेट्छ" : "Captures transaction alerts from bank and wallet apps", tap: () => void openNotificationAccess() },
     ],
+    androidPermissionsLabel: np ? "Android एपका अनुमति" : "Android app permissions",
+    openAndroidPermissions: () => void openAppSettings(),
+    smsRecoverTitle: np ? "कारोबार छुटेको छ?" : "Missing a transaction?",
     smsRecoverLabel: np ? "छुटेका बैंक SMS जाँच्नुहोस्" : "Check for missed bank SMS",
     smsRecoverHint: !s.perms[0] ? (np ? "पहिले माथि SMS अनुमति दिनुहोस्।" : "Allow SMS permission above first.")
       : !enabledSmsBanks(s.sources, s.smsBanks).length ? (np ? "पहिले कम्तीमा एउटा बैंक छान्नुहोस्।" : "Enable at least one bank below first.")
@@ -37,9 +39,21 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
     smsCanRecover: s.perms[0] && enabledSmsBanks(s.sources, s.smsBanks).length > 0,
     recoverBankSms: () => { if (s.perms[0] && enabledSmsBanks(s.sources, s.smsBanks).length) void app.catchUpSms(true); },
     smsAccessTitle: np ? "बैंक SMS पहुँच" : "Bank SMS access",
+    smsAccessIntro: np ? "पढ्न दिने बैंकहरू रोज्नुहोस्। बन्द गर्दा पुराना कारोबार मेटिँदैनन्।" : "Choose which banks Thaili may read. Turning one off keeps your saved transactions.",
+    smsAccessDetailsLabel: np ? "SMS पहुँचबारे बुझ्नुहोस्" : "How SMS access works",
+    smsBankCount: np ? npDigits(enabledSmsBanks(s.sources, s.smsBanks).length) + "/" + npDigits(smsInstitutions.length) + " छानिएको"
+      : enabledSmsBanks(s.sources, s.smsBanks).length + " of " + smsInstitutions.length + " enabled",
+    smsEmptyTitle: np ? "पहिले बैंक खाता थप्नुहोस्" : "Add a bank account first",
+    smsEmptyNote: np ? "तपाईंका खातासँग मिल्ने बैंकहरू यहाँ देखिन्छन्।" : "Banks linked to your accounts will appear here.",
+    smsAccountsLabel: np ? "खाताहरू हेर्नुहोस्" : "View accounts",
+    openSmsAccounts: () => app.go("accounts"),
     smsAccessNote: np ? "अनुमति दिए पनि छानेका बैंकका मात्र सन्देश पढिन्छन्। बैंक खोजमा प्रेषकका नाम मात्र जाँचिन्छन्। एउटै बैंकको प्रेषक सबै खाताको साझा हुन सक्छ। तल बैंक नदेखिए पहिले खाता थप्नुहोस्।" : "Only enabled banks’ message bodies are read, even when Android grants full SMS permission. Discovery checks sender names only. Accounts at the same bank can share a sender. Add an account to see its bank here. After upgrading from v1.3, choose your banks here to resume SMS capture.",
     smsBankRows: smsInstitutions.map(bank => ({
       key: bank.key, label: bank.name, on: s.smsBanks.includes(bank.key),
+      toggle: { justify: s.smsBanks.includes(bank.key) ? "flex-end" : "flex-start", track: s.smsBanks.includes(bank.key) ? "var(--action)" : "var(--line)" },
+      detail: s.smsBanks.includes(bank.key)
+        ? (!s.perms[0] ? (np ? "छानिएको · SMS अनुमति चाहिन्छ" : "Selected · SMS permission needed") : (np ? "SMS बाट कारोबार थपिन्छ" : "SMS capture enabled"))
+        : (np ? "यस बैंकका SMS पढिँदैनन्" : "SMS from this bank won’t be read"),
       tap: () => app.patch(state => state.smsBanks.includes(bank.key)
         ? { smsBanks: state.smsBanks.filter(key => key !== bank.key) }
         : { smsBanks: [...state.smsBanks, bank.key], smsSince: Math.min(state.smsSince ?? Date.now(), Date.now() - SMS_HISTORY_MS) }),
