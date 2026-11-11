@@ -1,10 +1,14 @@
 apply plugin: 'com.android.application'
 
+// Separate package and outputs for synthetic phone tests; never replaces the user's ledger.
+def syntheticDeviceApp = project.hasProperty("syntheticDeviceApp")
+if (syntheticDeviceApp) layout.buildDirectory.set(file("build/synthetic-device"))
+
 android {
     namespace = "com.george.thaili"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.george.thaili"
+        applicationId syntheticDeviceApp ? "com.george.thaili.devicetest" : "com.george.thaili"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 5
@@ -16,6 +20,11 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (syntheticDeviceApp) sourceSets.release.manifest.srcFile("src/syntheticDevice/AndroidManifest.xml")
+
+    // Opt in when testing an installed, signed release without replacing it with a debug build.
+    testBuildType = project.findProperty("deviceTestBuildType") ?: "debug"
+
     // Release signing is optional: put storeFile/storePassword/keyAlias/keyPassword in android/keystore.properties (git-ignored).
     def keystoreFile = rootProject.file('keystore.properties')
     if (keystoreFile.exists()) {
