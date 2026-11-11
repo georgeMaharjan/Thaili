@@ -1,8 +1,8 @@
 # Thaili privacy policy
 
-Updated: 11 November 2026. Developer: George Maharjan. Contact: https://github.com/georgeMaharjan/Thaili/issues.
+Updated: 12 November 2026. Developer: George Maharjan. Contact: https://github.com/georgeMaharjan/Thaili/issues.
 
-**Release scope:** the policy below describes the updated source and forthcoming Android build, not the unchanged public v1.3 APK. v1.3 includes Firebase messaging, permits Android automatic backup, reads broad SMS body candidates before filtering, and has a notification buffer capped at 500 records without age expiry. There is no evidence from this review that financial message bodies were uploaded; cold-start network traffic has not been measured. The [security review](PLAY-PROTECT-SECURITY-REVIEW.md) records these limitations.
+**Release scope:** the policy below describes the published [v1.4 APK](https://github.com/georgeMaharjan/Thaili/releases/tag/v1.4). The older v1.3 includes Firebase messaging, permits Android automatic backup, reads broad SMS body candidates before filtering, and has a notification buffer capped at 500 records without age expiry. There is no evidence from this review that financial message bodies were uploaded; cold-start network traffic has not been measured. The [security review](PLAY-PROTECT-SECURITY-REVIEW.md) records these limitations.
 
 ## Information stored on your phone
 
@@ -36,4 +36,4 @@ Revoke SMS or notification access in Android Settings at any time. Manual entry 
 
 Developer: George Maharjan · https://github.com/georgeMaharjan/Thaili/issues. Policy date: 11 November 2026. This policy describes this build. The older public v1.3 included the Firebase SDK, enabled Android automatic backup and read broader SMS body candidates before sender filtering. New backup settings cannot delete existing backups.
 
-The same policy is available offline in English and Nepali from the permission screen and Settings. Public v1.3 disclosures are published separately on the website.
+The same policy is available offline in English and Nepali from the permission screen and Settings. The website policy describes v1.4 and includes the older v1.3 differences.

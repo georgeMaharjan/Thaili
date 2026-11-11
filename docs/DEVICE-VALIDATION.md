@@ -1,7 +1,7 @@
 # Connected-device validation — 12 November 2026
 
 Device: Samsung Galaxy S24 Ultra, Android 17 / API 37. Candidate: v1.4 (versionCode 5),
-same release signing certificate as public v1.3. The public download and existing appeal are unchanged.
+same release signing certificate as public v1.3. At the time of testing, the public download and existing appeal were unchanged. The exact tested APK was subsequently published as [v1.4](https://github.com/georgeMaharjan/Thaili/releases/tag/v1.4); the existing v1.3 appeal remains unchanged.
 
 ## Restore-gap fix
 

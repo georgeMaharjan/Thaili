@@ -1,10 +1,10 @@
-# Privacy remediation — v1.4 candidate
+# Privacy remediation — v1.4
 
-Prepared 11 November 2026; updated 12 November after connected-device testing. **Unpublished:** the public v1.3 APK and its submitted appeal remain
-unchanged. The website policy at https://thaili.georgemaharjan.com.np/privacy describes v1.3
-accurately and distinguishes forthcoming changes. Website commits: `fe70312` (Next patch),
-`9c2f809` (privacy policy). Both deployed and verified live; the original website checkout was
-fast-forwarded without changing its existing untracked documents.
+Prepared 11 November 2026; updated 12 November after connected-device testing. **Published:** [v1.4](https://github.com/georgeMaharjan/Thaili/releases/tag/v1.4) on 12 November 2026,
+using the exact candidate APK verified below. The public v1.3 APK and its submitted appeal remain
+unchanged; v1.4 is a separate release and is not claimed to have Google approval. The website policy
+at https://thaili.georgemaharjan.com.np/privacy now describes v1.4 and retains the older-version
+privacy differences. Website commit: `067f3b4`.
 
 ## Preserved features
 
@@ -89,7 +89,7 @@ system-delivered background capture, and OEM-specific behavior remain unverified
 before/after financial hash comparison had a test-harness persistence error; it is inconclusive,
 so the upgrade is not claimed to have passed an exact financial-data comparison.
 No cold-start packet capture, actual cloud backup/transfer attempt or independent penetration test
-was performed. App source is committed for review; no new public APK was uploaded.
+was performed. The exact tested APK is published as v1.4 with its SHA-256 checksum.
 
 Google explicitly lists READ_SMS, RECEIVE_SMS and notification-listener access as triggers for the
 sensitive-permission sideloading block in supported markets. Restricting usage in app code does not
