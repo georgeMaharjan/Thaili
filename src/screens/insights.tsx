@@ -44,7 +44,7 @@ export function Insights({ v }: { v: V }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <header className="flex flex-none flex-col gap-3 px-5 pt-4 pb-3"><h1 className="font-display text-[28px] font-bold">{v.t.insights}</h1><Ranges v={v} /></header>
-      <div className="flex flex-1 flex-col gap-6 overflow-auto px-5 pt-2 pb-6">
+      <div className="flex flex-1 flex-col gap-6 overflow-auto px-5 pt-2 pb-[88px]">
 
         <div className="flex flex-col gap-2 rounded-[20px] bg-surface-2 p-5">
           <span className="text-[14px] font-semibold text-ink-2">{v.keptHeadLabel}</span>

@@ -11,7 +11,7 @@ export function Home({ v }: { v: V }) {
       <button onClick={v.toSettings} aria-label={v.settingsLabel} className="press relative flex size-[44px] items-center justify-center rounded-full bg-surface-2 text-[15px] font-semibold text-navy">{v.userInitials}</button>
     </header>
     <Pull onRefresh={v.refreshTransactions} className="min-h-0 flex-1">
-      <div className="flex flex-col gap-6 px-5 pb-6">
+      <div className="flex flex-col gap-6 px-5 pb-[88px]">
         <section className="balance-card rounded-[20px] px-5 py-4" aria-label="Account balances">
           <div className="flex items-center justify-between"><span className="text-[15px] font-medium">{v.haveLabel}</span><button onClick={v.toggleBal} aria-label={v.balEyeLabel} className="press flex size-[44px] items-center justify-center"><Icon d={v.balEyeD} size={19} /></button></div>
           <Hero value={v.totalBal} fs={v.balFs} rs="text-[18px]" />

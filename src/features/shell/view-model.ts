@@ -21,6 +21,7 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     totalBal: balHero(s.sources.reduce((a, x) => a + balance(x.key), 0), s.hideBal),
     toSrcNew: () => app.go("src-new", { srcNewFrom: s.screen, editSrcKey: null, newSrcAmt: "" }),
     showTabs: TABS.indexOf(s.screen) > -1,
+    addNewLabel: np ? "नयाँ थप्नुहोस्" : "Add new",
     toAdd: () => app.go("add", { addEntry: "", addNote: "", addError: "", addDir: "debit", addCat: cats[0]?.key || "", addSrc: s.sources.find(x => x.key === "cash")?.key || s.sources[0]?.key || "", discardAdd: false }),
     adRange: (np ? "दिन " + DAY_OF_MONTH + " / " : "Day " + DAY_OF_MONTH + " of ") + DAYS_IN_MONTH + " · " + adLabel(0),
     allowAmount: fmt(allowance),
@@ -90,7 +91,7 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     hasToast: !!s.toast,
     toast: s.toast,
     canUndo: !!s.undoState,
-    toastBottom: TABS.indexOf(s.screen) > -1 ? "88px" : "24px",
+    toastBottom: TABS.indexOf(s.screen) > -1 ? "152px" : "24px",
     dismissToastLabel: np ? "सूचना बन्द गर्नुहोस्" : "Dismiss notification",
     dismissToast: () => {
       clearTimeout(app._t);

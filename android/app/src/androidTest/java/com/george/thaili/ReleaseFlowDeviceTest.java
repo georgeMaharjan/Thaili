@@ -68,7 +68,7 @@ public class ReleaseFlowDeviceTest {
     @Test public void b_manualExpensePersistsAfterReload() throws Exception {
         try(DeviceWeb app=new DeviceWeb()) {
             app.requireFixtureOrEmpty();app.text("View accounts");
-            app.tap("button[aria-label='Quick add']");app.text("New transaction");
+            app.tap("button[aria-label='Add new']");app.text("New transaction");
             app.value("input[aria-label=Amount]","25.50");app.value("textarea","DEVICE TEST MANUAL");
             app.waitFor("document.querySelector('button[type=submit]').disabled===false");
             app.tap("button[type=submit]");app.text("Expense saved");app.reload();app.text("View accounts");
