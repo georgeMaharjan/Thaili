@@ -34,7 +34,7 @@ public class PrivacyDeviceTest {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
     @Test public void releaseIsPrivateWithoutCapturePermissions() throws Exception {
-        assertEquals("1.4.1",context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);
+        assertEquals("1.4.2",context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);
         assertEquals(0, context.getApplicationInfo().flags & ApplicationInfo.FLAG_ALLOW_BACKUP);
         assertEquals(0, context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE);
         assertEquals(PackageManager.PERMISSION_DENIED,context.checkSelfPermission(Manifest.permission.READ_SMS));
