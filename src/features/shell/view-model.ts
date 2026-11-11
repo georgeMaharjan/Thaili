@@ -91,7 +91,7 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     hasToast: !!s.toast,
     toast: s.toast,
     canUndo: !!s.undoState,
-    toastBottom: TABS.indexOf(s.screen) > -1 ? "152px" : "24px",
+    toastBottom: TABS.indexOf(s.screen) > -1 ? "112px" : "24px",
     dismissToastLabel: np ? "सूचना बन्द गर्नुहोस्" : "Dismiss notification",
     dismissToast: () => {
       clearTimeout(app._t);

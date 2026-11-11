@@ -63,10 +63,13 @@ function TabBar({ v }: { v: V }) {
   return (
     <div className="relative flex-none">
       <nav aria-label="Main navigation" className="flex h-[72px] items-center border-t border-line bg-surface px-2">
-        {TABS.map(tab)}
+        {TABS.slice(0, 2).map(tab)}
+        <div aria-hidden="true" className="w-[80px] flex-none" />
+        {TABS.slice(2).map(tab)}
       </nav>
-      <button type="button" onClick={v.toAdd} aria-label={v.addNewLabel} className="press absolute right-[20px] bottom-[calc(100%+16px)] z-10 flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-action px-5 text-[15px] font-semibold text-on-action shadow-card">
-        <Icon d={P.plus} size={24} sw={2} /><span>{v.addNewLabel}</span>
+      <button type="button" onClick={v.toAdd} aria-label={v.addNewLabel} className="press absolute -top-[24px] left-1/2 z-10 flex w-[72px] -translate-x-1/2 flex-col items-center gap-1 text-[12px] font-semibold text-action">
+        <span aria-hidden="true" className="flex size-[60px] items-center justify-center rounded-full bg-action text-on-action shadow-card ring-[4px] ring-canvas"><Icon d={P.plus} size={26} sw={2} /></span>
+        <span>{v.addNewLabel}</span>
       </button>
     </div>
   );
