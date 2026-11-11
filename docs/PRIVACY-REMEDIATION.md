@@ -1,6 +1,6 @@
 # Privacy remediation — v1.4 candidate
 
-Prepared 11 November 2026. **Unpublished:** the public v1.3 APK and its submitted appeal remain
+Prepared 11 November 2026; updated 12 November after connected-device testing. **Unpublished:** the public v1.3 APK and its submitted appeal remain
 unchanged. The website policy at https://thaili.georgemaharjan.com.np/privacy describes v1.3
 accurately and distinguishes forthcoming changes. Website commits: `fe70312` (Next patch),
 `9c2f809` (privacy policy). Both deployed and verified live; the original website checkout was
@@ -48,9 +48,19 @@ cloud adapter was connected. Firebase messaging was unused by these features; it
   Production npm audit reports zero known advisory findings for the app and website trees checked.
   This does not assess all Maven dependencies, WebView or every possible vulnerability.
 
+## Restored backup recovery
+
+Android SMS and notification access do not come back with a JSON backup. Settings now includes
+permission status/actions and **Check for missed bank SMS**. Select banks explicitly after granting
+Android SMS permission. Disabled/denied SMS reads preserve the history checkpoint; manual refresh
+rescans up to 90 days of retained selected-bank SMS, respecting the existing history cutoff and
+transaction deduplication. Choosing a bank or granting SMS permission also triggers catch-up.
+Notifications received while the app was uninstalled cannot be recovered from its deleted replay
+buffer. No real messages were read during the synthetic-only device tests.
+
 ## Validation
 
-- Typecheck passed; 54 application checks passed, including consent persistence/revocation, legacy
+- Typecheck passed; 55 application checks passed, including consent persistence/revocation, legacy
   opt-in, selective reads, cancellation, finance/capture regressions and all route/language/theme renders.
 - ESLint: zero errors, two existing image-element warnings.
 - Android: nine unit tests passed, including new sender-query and retention tests.
@@ -64,16 +74,20 @@ cloud adapter was connected. Firebase messaging was unused by these features; it
   compiled XML exclusions verified, FileProvider path verified.
 - APK signature verifies using v2 with the same certificate as public v1.3:
   `c581a727f0c4b6e6ca8b93e6dc07bb8daaf3d15e7a3e7cf504c97e399655e9bb`.
-- Candidate SHA-256: `c4b0d86f1c337c38639aac70e2b895853f9a8d16a1b4174c34705af792faec78`.
-  Build output: `android/app/build/outputs/apk/release/app-release.apk` (5,825,504 bytes).
+- Candidate SHA-256: `9917a4adbcc7008c30fd342f4976db1ee5af04c76646d09b65fc89bf675d929d`.
+  Build output: `android/app/build/outputs/apk/release/app-release.apk` (5,826,892 bytes).
 
 Machine-readable results and the policy screenshot are in
 [`audits/2026-11-11-play-protect/`](audits/2026-11-11-play-protect/).
 
 ## Remaining verification before public release
 
-No Android device was connected. Physical-device tests of bank SMS import, foreground/background
-capture, consent changes, notification replay, JSON export/restore and an upgrade over v1.3 remain.
+A Samsung S24 Ultra (Android 17/API 37) was connected on 12 November. The candidate was installed
+as an in-place, same-signer update over v1.3 after the owner restored their backup. Synthetic-only
+checks run in an isolated package; see [device validation](DEVICE-VALIDATION.md). Real inbox reads,
+system-delivered background capture, and OEM-specific behavior remain unverified. An attempted
+before/after financial hash comparison had a test-harness persistence error; it is inconclusive,
+so the upgrade is not claimed to have passed an exact financial-data comparison.
 No cold-start packet capture, actual cloud backup/transfer attempt or independent penetration test
 was performed. App source is committed for review; no new public APK was uploaded.
 

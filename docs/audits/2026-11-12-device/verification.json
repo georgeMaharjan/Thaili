@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-12",
+  "deviceModel": "Samsung Galaxy S24 Ultra",
+  "androidVersion": 17,
+  "apiLevel": 37,
+  "candidate": {
+    "package": "com.george.thaili",
+    "versionName": "1.4",
+    "versionCode": 5,
+    "sha256": "9917a4adbcc7008c30fd342f4976db1ee5af04c76646d09b65fc89bf675d929d",
+    "bytes": 5826892,
+    "signerSha256": "c581a727f0c4b6e6ca8b93e6dc07bb8daaf3d15e7a3e7cf504c97e399655e9bb",
+    "signatureSchemeV2Verified": true,
+    "published": false
+  },
+  "isolation": {
+    "testPackage": "com.george.thaili.devicetest",
+    "syntheticOnly": true,
+    "smsAccessGranted": false,
+    "notificationReadingGranted": false,
+    "realMessagesRead": false
+  },
+  "checks": {
+    "application": {
+      "passed": 55,
+      "failed": 0
+    },
+    "androidUnit": {
+      "passed": 9,
+      "failed": 0
+    },
+    "deviceInstrumentation": {
+      "passed": 7,
+      "failed": 0,
+      "fixtureTests": 1,
+      "privacyAndFlowTests": 6
+    },
+    "typecheck": "passed",
+    "eslint": {
+      "errors": 0,
+      "existingWarnings": 2
+    },
+    "releaseLint": "passed",
+    "productionExportAndSync": "passed",
+    "signedReleaseBuild": "passed"
+  },
+  "limitations": [
+    "Published v1.3 to v1.4 exact financial hash comparison was inconclusive due to test baseline persistence error.",
+    "Legacy schema fixture is not a published v1.3 APK upgrade test.",
+    "System-delivered real SMS and notification capture not tested.",
+    "Document picker responses were supplied by instrumentation with a synthetic app-owned Downloads file.",
+    "ADB installation is not a Play Protect browser-installation check."
+  ]
+}

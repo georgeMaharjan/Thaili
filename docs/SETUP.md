@@ -92,4 +92,4 @@ reconnected. Check the migrations and RLS on a throwaway Postgres 17 with:
 bash supabase/test.sh supabase/migrations/*.sql
 ```
 
-The unpublished v1.4 privacy candidate is described in [PRIVACY.md](PRIVACY.md) and [PRIVACY-REMEDIATION.md](PRIVACY-REMEDIATION.md). After upgrading from v1.3, choose banks in **Settings → Bank SMS access** to resume SMS capture.
+The unpublished v1.4 privacy candidate is described in [PRIVACY.md](PRIVACY.md) and [PRIVACY-REMEDIATION.md](PRIVACY-REMEDIATION.md). After restoring or upgrading, open **Settings → Permissions → Read bank SMS**, allow Android SMS access, then choose banks in **Bank SMS access**. **Check for missed bank SMS** rescans retained selected-bank messages from up to the last 90 days, subject to the saved history cutoff. See [device validation](DEVICE-VALIDATION.md) for the isolated synthetic phone tests.
