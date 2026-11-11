@@ -20,7 +20,7 @@ function fixture() {
     sources: [{ key: "nabil", name: "Nabil Bank", type: "Bank · SMS", dot: "red", opening: 10000, acct: "4821", openedAt: new Date(at - 60000).toISOString() }],
     roles: { nabil: "spending" },
     moneyApps: [{ key: "prabhu", base: "Prabhu Bank", app: "Prabhu Smart", kind: "bank", packages: ["np.fixture.prabhu"] }],
-    perms: [true, true], screen: "scan", smsSince: at - 30000,
+    smsBanks: ["nabil"], perms: [true, true], screen: "scan", smsSince: at - 30000,
   };
   return app;
 }

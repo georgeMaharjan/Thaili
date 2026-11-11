@@ -4,7 +4,7 @@ import { dated } from "./bs.ts";
 import type { Pouch } from "./local-ledger";
 import { evidenceFor } from "./transaction-capture.ts";
 
-export const PREF_KEYS = ["picked", "customCats", "ess", "saveTarget", "savingsGoal", "theme", "lang",
+export const PREF_KEYS = ["smsBanks", "picked", "customCats", "ess", "saveTarget", "savingsGoal", "theme", "lang",
   "splitMode", "syncCell", "syncRaw", "syncAlert", "appLock", "notifMode", "smsSince", "notificationSince", "captureStartAt", "hideBal", "setupComplete"] as const;
 export type PouchState = Pick<Pouch, "user" | "sources" | "roles" | "tx" | "rules" | "goals"> & Preferences;
 export const prefsOf = (state: Preferences): Preferences => Object.fromEntries(PREF_KEYS.filter(k => state[k] !== undefined).map(k => [k, state[k]]));

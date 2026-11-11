@@ -1,12 +1,13 @@
-import { CASH, SRC_KINDS, isManualSrc, needsAcctNumber, now, tailName } from "../../application/config";
+import { CASH, isManualSrc, needsAcctNumber, now } from "../../application/config";
 import type { AppController } from "../../application/controller";
-import type { Account, Category } from "../../domain/models";
+import type { Category } from "../../domain/models";
 import { isDevice, openAppSettings, openNotificationAccess, readSms, requestSms } from "../../lib/device";
+import { enabledSmsBanks } from "../../lib/sms";
 import { digits10, fmt, rs, validPhone } from "../../lib/format";
 import { applyImportResult } from "../../lib/import-transactions";
-import { appendMoneyAccounts, sourceForMoneyApp } from "../../lib/money-apps";
+import { sourceForMoneyApp } from "../../lib/money-apps";
 import type { ViewContext } from "../context";
-export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "state" | "flash" | "startSetup" | "smsToTx" | "editSource" | "importData">, context: Pick<ViewContext, "s" | "DAYS_IN_MONTH" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
+export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "confirmDetection" | "state" | "flash" | "startSetup" | "smsToTx" | "editSource" | "importData">, context: Pick<ViewContext, "s" | "DAYS_IN_MONTH" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
   const { s, DAYS_IN_MONTH, income, freeToSpend, T, np, allCats, incomeCats, clabel, scanAccts, scanGroups, isEss, essMonthly, baseFor, srcMissing, detectAccounts, detAvailable, detOnKeys } = context;
   // "Food", "food " and "FOOD" are one category.
   const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
@@ -36,7 +37,8 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
         ...(s.perms[0] ? { captureStartAt: at, smsSince: at, notificationSince: at } : {}),
       });
     },
-    detectScanning: s.detState === "scanning",
+    detectScanning: s.detState === "scanning" || s.detState === "reading",
+    detectProgress: s.detState === "reading" ? (np ? "छानिएका बैंकका सन्देश पढिँदै…" : "Reading messages from your selected banks…") : (np ? "एप र बैंकका प्रेषक नाम खोजिँदै…" : "Checking installed apps and bank sender names…"),
     detectDone: s.detState === "done",
     toDetect: () => app.startDetection("setup"),
     detectRetry: () => app.startDetection(s.detFrom),
@@ -56,26 +58,26 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
     },
     detectError: s.detState === "error",
     detectUnavailable: s.detState === "unsupported",
-    detectTitle: s.detState === "scanning" ? "Looking for your banks and wallets"
+    detectTitle: s.detState === "reading" ? (np ? "छानिएका खाताको विवरण खोजिँदै" : "Finding details for your selected accounts") : s.detState === "scanning" ? "Looking for your banks and wallets"
       : s.detState === "error" ? "Couldn't scan your apps"
         : s.detState === "unsupported" ? "App scanning needs Android"
           : detectAccounts && s.detFound.length && !detAvailable.length ? "No new banks or wallets found"
             : !s.detFound.length ? "No banks or wallets found"
               : s.detFound.length + (s.detFound.length === 1 ? " bank or wallet" : " banks and wallets") + " on this phone",
-    detectSub: s.detState === "scanning"
-      ? "Thaili checks installed apps and recognized bank transaction SMS when permitted. It never opens banking apps or asks for a login."
+    detectSub: s.detState === "reading" ? (np ? "छानिएका बैंकका मात्र पछिल्ला ९० दिनका सन्देश पढिन्छन्।" : "Reading up to 90 days of messages from selected bank senders only.") : s.detState === "scanning"
+      ? (np ? "एप सूची र SMS प्रेषकका नाम मात्र जाँचिन्छन्। बैंक छान्नुअघि सन्देशको पाठ पढिँदैन।" : "Checks installed apps and SMS sender names only. Message bodies are read after you select banks and tap Add.")
       : s.detState === "error" ? "We couldn't read the installed-app list. Try again or add your accounts by hand."
         : s.detState === "unsupported" ? "Open Thaili on your Android phone to find installed banking and wallet apps. You can add accounts by hand here."
           : detectAccounts && s.detFound.length && !detAvailable.length ? "All the banks and wallets found are already in your accounts. Scan again after installing a new app or receiving bank alerts."
             : detectAccounts && s.detFound.length ? "Select the banks and wallets to add. Existing accounts are marked below. Add each new account’s balance and last four digits afterward."
-              : detectAccounts ? "No banking apps or recognized transaction SMS were found. Scan again or add an account by hand."
-                : s.detFound.length ? "Untick anything you don't actually use. Anything the scan can't see — a sahakari, an FD, cash — you add on the next screen."
-                  : "No banking apps or recognized transaction SMS were found. Scan again or add accounts by hand on the next screen.",
+              : detectAccounts ? "No banking apps or bank sender names were found. Scan again or add an account by hand."
+                : s.detFound.length ? (np ? "आफूले प्रयोग गर्ने बैंक र वालेट छान्नुहोस्। थप्नुहोस् थिचेपछि छानिएका बैंकका मात्र सन्देश पढिन्छन्।" : "Select the banks and wallets you use. Tapping Add permits reading messages from those bank senders. Add other accounts on the next screen.")
+                  : "No banking apps or bank sender names were found. Scan again or add accounts by hand on the next screen.",
     detectRows: s.detFound.map(d => {
       const added = detectAccounts && !!sourceForMoneyApp(d, s.sources);
       return {
         key: d.key, app: d.app, added,
-        detail: (d.kind === "bank" ? "Bank" : "Wallet") + " · " + (s.detTails[d.key] ? "ending " + s.detTails[d.key] + ", seen in your messages" : d.packages.length ? "installed app" : "transaction SMS"),
+        detail: (d.kind === "bank" ? "Bank" : "Wallet") + " · " + (s.detTails[d.key] ? "ending " + s.detTails[d.key] + ", seen in your messages" : d.packages.length ? "installed app" : (np ? "SMS प्रेषक" : "SMS sender")),
         border: !added && s.detOn[d.key] ? "var(--action)" : "var(--line)",
         justify: s.detOn[d.key] ? "flex-end" : "flex-start",
         track: s.detOn[d.key] ? "var(--pos)" : "var(--barDim)",
@@ -85,26 +87,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
     detectCta: detOnKeys.length ? "Add " + detOnKeys.length + (detOnKeys.length === 1 ? " account" : " accounts") : "Pick at least one",
     detectCtaBg: detOnKeys.length ? "var(--action)" : "var(--surface2)",
     detectCtaFg: detOnKeys.length ? "var(--onAction)" : "var(--ink3)",
-    detectConfirm: () => {
-      if (!detOnKeys.length) return;
-      const made: Account[] = detAvailable.filter(d => s.detOn[d.key]).map(d => {
-        const kind = SRC_KINDS.filter(k => k.key === d.kind)[0];
-        return {
-          key: d.key, base: d.base, name: tailName(d.base, s.detTails[d.key] || null), short: d.base, packages: d.packages,
-          type: kind.type, dot: kind.dot, opening: 0, acct: s.detTails[d.key] || null
-        };
-      });
-      if (detectAccounts) {
-        const merged = appendMoneyAccounts(app.state.sources, made, app.state.roles);
-        app.go("accounts", { sources: merged.sources, roles: merged.roles });
-        app.flash("Added " + merged.added.length + (merged.added.length === 1 ? " account" : " accounts") + " — tap each new account to set its balance and details");
-        return;
-      }
-      made.push(CASH);
-      const roles: Record<string, string> = {};
-      made.forEach(x => { roles[x.key] = "spending"; });
-      app.go("source", { sources: made, roles: roles });
-    },
+    detectConfirm: app.confirmDetection,
     detectSkip: () => {
       app.cancelDetection();
       if (detectAccounts) { app.go("accounts"); return; }
@@ -147,10 +130,10 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
           return;
         }
         const t0 = Date.now();
-        readSms(t0 - 90 * 86400000).then(msgs => {
+        readSms(t0 - 90 * 86400000, enabledSmsBanks(s.sources, s.smsBanks)).then(msgs => {
           const r = app.smsToTx(msgs, app.state.tx);
           app.go("scan", { scanTx: r.tx, scanResult: r, scanOrphans: r.orphans, smsSince: t0 });
-        });
+        }).catch(() => app.flash(np ? "छानिएका बैंकका SMS पढ्न सकिएन। अनुमति जाँच्नुहोस् वा SMS बिना जारी राख्नुहोस्।" : "Could not read selected bank SMS. Check permission or continue without SMS."));
         return;
       }
       app.flash("Tap " + srcMissing[0].name + " to add its " + (needsAcctNumber(srcMissing[0]) ? "account number and balance" : "balance"));
@@ -165,8 +148,8 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       tap: () => app.editSource(x.key)
     })),
     perms: [
-      { name: "Read bank SMS", detail: "Recognized bank and wallet senders. 90 days of transaction history, then ongoing." },
-      { name: "Notification access", detail: "Reads transaction alerts from detected bank and wallet apps. Logs amounts and money in or out." }
+      { name: np ? "बैंकका SMS पढ्ने" : "Read bank SMS", detail: np ? "पहिले प्रेषकका नाम मात्र। बैंक छानेपछि ती बैंकका ९० दिनका सन्देश र नयाँ कारोबार पढिन्छन्। Android को अनुमति भने सबै SMS का लागि हुन्छ।" : "Sender names first; after you choose banks, read up to 90 days of their messages and new transactions. Android grants broad SMS access." },
+      { name: np ? "सूचना पहुँच" : "Notification access", detail: np ? "Android ले सबै सूचना उपलब्ध गराउन सक्छ। थैलीले पत्ता लागेका बैंक र वालेटका कारोबार सूचना मात्र राख्छ।" : "Android can expose all notifications. Thaili keeps transaction alerts only from detected bank and wallet apps." }
     ].map((p, i) => ({
       name: p.name, detail: p.detail,
       justify: s.perms[i] ? "flex-end" : "flex-start",
@@ -182,9 +165,9 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       }
     })),
     permNote: s.perms[0]
-      ? "The system dialog next looks alarming. It's the standard Android one."
+      ? (np ? "SMS अनुमति सबै सन्देशका लागि हुन्छ। थैलीले प्रेषकका नाम खोज्छ र छानिएका बैंकका मात्र सन्देश पढ्छ। सेटिङबाट अनुमति हटाउन सकिन्छ।" : "SMS permission covers the inbox. Thaili checks sender names, then reads bodies only from selected banks. Revoke access in Android Settings any time.")
       : "Without SMS, Thaili runs on quick add and wallet notifications. You can turn SMS on any time.",
-    permCta: s.perms[0] ? (np ? "अनुमति दिनुहोस्, फोन स्क्यान गर्नुहोस्" : "Allow, then scan this phone") : (np ? "SMS बिना अगाडि बढ्नुहोस्" : "Continue without SMS"),
+    permCta: s.perms[0] ? (np ? "अनुमति दिनुहोस्, फोन स्क्यान गर्नुहोस्" : "Choose banks to read") : (np ? "SMS बिना अगाडि बढ्नुहोस्" : "Continue without SMS"),
     scanTitle: !s.perms[0] ? "Nothing to scan — and that's fine"
       : s.scanTx.length ? "Found " + s.scanTx.length + " transactions across " + scanAccts + (scanAccts === 1 ? " account" : " accounts")
         : "No bank messages in the last 90 days",

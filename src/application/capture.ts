@@ -4,15 +4,15 @@ import { applyImportResult, importTransactions } from "../lib/import-transaction
 import { allMoneyPackages, appendMoneyAccounts, type MoneyApp } from "../lib/money-apps.ts";
 import { notificationInbox, notificationRules } from "../lib/notification-transactions.ts";
 import { words } from "../lib/rules.ts";
-import { nativeRules } from "../lib/sms.ts";
+import { bankOf, enabledSmsBanks, nativeRules } from "../lib/sms.ts";
 import type { AppState, StatePatch } from "./state.ts";
 
-export type CaptureSnapshot = Pick<AppState, "loaded" | "setupComplete" | "captureStartAt" | "user" | "sources" | "roles" | "rules" | "tx" | "moneyApps" | "smsSince" | "notificationSince" | "notifMode">;
+export type CaptureSnapshot = Pick<AppState, "loaded" | "setupComplete" | "captureStartAt" | "user" | "sources" | "roles" | "rules" | "tx" | "moneyApps" | "smsSince" | "notificationSince" | "notifMode" | "smsBanks">;
 export type CapturePorts = {
   snapshot(): CaptureSnapshot;
   commit(update: (state: CaptureSnapshot) => StatePatch): Promise<void>;
   apps(): Promise<MoneyApp[]>;
-  readSms(since: number): Promise<Sms[]>;
+  readSms(since: number, selected: string[]): Promise<Sms[]>;
   readNotifications(since: number): Promise<MoneyNotification[]>;
   message(text: string): void;
   now(): number;
@@ -40,7 +40,7 @@ export class CaptureCoordinator {
     const at = this.ports.now();
     const read = <T>(promise: Promise<T[]>) => promise.then(items => ({ ok: true, items })).catch(() => ({ ok: false, items: [] as T[] }));
     const promise = Promise.all([
-      read(this.ports.readSms(Math.max(s.captureStartAt ?? 0, (s.smsSince ?? at) - 180000))),
+      read(this.ports.readSms(Math.max(s.captureStartAt ?? 0, (s.smsSince ?? at) - 180000), enabledSmsBanks(s.sources, s.smsBanks))),
       read(this.ports.readNotifications(Math.max(s.captureStartAt ?? 0, s.notificationSince ?? s.smsSince ?? 0))),
       this.ports.apps().catch(() => s.moneyApps),
     ]).then(async ([sms, notes, apps]) => {
@@ -52,7 +52,7 @@ export class CaptureCoordinator {
       const allowed = (message: { at: number }) => current.captureStartAt == null || message.at > current.captureStartAt;
       const inbox = notificationInbox(notes.items.filter(allowed), apps, current.sources, allMoneyPackages(current.sources, apps));
       const merged = appendMoneyAccounts(current.sources, inbox.additions, current.roles);
-      const imported = importTransactions([...sms.items.filter(allowed), ...inbox.messages], {
+      const imported = importTransactions([...sms.items.filter(message => allowed(message) && enabledSmsBanks(current.sources, current.smsBanks).includes(bankOf(message.sender) || "")), ...inbox.messages], {
         sources: merged.sources, rules: current.rules, existing: current.tx,
         now: new Date(at), newId: this.ports.newId,
       });
@@ -84,7 +84,7 @@ export class CaptureCoordinator {
 
 export function captureConfiguration(s: CaptureSnapshot): CaptureConfiguration {
   return {
-    ...nativeRules(s.sources), packages: allMoneyPackages(s.sources, s.moneyApps), notification: notificationRules(),
+    ...nativeRules(enabledSmsBanks(s.sources, s.smsBanks)), packages: allMoneyPackages(s.sources, s.moneyApps), notification: notificationRules(),
     rules: s.rules.map(r => words(r.kw)).filter(Boolean), notify: s.setupComplete && s.notifMode !== "Off",
   };
 }

@@ -2,6 +2,8 @@ import type { AppViewModel } from "../view-model";
 
 /** Only the values and actions consumed by this feature’s screens. */
 export type SettingsScreenModel = Pick<AppViewModel,
+  "privacyTitle" | "privacySections" | "privacyBack" |
+  "smsAccessTitle" | "smsAccessNote" | "smsBankRows" |
   "numericEditingLabel" |
   "darkBg" |
   "darkFg" |

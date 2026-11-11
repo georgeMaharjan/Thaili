@@ -4,7 +4,7 @@ import { initialState } from "./state.ts";
 import type { Sms } from "../lib/device.ts";
 const at = Date.parse("2026-10-11T12:00:00Z");
 const seed = (): import("./state").AppState => ({
-  ...initialState(), loaded: true, setupComplete: true, user: { name: "Fixture", phone: "+9779800000000", createdAt: new Date(at).toISOString() },
+  ...initialState(), smsBanks: ["nabil"], loaded: true, setupComplete: true, user: { name: "Fixture", phone: "+9779800000000", createdAt: new Date(at).toISOString() },
   sources: [{ key: "nabil", name: "Nabil", type: "Bank · SMS", opening: 1000, acct: "4821", dot: "red" }], smsSince: at - 60000, notificationSince: at - 60000
 });
 const message: Sms = { id: "sms", sender: "NABIL", body: "NPR 100 has been debited from A/C XXXX4821. Remarks: SHOP. Ref: TXN10001", at };
@@ -12,7 +12,7 @@ let state = seed(), resolveRead!: (messages: Sms[]) => void, reads = 0, commits 
 const coordinator = new CaptureCoordinator({
   snapshot: () => state,
   commit: async update => { commits++; state = { ...state, ...update(state) }; },
-  apps: async () => [], readSms: async () => { reads++; return new Promise<Sms[]>(done => { resolveRead = done; }); },
+  apps: async () => [], readSms: async (_since, banks) => { assert.deepEqual(banks, ["nabil"]); reads++; return new Promise<Sms[]>(done => { resolveRead = done; }); },
   readNotifications: async () => { throw new Error("permission denied"); }, message() { }, now: () => at, newId: () => "generated",
 });
 const first = coordinator.catchUp(), second = coordinator.catchUp();
@@ -34,3 +34,14 @@ const stopped = new CaptureCoordinator({
 const pending = stopped.catchUp(); stopped.dispose(); release([message]); await pending;
 assert.equal(state.tx.length, 0); assert.equal(state.smsSince, at - 60000);
 console.log("capture coordinator: one active read, concurrent edits, failed cursors and disposal pass");
+
+// Revoking a bank while its read is in flight prevents its messages being imported.
+state = seed(); let finishRevoked!: (messages: Sms[]) => void;
+const revoked = new CaptureCoordinator({
+  snapshot: () => state, commit: async update => { state = { ...state, ...update(state) }; },
+  apps: async () => [], readSms: () => new Promise(done => { finishRevoked = done; }), readNotifications: async () => [],
+  message() {}, now: () => at, newId: () => "revoked",
+});
+const revokedRead = revoked.catchUp(); state = { ...state, smsBanks: [] };
+finishRevoked([message]); await revokedRead;
+assert.deepEqual(state.tx, []); revoked.dispose();

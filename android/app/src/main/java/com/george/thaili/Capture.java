@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import java.math.BigDecimal;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONArray;
@@ -30,7 +31,10 @@ final class Capture {
 
     static JSONObject config(Context ctx) {
         try {
-            return new JSONObject(ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("config", "{}"));
+            JSONObject config = new JSONObject(ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("config", "{}"));
+            // v1.3's saved sender map predates explicit per-bank SMS consent.
+            if (config.optInt("smsSelectionVersion", 0) < 1) config.put("senders", new JSONObject());
+            return config;
         } catch (Exception e) {
             return new JSONObject();
         }
@@ -88,7 +92,7 @@ final class Capture {
     }
 
     private static boolean filedByRule(JSONObject c, String body) {
-        String hay = body.toUpperCase().replaceAll("[^A-Z0-9&]+", " ");
+        String hay = body.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9&]+", " ");
         JSONArray rules = c.optJSONArray("rules");
         for (int i = 0; rules != null && i < rules.length(); i++) {
             String kw = rules.optString(i);

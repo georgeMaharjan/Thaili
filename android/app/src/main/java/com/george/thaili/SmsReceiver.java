@@ -20,6 +20,7 @@ public class SmsReceiver extends BroadcastReceiver {
         long at = System.currentTimeMillis();
         for (SmsMessage m : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
             String sender = m.getDisplayOriginatingAddress();
+            if (Capture.bankForSender(c, sender) == null) continue; // Do not request an unselected sender’s body.
             bodies.computeIfAbsent(sender, k -> new StringBuilder()).append(m.getMessageBody());
             at = m.getTimestampMillis();
         }

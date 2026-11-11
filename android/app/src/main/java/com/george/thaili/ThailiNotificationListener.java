@@ -12,6 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import android.os.Handler;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,7 +28,6 @@ import org.json.JSONObject;
  */
 public class ThailiNotificationListener extends NotificationListenerService {
     static final String PREFS = Capture.PREFS;
-    private static final int KEEP = 500; // ponytail: newest 500 only; the app reads them within a day or two anyway
     static final Pattern AMOUNT = MoneyNotificationText.AMOUNT;
     // An actual code, not the "Never share your OTP" footer real bank alerts carry.
     static final Pattern OTP = MoneyNotificationText.OTP;
@@ -35,6 +36,7 @@ public class ThailiNotificationListener extends NotificationListenerService {
     @Override
     public void onListenerConnected() {
         active = new WeakReference<>(this);
+        readLog(getSharedPreferences(PREFS, Context.MODE_PRIVATE), System.currentTimeMillis());
         captureActive();
     }
 
@@ -87,12 +89,11 @@ public class ThailiNotificationListener extends NotificationListenerService {
         String id = UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
         synchronized (ThailiNotificationListener.class) {
             try {
-                JSONArray all = new JSONArray(p.getString("log", "[]"));
+                JSONArray all = readLog(p, System.currentTimeMillis());
                 for (int i = 0; i < all.length(); i++) if (id.equals(all.getJSONObject(i).optString("id"))) return;
                 all.put(new JSONObject().put("id", id).put("pkg", sbn.getPackageName()).put("body", body)
                     .put("at", at).put("receivedAt", System.currentTimeMillis()));
-                JSONArray kept = new JSONArray();
-                for (int i = Math.max(0, all.length() - KEEP); i < all.length(); i++) kept.put(all.get(i));
+                JSONArray kept = recent(all, System.currentTimeMillis());
                 p.edit().putString("log", kept.toString()).apply();
             } catch (JSONException ignored) {
                 // A corrupt log is dropped rather than crash the listener.
@@ -102,4 +103,28 @@ public class ThailiNotificationListener extends NotificationListenerService {
         ThailiPlugin.moneyNotification();
         Capture.onMessage(this, c, normalized, at);
     }
+    private static JSONArray recent(JSONArray all, long now) throws JSONException {
+        List<JSONObject> items = new ArrayList<>();
+        for (int i = 0; i < all.length(); i++) items.add(all.getJSONObject(i));
+        JSONArray kept = new JSONArray();
+        for (JSONObject item : NotificationRetention.keep(items, now,
+                n -> n.optLong("at", 0), n -> n.optLong("receivedAt", n.optLong("at", 0)))) kept.put(item);
+        return kept;
+    }
+
+    /** Pruning on capture/read/connection avoids an unbounded private raw-message archive. */
+    static JSONArray readLog(SharedPreferences prefs, long now) {
+        synchronized (ThailiNotificationListener.class) {
+            try {
+                JSONArray all = new JSONArray(prefs.getString("log", "[]"));
+                JSONArray kept = recent(all, now);
+                if (kept.length() != all.length()) prefs.edit().putString("log", kept.toString()).apply();
+                return kept;
+            } catch (JSONException ignored) {
+                prefs.edit().remove("log").apply();
+                return new JSONArray();
+            }
+        }
+    }
+
 }

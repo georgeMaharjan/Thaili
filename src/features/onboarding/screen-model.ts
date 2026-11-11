@@ -2,6 +2,7 @@ import type { AppViewModel } from "../view-model";
 
 /** Only the values and actions consumed by this feature’s screens. */
 export type OnboardingScreenModel = Pick<AppViewModel,
+  "openPrivacy" | "privacyTitle" |
   "numericEditingLabel" |
   "addCatNote" |
   "addCustomCat" |
@@ -30,6 +31,7 @@ export type OnboardingScreenModel = Pick<AppViewModel,
   "detectRetry" |
   "detectRows" |
   "detectScanning" |
+  "detectProgress" |
   "detectSkip" |
   "detectSkipLabel" |
   "detectStep" |

@@ -21,6 +21,7 @@ export type Profile = { name: string; phone: string; createdAt: string };
 // in: a money-in category; gone: deleted. customCats also holds renames/deletes of built-ins under their key.
 export type Category = { key: string; label: string; limit?: number; in?: boolean; gone?: boolean };
 export type Preferences = {
+  smsBanks?: string[];
   picked?: string[]; customCats?: Category[]; ess?: Record<string, boolean>;
   saveTarget?: number; savingsGoal?: number; theme?: "light" | "dark"; lang?: "EN" | "NP";
   splitMode?: SplitMode; syncCell?: boolean; syncRaw?: boolean; syncAlert?: boolean;

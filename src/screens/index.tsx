@@ -8,13 +8,13 @@ import { GoalNew,Goals } from "./goals";
 import { Add,Home,Stack } from "./home";
 import { Baseline,Flow,Insights,Leaks } from "./insights";
 import { Cats,Detect,Permission,Register,Scan,Source,Welcome } from "./onboarding";
-import { Profile,Settings } from "./settings";
+import { Privacy,Profile,Settings } from "./settings";
 import { Detail,Rules,Txns } from "./transactions";
 
 const SCREENS: Record<ScreenName, ComponentType<{ v: V }>> = {
   welcome: Welcome, register: Register, permission: Permission, detect: Detect, source: Source, "src-new": SrcNew, scan: Scan, cats: Cats,
   home: Home, txns: Txns, stack: Stack, detail: Detail, insights: Insights, flow: Flow, leaks: Leaks, baseline: Baseline, add: Add, rules: Rules,
-  accounts: Accounts, "source-detail": SourceDetail, goals: Goals, "goal-new": GoalNew, settings: Settings, profile: Profile,
+  accounts: Accounts, "source-detail": SourceDetail, goals: Goals, "goal-new": GoalNew, settings: Settings, profile: Profile, privacy: Privacy,
 };
 
 export default function Screens({ v }: { v: V }) {

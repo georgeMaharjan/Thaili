@@ -3,11 +3,26 @@ import type { AppController } from "../../application/controller";
 import { authenticationMessage } from "../../lib/authentication";
 import { bsOf, monthKey, monthName, npDigits } from "../../lib/bs";
 import { digits10, fmtPhone, initials, rs, validPhone } from "../../lib/format";
+import { privacyPolicy } from "../../lib/privacy";
+import { INSTITUTIONS, institutionForAccount } from "../../lib/institutions";
 import { captureNotifications } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
+export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData" | "back">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
   const { s, T, np, dark, surplus, openBaseline, autoFiled, segBg, segFg, segSh } = context;
+  const privacyTitle = np ? "गोपनीयता नीति" : "Privacy policy";
+  const smsInstitutions = INSTITUTIONS.filter(bank => bank.sms && s.sources.some(account => institutionForAccount(account)?.key === bank.key));
   return {
+    privacyTitle,
+    privacySections: privacyPolicy(np),
+    openPrivacy: () => app.go("privacy"),
+    privacyBack: () => { if (!app.back()) app.go(s.setupComplete ? "settings" : "permission"); },
+    smsAccessTitle: np ? "बैंक SMS पहुँच" : "Bank SMS access",
+    smsAccessNote: np ? "अनुमति दिए पनि छानेका बैंकका मात्र सन्देश पढिन्छन्। बैंक खोजमा प्रेषकका नाम मात्र जाँचिन्छन्। एउटै बैंकको प्रेषक सबै खाताको साझा हुन सक्छ। तल बैंक नदेखिए पहिले खाता थप्नुहोस्।" : "Only enabled banks’ message bodies are read, even when Android grants full SMS permission. Discovery checks sender names only. Accounts at the same bank can share a sender. Add an account to see its bank here. After upgrading from v1.3, choose your banks here to resume SMS capture.",
+    smsBankRows: smsInstitutions.map(bank => ({
+      key: bank.key, label: bank.name, on: s.smsBanks.includes(bank.key),
+      tap: () => app.patch(state => ({ smsBanks: state.smsBanks.includes(bank.key) ? state.smsBanks.filter(key => key !== bank.key) : [...state.smsBanks, bank.key] })),
+      stateLabel: s.smsBanks.includes(bank.key) ? (np ? "चालु" : "On") : (np ? "बन्द" : "Off"),
+    })),
     setLight: () => app.patch({ theme: "light" }),
     setDark: () => app.patch({ theme: "dark" }),
     lightBg: segBg(!dark),
@@ -36,6 +51,7 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
     userPhone: s.user ? fmtPhone(s.user.phone) : "",
     toProfile: () => s.user && app.go("profile", { profName: s.user.name, profPhone: s.user.phone.slice(-10) }),
     settingRows: [
+      { icon: IC.lock, label: privacyTitle, meta: np ? "अनुमति, भण्डारण, ब्याकअप र डेटा मेटाउने" : "Permissions, storage, backups and deletion", value: "", tap: () => app.go("privacy") },
       {
         icon: IC.bell, label: T.notifications,
         meta: s.notifMode === "Off" ? "No alerts — review from the app" : "New transactions that need a category",
@@ -61,7 +77,7 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
       { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) },
       {
         icon: IC.exportI, label: np ? "सबै डेटा निर्यात" : "Export all data",
-        meta: np ? "ब्याकअप फाइल — एप हटाएर फेरि हाल्दा फिर्ता ल्याउन" : "Backup file to restore from if you reinstall Thaili",
+        meta: np ? "पढ्न मिल्ने JSON — आफूले रोजेको स्थानमा" : "Readable JSON; saved to the location you choose",
         value: "", tap: () => void app.exportData()
       },
       {

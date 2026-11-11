@@ -20,6 +20,7 @@ const BANKS: Record<string, RegExp> = {
 // short code — is ignored, whatever the text says. The same IDs also send OTPs and offers;
 // TXN below decides which of their messages are transactions.
 const SENDERS = Object.fromEntries(INSTITUTIONS.filter(i => i.sms).map(i => [i.key, i.sms!]));
+export const knownSmsSenders = Object.fromEntries(Object.entries(SENDERS).map(([key, pattern]) => [key, pattern.source]));
 export const bankOf = (sender: string) => Object.keys(SENDERS).find((k) => SENDERS[k].test(sender.trim())) || null;
 
 const AMOUNT = /(?:NPR\.?|Rs\.?)\s*([\d,]+(?:\.\d{1,2})?)/i;
@@ -142,3 +143,7 @@ export function tailsByBank(msgs: { sender: string; body: string; at: number }[]
   Object.keys(n).forEach((b) => { out[b] = Object.keys(n[b]).sort((x, y) => n[b][y] - n[b][x])[0]; });
   return out;
 }
+
+/** A bank must have an account and explicit SMS opt-in; old backups default to no body access. */
+export const enabledSmsBanks = (accounts: (string | MatchableSource)[], selected: string[]) =>
+  Object.keys(nativeRules(accounts).senders).filter(key => selected.includes(key));

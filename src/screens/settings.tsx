@@ -69,6 +69,16 @@ export function Settings({ v }: { v: V }) {
           </div>
         </Section>
 
+        <Section title={v.smsAccessTitle}>
+          <p className="pb-3 text-[13px] leading-[1.6] text-ink-3">{v.smsAccessNote}</p>
+          {v.smsBankRows.map(bank => (
+            <button key={bank.key} role="switch" aria-checked={bank.on} onClick={bank.tap} className={cx(ROW, "press justify-between gap-4 text-left")}>
+              <span className="text-[15px] font-medium">{bank.label}</span>
+              <span className={cx("flex-none text-[14px] font-semibold", bank.on ? "text-pos" : "text-ink-3")}>{bank.stateLabel}</span>
+            </button>
+          ))}
+        </Section>
+
         <Section title={v.manageTitle}>
           {v.settingRows.map((s, i: number) => (
             <button key={i} onClick={s.tap} className={cx(ROW, "press text-left")}>
@@ -109,4 +119,16 @@ export function Profile({ v }: { v: V }) {
       </div>
     </div>
   );
+}
+
+export function Privacy({ v }: { v: V }) {
+  return <div className="flex flex-1 flex-col overflow-hidden">
+    <TopBar onBack={v.privacyBack} title={v.privacyTitle} />
+    <div className="flex flex-1 flex-col gap-6 overflow-auto px-5 pt-2 pb-8">
+      {v.privacySections.map(section => <section key={section.title} className="flex flex-col gap-2">
+        <h2 className="text-[16px] font-semibold text-ink">{section.title}</h2>
+        <p className="text-[14px] leading-[1.65] text-ink-2">{section.text}</p>
+      </section>)}
+    </div>
+  </div>;
 }

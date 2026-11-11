@@ -3,6 +3,7 @@ import type { CaptureConfiguration } from "../domain/capture-contract";
 // In a browser there is no device: nothing granted, nothing installed.
 import { Capacitor,registerPlugin } from "@capacitor/core";
 import type { InstalledApp } from "./money-apps";
+import { knownSmsSenders, nativeRules } from "./sms";
 
 export type Perms = { sms: boolean; notifications: boolean };
 
@@ -13,7 +14,8 @@ type Native = {
   openAppSettings(): Promise<void>;
   installedApps(): Promise<{ apps: InstalledApp[] }>;
   authenticate(o: { title?: string }): Promise<{ ok: boolean; reason?: string }>;
-  readSms(o: { sinceMs: number }): Promise<{ messages: Sms[] }>;
+  readSmsSenders(o: { sinceMs: number; senders: Record<string, string> }): Promise<{ senders: string[] }>;
+  readSms(o: { sinceMs: number; senders: Record<string, string> }): Promise<{ messages: Sms[] }>;
   setCapture(o: CaptureConfiguration): Promise<void>;
   addListener(e: "open", cb: (o: { open: string; at: number }) => void): Promise<{ remove: () => void }>;
   addListener(e: "moneyNotification", cb: () => void): Promise<{ remove: () => void }>;
@@ -38,9 +40,11 @@ export const installedApps = () =>
 // Browser preview has no lock to check, so it always passes.
 export const authenticate = (title?: string) =>
   isDevice ? native.authenticate({ title }) : Promise.resolve({ ok: true, reason: undefined as string | undefined });
-// Money messages since sinceMs (filtered natively: amount + debit/credit word, no OTPs).
-export const readSms = (sinceMs: number) =>
-  isDevice ? native.readSms({ sinceMs }).then((r) => r.messages) : Promise.resolve([] as Sms[]);
+// Discovery queries sender addresses only. Message bodies require an explicit account scope.
+export const readSmsSenders = (sinceMs: number) =>
+  isDevice ? native.readSmsSenders({ sinceMs, senders: knownSmsSenders }).then(r => r.senders) : Promise.resolve([] as string[]);
+export const readSms = (sinceMs: number, selected: Parameters<typeof nativeRules>[0]) =>
+  isDevice ? native.readSms({ sinceMs, senders: nativeRules(selected).senders }).then((r) => r.messages) : Promise.resolve([] as Sms[]);
 // What background capture watches and checks; see Capture.java and sms.ts nativeRules.
 export const setCapture = (config: CaptureConfiguration) => (isDevice ? native.setCapture(config).catch(() => {}) : Promise.resolve());
 // A tapped Thaili notification ("review" carries the spend's time).

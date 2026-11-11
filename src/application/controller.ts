@@ -8,7 +8,7 @@ import { TransactionCommands } from "../features/transactions/commands";
 import { createAppViewModel } from "../features/view-model";
 import { AuthenticationSession, authenticationMessage } from "../lib/authentication";
 import type { Sms } from "../lib/device";
-import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, saveFile, setCapture } from "../lib/device";
+import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, readSmsSenders, saveFile, setCapture } from "../lib/device";
 import { BackupError, backupName, decodeBackup, encodeBackup } from "../lib/backup";
 import { npDigits } from "../lib/bs";
 import { hydrated, snapshot } from "../lib/pouch";
@@ -184,11 +184,13 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   private createDiscovery = () => new MoneyAppDiscovery({
     snapshot: () => this.state, commit: (update, done) => this.patch(update, done),
     navigate: (screen, patch) => this.go(screen, patch), supported: isDevice,
-    installed: installedApps, history: readSms, now: Date.now,
+    installed: installedApps, senders: readSmsSenders, history: readSms, now: Date.now,
+    message: text => this.flash(text),
   });
   discovery = this.createDiscovery();
   get appDiscovery() { return this.discovery.promise; }
   startDetection = (from = "setup") => { void this.discovery.scan(from); };
+  confirmDetection = () => { void this.discovery.confirm(); };
   cancelDetection = () => this.discovery.cancel();
   componentDidMount() {
     this.disposed = false;
@@ -269,7 +271,7 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   componentDidUpdate(_: Record<string, never>, prev: AppState) {
     if (this.saving && prev.loaded) save(prev, this.state);
     const n = this.state;
-    if (n.loaded && (prev.sources !== n.sources || prev.rules !== n.rules || prev.notifMode !== n.notifMode || prev.moneyApps !== n.moneyApps || prev.setupComplete !== n.setupComplete || !prev.loaded)) this.syncCapture();
+    if (n.loaded && (prev.sources !== n.sources || prev.smsBanks !== n.smsBanks || prev.rules !== n.rules || prev.notifMode !== n.notifMode || prev.moneyApps !== n.moneyApps || prev.setupComplete !== n.setupComplete || !prev.loaded)) this.syncCapture();
     if (n.loaded && n.setupComplete && (!prev.setupComplete || prev.captureStartAt !== n.captureStartAt)) void this.catchUpSms().catch(console.warn);
     if (prev.theme !== this.state.theme) this.paintBars();
     const to = this.state.screen;

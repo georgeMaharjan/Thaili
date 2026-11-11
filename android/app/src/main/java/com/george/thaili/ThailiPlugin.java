@@ -19,6 +19,9 @@ import android.provider.Telephony;
 import java.util.regex.Pattern;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Iterator;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
 import java.io.OutputStream;
@@ -225,6 +228,7 @@ public class ThailiPlugin extends Plugin {
      */
     @PluginMethod
     public void setCapture(PluginCall call) {
+        call.getData().put("smsSelectionVersion", 1);
         getContext().getSharedPreferences(Capture.PREFS, Context.MODE_PRIVATE)
             .edit().putString("config", call.getData().toString()).apply();
         ThailiNotificationListener.refresh();
@@ -266,7 +270,7 @@ public class ThailiPlugin extends Plugin {
         SharedPreferences p = getContext().getSharedPreferences(ThailiNotificationListener.PREFS, Context.MODE_PRIVATE);
         JSArray out = new JSArray();
         try {
-            JSONArray all = new JSONArray(p.getString("log", "[]"));
+            JSONArray all = ThailiNotificationListener.readLog(p, System.currentTimeMillis());
             for (int i = 0; i < all.length(); i++) {
                 JSONObject n = all.getJSONObject(i);
                 if (n.optLong("receivedAt", n.getLong("at")) >= since) out.put(n);
@@ -279,29 +283,80 @@ public class ThailiPlugin extends Plugin {
         call.resolve(r);
     }
 
-    /** Bank messages received since sinceMs (epoch ms), newest first. Needs the SMS permission. */
+    private List<Pattern> selectedSmsSenders(PluginCall call) {
+        List<Pattern> patterns = new ArrayList<>();
+        JSONObject senders = call.getData().optJSONObject("senders");
+        if (senders != null) for (Iterator<String> keys = senders.keys(); keys.hasNext();) {
+            patterns.add(Pattern.compile(senders.optString(keys.next(), "(?!)"), Pattern.CASE_INSENSITIVE));
+        }
+        return patterns; // Missing/empty selection means no inbox access.
+    }
+
+    private SmsInboxReader.Source smsInbox() {
+        return new SmsInboxReader.Source() {
+            public List<String> senderAddresses(long since) {
+                List<String> addresses = new ArrayList<>();
+                // Discovery never requests BODY, DATE or message IDs.
+                try (Cursor c = getContext().getContentResolver().query(Telephony.Sms.Inbox.CONTENT_URI,
+                        new String[] { Telephony.Sms.ADDRESS }, Telephony.Sms.DATE + " >= ?",
+                        new String[] { String.valueOf(since) }, null)) {
+                    while (c != null && c.moveToNext()) addresses.add(c.getString(0));
+                }
+                return addresses;
+            }
+
+            public List<SmsInboxReader.Message> messages(long since, List<String> addresses) {
+                List<SmsInboxReader.Message> messages = new ArrayList<>();
+                for (int offset = 0; offset < addresses.size(); offset += 100) {
+                    List<String> batch = addresses.subList(offset, Math.min(offset + 100, addresses.size()));
+                    String[] args = new String[batch.size() + 1];
+                    args[0] = String.valueOf(since);
+                    for (int i = 0; i < batch.size(); i++) args[i + 1] = batch.get(i);
+                    try (Cursor c = getContext().getContentResolver().query(Telephony.Sms.Inbox.CONTENT_URI,
+                            new String[] { Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms._ID },
+                            SmsInboxReader.selection(batch.size()), args, Telephony.Sms.DATE + " DESC")) {
+                        while (c != null && c.moveToNext()) messages.add(new SmsInboxReader.Message(
+                            c.getLong(3), c.getLong(2), c.getString(0), c.getString(1)));
+                    }
+                }
+                messages.sort((a, b) -> Long.compare(b.at, a.at));
+                return messages;
+            }
+        };
+    }
+
+    /** Recognized sender names for discovery. No SMS message body is queried. */
+    @PluginMethod
+    public void readSmsSenders(PluginCall call) {
+        JSArray names = new JSArray();
+        try {
+            if (getPermissionState("sms") == PermissionState.GRANTED) {
+                for (String sender : SmsInboxReader.senders(smsInbox(), call.getLong("sinceMs", 0L), selectedSmsSenders(call))) names.put(sender);
+            }
+            JSObject r = new JSObject(); r.put("senders", names); call.resolve(r);
+        } catch (RuntimeException error) { call.reject("Unable to read SMS sender names", error); }
+    }
+
+    /** Only selected bank sender bodies are queried. OTP/amount filtering then applies locally. */
     @PluginMethod
     public void readSms(PluginCall call) {
         JSArray out = new JSArray();
-        if (getPermissionState("sms") == PermissionState.GRANTED) {
-            String since = String.valueOf(call.getLong("sinceMs", 0L));
-            String[] cols = { Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms._ID };
-            try (Cursor c = getContext().getContentResolver().query(Telephony.Sms.Inbox.CONTENT_URI, cols,
-                    Telephony.Sms.DATE + " >= ?", new String[] { since }, Telephony.Sms.DATE + " DESC")) {
-                while (c != null && c.moveToNext()) {
-                    String body = c.getString(1);
+        try {
+            if (getPermissionState("sms") == PermissionState.GRANTED) {
+                for (SmsInboxReader.Message message : SmsInboxReader.read(smsInbox(), call.getLong("sinceMs", 0L), selectedSmsSenders(call))) {
+                    String body = message.body;
                     if (body == null) continue;
                     String normalized = MoneyNotificationText.normalize(body);
                     if (!AMOUNT.matcher(normalized).find() || OTP.matcher(normalized).find()) continue;
                     JSObject m = new JSObject();
-                    m.put("id", UUID.nameUUIDFromBytes(("sms|" + c.getLong(3) + "|" + c.getLong(2) + "|" + c.getString(0) + "|" + body).getBytes(StandardCharsets.UTF_8)).toString());
-                    m.put("sender", c.getString(0));
+                    m.put("id", UUID.nameUUIDFromBytes(("sms|" + message.id + "|" + message.at + "|" + message.sender + "|" + body).getBytes(StandardCharsets.UTF_8)).toString());
+                    m.put("sender", message.sender);
                     m.put("body", body);
-                    m.put("at", c.getLong(2));
+                    m.put("at", message.at);
                     out.put(m);
                 }
             }
-        }
+        } catch (RuntimeException error) { call.reject("Unable to read selected bank messages", error); return; }
         JSObject r = new JSObject();
         r.put("messages", out);
         call.resolve(r);

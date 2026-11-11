@@ -90,6 +90,7 @@ export function Permission({ v }: { v: V }) {
         ))}
       </div>
       <div className="rounded-2xl bg-tint-n px-4 py-4 text-[13px] leading-[1.6] text-ink-2">{v.permNote}</div>
+      <button onClick={v.openPrivacy} className="min-h-[44px] text-left text-[14px] font-semibold text-action underline">{v.privacyTitle}</button>
       <div className="flex-1" />
       <Btn onClick={v.toDetect}>{v.permCta}</Btn>
     </div>
@@ -105,7 +106,7 @@ export function Detect({ v }: { v: V }) {
           <div className="h-[6px] overflow-hidden rounded-[3px] bg-bar-track">
             <div className="h-full w-2/5 animate-[thaili-sweep_1.15s_ease-in-out_infinite] rounded-[3px] bg-action" />
           </div>
-          <span className="text-[13px] text-ink-3">Reading the installed-app list…</span>
+          <span className="text-[13px] text-ink-3">{v.detectProgress}</span>
         </div>
       )}
       {v.detectDone && (

@@ -31,8 +31,9 @@ export type AppState = {
   rulePrompt: { kw: string | null; cat: string; label: string } | null;
   newSrcKind: string; newSrcName: string; newSrcAmt: string; newSrcRole: string;
   newSrcAcct: string; newSrcField: string;
-  detState: "done" | "scanning" | "unsupported" | "error"; detFrom: string;
+  detState: "done" | "scanning" | "reading" | "unsupported" | "error"; detFrom: string;
   detOn: Record<string, boolean>; detFound: MoneyApp[]; moneyApps: MoneyApp[];
+  smsBanks: string[];
   syncRaw: boolean; // Legacy local raw-text retention preference; no sync controls.
   goalName: string; goalAmt: string; goalPos: string; goalError: string; discardGoal: boolean;
   catsMode: string; catsFrom: Screen; goalsFrom: Screen; settingsFrom: Screen;
@@ -69,7 +70,7 @@ export function initialState(): AppState {
     newSrcKind: "bank", newSrcName: "Nabil Bank", newSrcAmt: "", newSrcRole: "spending",
     newSrcAcct: "", newSrcField: "acct",
     detState: "done", detFrom: "setup", detOn: {}, detFound: [], moneyApps: [],
-    syncRaw: true,
+    smsBanks: [], syncRaw: true,
     roles: {},
     goals: [],
     goalName: "", goalAmt: "", goalPos: "bottom", goalError: "", discardGoal: false,
