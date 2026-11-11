@@ -1,6 +1,44 @@
 # Play Protect appeal — submission record
 
-Submitted on 11 November 2026 for the currently published v1.3 APK. Google displayed
+## Current release — v1.4.4
+
+Submitted on **12 November 2026 (Nepal time)** from the developer's signed-in Google account.
+Google displayed **Your email has been sent**, with no email-verification prompt, case ID or
+review deadline. This submission requests review of the new v1.4.4 bytes; it does not repeat
+the older v1.3 hash. No classification decision or installation exemption is claimed.
+
+- Published release: [v1.4.4](https://github.com/georgeMaharjan/Thaili/releases/tag/v1.4.4), version code 9.
+- Exact APK: `https://github.com/georgeMaharjan/Thaili/releases/download/v1.4.4/thaili.apk`.
+- APK SHA-256: `fa18d8476620f00e03a03243175170249ee6bef293bbd3d52f4402398576b767`.
+- Package: `com.george.thaili`.
+- Signing certificate SHA-256: `c581a727f0c4b6e6ca8b93e6dc07bb8daaf3d15e7a3e7cf504c97e399655e9bb`.
+- Tested release source: `646c1232d045b01b59ea913ce7f889a3de3f21cc`.
+- Website policy: https://thaili.georgemaharjan.com.np/privacy, verified live with the same APK hash.
+
+The exact public APK was downloaded and its checksum verified before uploading to VirusTotal.
+The developer explicitly approved accepting VirusTotal's terms and sharing this v1.4.4 sample
+with its security community. The completed [VirusTotal report](https://www.virustotal.com/gui/file/fa18d8476620f00e03a03243175170249ee6bef293bbd3d52f4402398576b767)
+displayed **0/67 malicious detections**. Google's engine displayed **Undetected**; eight other
+engines could not process the file type. This scan is not Play Protect approval or a guarantee
+of safety. Scan and signed-in submission screenshots are retained locally, outside the public
+repository.
+
+### Exact additional information submitted (963 characters)
+
+```text
+Please review Thaili v1.4.4 (code 9), MIT-licensed local finance tracker: sensitive-data installation block. This new APK replaces v1.3 and preserves optional SMS/notification capture. Android SMS access is broad, but sender discovery reads addresses only; message bodies are queried only for user-selected banks. Notification access filters configured bank/wallet apps. Ledger/messages stay on-device; JSON exports may use a chosen cloud provider. Update checks contact GitHub. Unused Firebase removed; automatic Android backup/transfer excluded; notification replay capped at 500/90 days. No accessibility service, SMS sending, banking credentials or payments. Same release signer; non-debuggable; target API 36. Please review this exact APK, not future implementation advice.
+APK: https://github.com/georgeMaharjan/Thaili/releases/download/v1.4.4/thaili.apk
+Source: https://github.com/georgeMaharjan/Thaili
+Privacy: https://thaili.georgemaharjan.com.np/privacy
+```
+
+Google's confirmation explicitly says **you will not receive a response** and decisions are final.
+Do not submit another duplicate for this APK. The sensitive Android permissions remain declared;
+the privacy changes do not guarantee removal of the sideloading block.
+
+## Historical release — v1.3
+
+Submitted on 11 November 2026 for the then-published v1.3 APK. Google displayed
 **Your email has been sent**. The first submission was made while signed out and requested email
 verification; no verification email was found in a focused mailbox search. After the developer
 signed in and explicitly approved a second submission, the same appeal was submitted under the
