@@ -1,4 +1,5 @@
 import { Chevron,Cta,Icon,P,PersonFields,Section,Seg,Toggle,TopBar,cx } from "@/components/ui";
+import { Sheet } from "@/components/sheet";
 import type { ReactNode } from "react";
 import type { SettingsScreenModel as V } from "../features/settings/screen-model";
 
@@ -104,7 +105,7 @@ export function Settings({ v }: { v: V }) {
             <button key={i} onClick={s.tap} role={s.toggle ? "switch" : undefined} aria-checked={s.toggle ? s.on : undefined} className={cx(ROW, "press py-3 text-left")}>
               <Icon d={s.icon} size={20} sw={1.8} className="text-ink-3" />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[16px] font-medium leading-[1.3]">{s.label}</span>
+                <span className={cx("text-[16px] font-medium leading-[1.3]", s.danger && "text-action")}>{s.label}</span>
                 <span className="text-[13px] leading-[1.4] text-ink-3">{s.meta}</span>
               </div>
               {s.toggle ? <span aria-hidden="true" className="flex flex-none items-center gap-2">
@@ -114,6 +115,18 @@ export function Settings({ v }: { v: V }) {
           ))}
         </Section>
       </div>
+      {v.expenseGoalOpen && <Sheet title={v.expenseGoalTitle} onClose={v.cancelExpenseGoal}>
+        <p className="text-[14px] leading-[1.6] text-ink-2">{v.expenseGoalDescription}</p>
+        <Seg className="rounded-xl" itemClass="flex h-[44px] flex-1 items-center justify-center rounded-[8px] text-[14px]" items={v.expenseGoalOptions} />
+        <label className="field">{v.expenseGoalAmountLabel}
+          <input type="number" inputMode="decimal" min="0.01" step="0.01" value={v.expenseGoalDraft}
+            onChange={v.expenseGoalDraftType} placeholder="0" />
+        </label>
+        <div className="flex gap-3 pt-1">
+          <button type="button" onClick={v.cancelExpenseGoal} className="flex-1 rounded-xl border border-line bg-surface-2 p-4 text-center text-[14px] font-semibold text-ink-2">{v.resetDataCancel}</button>
+          <Cta onClick={v.saveExpenseGoal} bg="var(--action)" fg="var(--onAction)" className="min-h-[52px] flex-1 px-4">{v.expenseGoalSaveLabel}</Cta>
+        </div>
+      </Sheet>}
     </div>
   );
 }

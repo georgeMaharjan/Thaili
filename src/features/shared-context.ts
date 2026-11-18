@@ -15,7 +15,13 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
     dayOf, bsLabel, bsDay, dayLabel, adLabel, wdShort } = calendarAt(today);
   const balances = accountBalances(s.sources, s.tx);
   const balance = (key: string | null) => balances[key || ""] || 0;
-  const { income, spent, freeToSpend, remaining, daysLeft, lastDay, allowance } = monthlyBudget(s.tx, TODAY_BS, DAYS_IN_MONTH, s.saveTarget);
+  const budget = monthlyBudget(s.tx, TODAY_BS, DAYS_IN_MONTH, s.saveTarget);
+  const { income, spent, daysLeft, lastDay } = budget;
+  const freeToSpend = s.expenseGoalSet
+    ? (s.expenseGoalMode === "percent" ? Math.round(income * s.expenseGoalValue / 100 * 100) / 100 : s.expenseGoalValue)
+    : budget.freeToSpend;
+  const remaining = freeToSpend - spent;
+  const allowance = Math.max(0, Math.round(remaining / daysLeft / 10) * 10);
   const T = L[s.lang] || L.EN;
   const np = s.lang === "NP";
   const dark = s.theme === "dark";
@@ -25,7 +31,7 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
   const spendCatsEver = catLists.every.filter(c => !c.in);
   const clabel = (k: string | null | undefined) => { const c = catLists.every.filter(x => x.key === k)[0]; return c ? c.label : "Uncategorised"; };
   const inMonth = (t: DatedTransaction) => monthKey(t.bs) === MONTH_KEY;
-  const evenLimit = Math.round(Math.max(0, income - s.saveTarget) / Math.max(s.picked.length, 1));
+  const evenLimit = Math.round(Math.max(0, freeToSpend) / Math.max(s.picked.length, 1));
   const cats = allCats.filter(c => s.picked.indexOf(c.key) > -1).map(c => Object.assign({ limit: evenLimit }, c));
   const fresh = (t: { added?: string }) => inReviewWindow(t.added, Date.now());
   const review = s.tx.filter(t => needsReview(t, Date.now()));
@@ -97,6 +103,7 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
     };
   };
   const dayMeta = (t: DatedTransaction) => dayLabel(t.off).split(" · ")[0] + " · " + srcOf(t.src).short;
-  return { s, today, TODAY_BS, MONTH_KEY, DAY_OF_MONTH, DAYS_IN_MONTH, MONTH_EN, MONTH_NP, PREV_MONTH_EN, dayOf, bsLabel, bsDay, dayLabel, adLabel, wdShort, balances, balance, income, spent, freeToSpend, remaining, daysLeft, lastDay, allowance, T, np, dark, allCats, incomeCats, spendCatsEver, clabel, inMonth, evenLimit, cats, fresh, review, scanAccts, scanGroups, card, detail, srcOf, shownSrc, amtStr, txLook, acctLook, amtFg, acctGrand, acctGroups, chip, keypad, isEss, kindOf, KIND, catDot, txCard, dayMeta };
+  const overspent = Math.max(0, spent - freeToSpend);
+  return { s, today, TODAY_BS, MONTH_KEY, DAY_OF_MONTH, DAYS_IN_MONTH, MONTH_EN, MONTH_NP, PREV_MONTH_EN, dayOf, bsLabel, bsDay, dayLabel, adLabel, wdShort, balances, balance, income, spent, freeToSpend, remaining, overspent, daysLeft, lastDay, allowance, T, np, dark, allCats, incomeCats, spendCatsEver, clabel, inMonth, evenLimit, cats, fresh, review, scanAccts, scanGroups, card, detail, srcOf, shownSrc, amtStr, txLook, acctLook, amtFg, acctGrand, acctGroups, chip, keypad, isEss, kindOf, KIND, catDot, txCard, dayMeta };
 }
 export type SharedContext = ReturnType<typeof sharedContext>;

@@ -15,6 +15,9 @@ export type AppState = {
   tx: DatedTransaction[]; sources: Account[]; roles: Record<string, string>;
   user: Profile | null; rules: FilingRule[]; goals: Goal[];
   setupComplete: boolean; storageStatus: StoreStatus; picked: string[];
+  resetDataOpen: boolean;
+  expenseGoalMode: "amount" | "percent"; expenseGoalValue: number; expenseGoalSet: boolean;
+  expenseGoalOpen: boolean; expenseGoalDraftMode: "amount" | "percent"; expenseGoalDraft: string;
   saveTarget: number; ess: Record<string, boolean>; stackIdx: number;
   detailId: string | null; from: Screen; srcFrom: Screen;
   rawOpen: boolean; editing: boolean; deleting: boolean; range: "Daily" | "Weekly" | "Monthly";
@@ -55,7 +58,8 @@ import { newId, SEED_RULES } from "./config";
 
 export function initialState(): AppState {
   return {
-    calendarDay: new Date().toDateString(), loaded: false, splash: true, screen: "welcome", tx: [], setupComplete: false, storageStatus: { kind: "local", pending: false },
+    calendarDay: new Date().toDateString(), loaded: false, splash: true, screen: "welcome", tx: [], setupComplete: false, storageStatus: { kind: "local", pending: false }, resetDataOpen: false,
+    expenseGoalMode: "amount", expenseGoalValue: 0, expenseGoalSet: false, expenseGoalOpen: false, expenseGoalDraftMode: "amount", expenseGoalDraft: "",
     picked: ["food", "transport", "grocery", "bills", "shopping", "health"],
     saveTarget: 10000, ess: {}, stackIdx: 0, detailId: null, from: "txns", srcFrom: "insights",
     rawOpen: false, editing: false, deleting: false,

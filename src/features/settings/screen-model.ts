@@ -44,6 +44,8 @@ export type SettingsScreenModel = Pick<AppViewModel,
   "setLight" |
   "setNp" |
   "settingRows" |
+  "resetDataOpen" | "resetDataTitle" | "resetDataDescription" | "resetDataCancel" | "resetDataConfirmLabel" | "cancelResetData" | "confirmResetData" |
+  "expenseGoalOpen" | "expenseGoalTitle" | "expenseGoalDescription" | "expenseGoalAmountLabel" | "expenseGoalSaveLabel" | "expenseGoalDraft" | "expenseGoalDraftType" | "expenseGoalOptions" | "cancelExpenseGoal" | "saveExpenseGoal" |
   "settingsBack" |
   "spacingLabel" |
   "spacingMeta" |

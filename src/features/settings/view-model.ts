@@ -9,8 +9,8 @@ import { enabledSmsBanks, SMS_HISTORY_MS } from "../../lib/sms";
 import { openAppSettings, openNotificationAccess } from "../../lib/device";
 import { captureNotifications } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData" | "back" | "openSmsPermission" | "catchUpSms">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
-  const { s, T, np, dark, surplus, openBaseline, autoFiled, segBg, segFg, segSh } = context;
+export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData" | "resetData" | "back" | "openSmsPermission" | "catchUpSms">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "freeToSpend" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
+  const { s, T, np, dark, surplus, freeToSpend, openBaseline, autoFiled, segBg, segFg, segSh } = context;
   const privacyTitle = np ? "गोपनीयता नीति" : "Privacy policy";
   const smsInstitutions = INSTITUTIONS.filter(bank => bank.sms && s.sources.some(account => institutionForAccount(account)?.key === bank.key));
   return {
@@ -122,6 +122,12 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
         icon: IC.vault, label: np ? "बचत आधार" : "Savings baseline", meta: "Protected before any goal is funded", value: rs(s.savingsGoal),
         tap: openBaseline
       },
+      { icon: IC.target, label: np ? "मासिक खर्च लक्ष्य" : "Monthly expense goal",
+        meta: s.expenseGoalSet
+          ? (s.expenseGoalMode === "percent" ? s.expenseGoalValue + "% of monthly income" : rs(s.expenseGoalValue) + " per month")
+          : (np ? "रकम वा आम्दानीको प्रतिशत छान्नुहोस्" : "Not set · configure an amount or percent of income"),
+        value: "", tap: () => app.patch({ expenseGoalOpen: true, expenseGoalDraftMode: s.expenseGoalSet ? s.expenseGoalMode : "amount",
+          expenseGoalDraft: String(s.expenseGoalSet ? s.expenseGoalValue : freeToSpend) }) },
       { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) },
       {
         icon: IC.exportI, label: np ? "सबै डेटा निर्यात" : "Export all data",
@@ -135,9 +141,49 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
         value: s.appVersion ? "v" + s.appVersion : "",
         // Opens in the phone's browser; Android installs the APK over this one.
         tap: () => { if (s.update) window.location.href = s.update.url; else void app.checkUpdate(true); }
-      }
-      // CSV export and Archive are hidden until built — see "Limitations" in README.md.
+      },
+      { icon: "M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3", label: np ? "सबै डेटा मेटाउनुहोस्" : "Delete or reset all data",
+        meta: np ? "फोनको थैली डेटा मेटाएर फेरि सुरु गर्नुहोस्" : "Erase this phone’s Thaili data and start over", value: "", danger: true,
+        tap: () => app.patch({ resetDataOpen: true }) },
     ],
+    resetDataOpen: s.resetDataOpen,
+    resetDataTitle: np ? "सबै डेटा मेटाउने?" : "Delete all Thaili data?",
+    resetDataDescription: np
+      ? "प्रोफाइल, खाता, कारोबार, लक्ष्य, नियम र सेटिङहरू यही फोनबाट मेटिन्छन्। फेरि सेटअप गर्नुपर्नेछ। निर्यात गरिएका फाइल छुट्टै मेटाउनुहोस्।"
+      : "Your profile, accounts, transactions, goals, rules, and data settings will be erased from this phone. You’ll need to set Thaili up again. Exported backup files are separate and must be deleted separately.",
+    resetDataCancel: np ? "रद्द गर्नुहोस्" : "Cancel",
+    resetDataConfirmLabel: np ? "मेटाएर फेरि सुरु गर्नुहोस्" : "Delete and start over",
+    cancelResetData: () => app.patch({ resetDataOpen: false }),
+    confirmResetData: () => { void app.resetData(); },
+    expenseGoalOpen: s.expenseGoalOpen,
+    expenseGoalTitle: np ? "मासिक खर्च लक्ष्य" : "Monthly expense goal",
+    expenseGoalDescription: np ? "मासिक खर्चको सीमा रकम वा आम्दानीको प्रतिशतमा तय गर्नुहोस्। यो सीमाभन्दा बढी खर्च भएको रकम Home मा बढी खर्चको रूपमा देखिन्छ।" : "Set a monthly spending limit as a fixed amount or a percentage of your income. Any amount spent above it appears as overspent on Home.",
+    expenseGoalAmountLabel: s.expenseGoalDraftMode === "percent" ? (np ? "आम्दानीको प्रतिशत" : "Percent of monthly income") : (np ? "मासिक रकम" : "Monthly amount"),
+    expenseGoalSaveLabel: np ? "सेभ गर्नुहोस्" : "Save goal",
+    expenseGoalDraft: s.expenseGoalDraft,
+    expenseGoalDraftType: (e: { target: { value: string } }) => {
+      const value = e.target.value.replace(/,/g, "");
+      if (/^\d{0,9}(\.\d{0,2})?$/.test(value)) app.patch({ expenseGoalDraft: value });
+    },
+    expenseGoalOptions: (["amount", "percent"] as const).map(mode => ({
+      label: mode === "amount" ? (np ? "निश्चित रकम" : "Fixed amount") : "% " + (np ? "आम्दानी" : "of income"),
+      bg: s.expenseGoalDraftMode === mode ? "var(--surface)" : "transparent",
+      fg: s.expenseGoalDraftMode === mode ? "var(--ink)" : "var(--ink3)",
+      shadow: s.expenseGoalDraftMode === mode ? "0 1px 2px rgba(0,0,0,.08)" : "none",
+      tap: () => app.patch({ expenseGoalDraftMode: mode })
+    })),
+    cancelExpenseGoal: () => app.patch({ expenseGoalOpen: false }),
+    saveExpenseGoal: () => {
+      const amount = Number(s.expenseGoalDraft);
+      if (!Number.isFinite(amount) || amount <= 0 || (s.expenseGoalDraftMode === "percent" && amount > 100)) {
+        app.flash(s.expenseGoalDraftMode === "percent"
+          ? (np ? "प्रतिशत ० भन्दा बढी र १०० सम्म राख्नुहोस्" : "Enter a percentage greater than 0 and no more than 100")
+          : (np ? "शून्यभन्दा बढी मासिक रकम राख्नुहोस्" : "Enter a monthly amount greater than 0"));
+        return;
+      }
+      app.patch({ expenseGoalSet: true, expenseGoalMode: s.expenseGoalDraftMode, expenseGoalValue: Math.round(amount * 100) / 100, expenseGoalOpen: false });
+      app.flash(np ? "मासिक खर्च लक्ष्य सेभ भयो" : "Monthly expense goal saved");
+    },
     ...(() => {
       const u = s.user || { name: "", phone: "", createdAt: now() };
       const ph = digits10(s.profPhone), phoneOk = validPhone(ph), nameOk = s.profName.trim().length >= 2;

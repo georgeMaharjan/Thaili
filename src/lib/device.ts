@@ -22,6 +22,7 @@ type Native = {
   readNotifications(o: { sinceMs: number }): Promise<{ notifications: MoneyNotification[] }>;
   tap(): Promise<void>;
   saveFile(o: { name: string; text: string }): Promise<{ saved: boolean }>;
+  resetData(): Promise<void>;
 };
 
 export type Sms = { id?: string; sender: string; body: string; at: number };
@@ -47,6 +48,7 @@ export const readSms = (sinceMs: number, selected: Parameters<typeof nativeRules
   isDevice ? native.readSms({ sinceMs, senders: nativeRules(selected).senders }).then((r) => r.messages) : Promise.resolve([] as Sms[]);
 // What background capture watches and checks; see Capture.java and sms.ts nativeRules.
 export const setCapture = (config: CaptureConfiguration) => (isDevice ? native.setCapture(config).catch(() => {}) : Promise.resolve());
+export const resetDeviceData = () => (isDevice ? native.resetData() : Promise.resolve());
 // A tapped Thaili notification ("review" carries the spend's time).
 export const onOpen = (cb: (o: { open: string; at: number }) => void) =>
   isDevice ? native.addListener("open", cb) : Promise.resolve({ remove() {} });

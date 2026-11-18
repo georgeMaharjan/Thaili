@@ -48,6 +48,7 @@ export type HomeScreenModel = Pick<AppViewModel,
   "leftFg" |
   "leftWord" |
   "monthlyTarget" |
+  "monthlyTargetMeta" |
   "noGoals" |
   "recent" |
   "reviewCount" |

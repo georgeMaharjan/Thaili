@@ -26,6 +26,13 @@ export default function Screens({ v }: { v: V }) {
     {v.discardAdd && <Sheet title="Discard this entry?" onClose={v.keepAdd}><p className="text-[14px] text-ink-2">Your unfinished transaction has not been saved.</p><Btn onClick={v.keepAdd}>Keep editing</Btn><Btn kind="secondary" onClick={v.discardEntry}>Discard entry</Btn></Sheet>}
     {v.discardGoal && <Sheet title="Discard this goal?" onClose={v.keepGoal}><p className="text-[14px] text-ink-2">Your goal has not been saved.</p><Btn onClick={v.keepGoal}>Keep editing</Btn><Btn kind="secondary" onClick={v.discardGoalEntry}>Discard goal</Btn></Sheet>}
     {v.deleting && <DeleteSheet v={v} />}
+    {v.resetDataOpen && <Sheet title={v.resetDataTitle} onClose={v.cancelResetData}>
+      <p className="text-pretty text-[14px] leading-[1.6] text-ink-2">{v.resetDataDescription}</p>
+      <div className="flex gap-3 pt-1">
+        <button type="button" onClick={v.cancelResetData} className="flex-1 rounded-xl border border-line bg-surface-2 p-4 text-center text-[14px] font-semibold text-ink-2">{v.resetDataCancel}</button>
+        <Btn onClick={v.confirmResetData} className="flex-1 bg-action text-on-action">{v.resetDataConfirmLabel}</Btn>
+      </div>
+    </Sheet>}
     {v.hasToast && (
       <div className="pointer-events-none absolute inset-x-[16px] flex items-center justify-between gap-2 rounded-[16px] bg-toast-bg py-2 pr-2 pl-4 text-toast-fg shadow-[0_10px_26px_rgba(0,0,0,.28)]" style={{ bottom: v.toastBottom }}>
         <span role="status" aria-atomic="true" className="min-w-0 flex-1 text-[13px] leading-[1.45] break-words">{v.toast}</span>

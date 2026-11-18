@@ -16,13 +16,16 @@ export function homeViewModel(app: Pick<AppController, "go" | "back" | "transact
     bsMonth: np ? MONTH_NP + " " + npDigits(TODAY_BS.y) : MONTH_EN + " " + TODAY_BS.y,
     haveLabel: np ? "कुल मौज्दात" : "Total balance",
     homeBalances: acctGroups.map(g => ({ label: g.label, total: balHero(g.sum, s.hideBal) })),
-    monthlyTarget: rs(s.saveTarget),
+    monthlyTarget: rs(freeToSpend),
+    monthlyTargetMeta: s.expenseGoalSet ? (s.expenseGoalMode === "percent"
+      ? s.expenseGoalValue + (np ? "% आम्दानीको खर्च लक्ष्य" : "% income expense goal")
+      : (np ? "मासिक खर्च लक्ष्य" : "monthly expense goal")) : (np ? "बचत लक्ष्यपछि खर्च गर्न मिल्ने" : "spendable after savings target"),
     editPlan: () => app.go("cats", { catsMode: "edit", catsFrom: "home" }),
     haveMeta: np ? s.sources.length + " खाताको जम्मा" : "Across " + s.sources.length + (s.sources.length === 1 ? " account" : " accounts"),
     dayOfLine: np ? "दिन " + DAY_OF_MONTH + " / " + DAYS_IN_MONTH : "Day " + DAY_OF_MONTH + " of " + DAYS_IN_MONTH,
     spentWord: np ? "खर्च भयो" : "Spent",
     homeSpent: "Rs " + whole(spent),
-    leftWord: remaining >= 0 ? (np ? "खर्च गर्न बाँकी" : "Left to spend") : (np ? "बढी खर्च" : "Over by"),
+    leftWord: remaining >= 0 ? (np ? "खर्च गर्न बाँकी" : "Left to spend") : (np ? "बढी खर्च" : "Overspent"),
     homeLeft: rs(Math.abs(remaining)),
     leftFg: remaining > 0 ? "var(--pos)" : "var(--warnInk)",
     targetWidth: Math.min(100, targetPctNum) + "%",
@@ -30,9 +33,11 @@ export function homeViewModel(app: Pick<AppController, "go" | "back" | "transact
     budgetLine: np ? rs(freeToSpend) + " को " + targetPctNum + "% खर्च भयो" : targetPctNum + "% of " + rs(freeToSpend) + " used",
     suggestLead: remaining <= 0 ? (np ? "खर्च गर्न मिल्ने भन्दा " : "You're ") : lastDay ? (np ? "आज " : "Keep today under ") : (np ? "दिनको " : "Try to keep each day under "),
     suggestAmt: remaining <= 0 ? rs(-remaining) : rs(allowance),
-    suggestTail: remaining <= 0 ? (np ? " बढी खर्च भयो" : " past what was free to spend") : np ? " भित्र राख्नुहोस्" : lastDay ? "" : " to stay on track",
-    suggestHow: (np ? MONTH_NP + "मा आएको " : "Came in this " + MONTH_EN + " ") + rs(income) + " − " + (np ? "बचत लक्ष्य " : "savings target ") + rs(s.saveTarget)
-      + " = " + rs(freeToSpend) + (np ? " खर्च गर्न मिल्ने" : " free to spend"),
+    suggestTail: remaining <= 0 ? (s.expenseGoalSet ? (np ? " खर्च लक्ष्यभन्दा बढी भयो" : " over your expense goal") : (np ? " बढी खर्च भयो" : " past what was free to spend")) : np ? " भित्र राख्नुहोस्" : lastDay ? "" : " to stay on track",
+    suggestHow: s.expenseGoalSet
+      ? (np ? "मासिक खर्च लक्ष्य " : "Monthly expense goal ") + rs(freeToSpend) + (s.expenseGoalMode === "percent" ? " · " + s.expenseGoalValue + "% " + (np ? "आम्दानीको" : "of income") : "")
+      : (np ? MONTH_NP + "मा आएको " : "Came in this " + MONTH_EN + " ") + rs(income) + " − " + (np ? "बचत लक्ष्य " : "savings target ") + rs(s.saveTarget)
+        + " = " + rs(freeToSpend) + (np ? " खर्च गर्न मिल्ने" : " free to spend"),
     floorPending: floorShort > 0,
     floorLine: np ? "बचत आधार " + rs(s.savingsGoal) + " पुगेपछि लक्ष्य भरिन थाल्छन् · " + rs(floorShort) + " बाँकी"
       : "Goals start filling once savings clear the " + rs(s.savingsGoal) + " baseline · " + rs(floorShort) + " to go",

@@ -21,6 +21,7 @@ runs on the Bikram Sambat calendar, and keeps all of your data on your phone.
   and optional and shows cash flow by Bikram Sambat month.
 - **Plans savings.** Set a protected savings baseline, then fund goals from the surplus, one at a time (Queue) or
   side by side (Share).
+- **Sets an expense goal.** Choose a fixed monthly amount or a percentage of income; spending above it is counted as overspent.
 - **Keeps it private.** App lock with fingerprint or phone PIN, a hide-balances switch, light and dark themes.
 
 ## Your data stays on your phone
@@ -33,8 +34,9 @@ but do not send messages or transactions. Review alerts are generated on the pho
 Android automatic backup and reads broader SMS body candidates before filtering. These changes need a new
 release; they do not alter an APK already downloaded. See the [privacy policy](docs/PRIVACY.md).
 
-Because the phone holds the only copy, **uninstalling Thaili or clearing its data deletes everything** unless you have
-a backup:
+Because the phone holds the only copy, **resetting, uninstalling, or clearing Thaili’s app data deletes everything**
+unless you have a backup. Settings → Delete or reset all data erases the profile and pouch from the app and returns
+to setup. Exported files are separate and are not removed by a reset:
 
 - **Export:** Settings → Export all data saves a `thaili-backup-<date>.json` file wherever you choose (Downloads by
   default). A cloud document provider can upload the file if you choose one. The current source opts out of

@@ -235,6 +235,15 @@ public class ThailiPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Drops retained notification message text and disables capture until setup is completed again. */
+    @PluginMethod
+    public void resetData(PluginCall call) {
+        SharedPreferences prefs = getContext().getSharedPreferences(Capture.PREFS, Context.MODE_PRIVATE);
+        prefs.edit().remove("log").putString("config", "{}").apply();
+        ThailiNotificationListener.refresh();
+        call.resolve();
+    }
+
     // A tapped "Review this transaction" opens the app with thailiOpen; the web layer listens for "open".
     @Override
     public void load() {

@@ -23,7 +23,7 @@ export type Category = { key: string; label: string; limit?: number; in?: boolea
 export type Preferences = {
   smsBanks?: string[];
   picked?: string[]; customCats?: Category[]; ess?: Record<string, boolean>;
-  saveTarget?: number; savingsGoal?: number; theme?: "light" | "dark"; lang?: "EN" | "NP";
+  saveTarget?: number; savingsGoal?: number; expenseGoalMode?: "amount" | "percent"; expenseGoalValue?: number; expenseGoalSet?: boolean; theme?: "light" | "dark"; lang?: "EN" | "NP";
   splitMode?: SplitMode; syncCell?: boolean; syncRaw?: boolean; syncAlert?: boolean;
   appLock?: boolean; notifMode?: "On" | "Off"; smsSince?: number | null;
   notificationSince?: number | null; hideBal?: boolean; setupComplete?: boolean;

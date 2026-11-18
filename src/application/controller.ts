@@ -8,7 +8,7 @@ import { TransactionCommands } from "../features/transactions/commands";
 import { createAppViewModel } from "../features/view-model";
 import { AuthenticationSession, authenticationMessage } from "../lib/authentication";
 import type { Sms } from "../lib/device";
-import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, readSmsSenders, requestSms, openAppSettings, saveFile, setCapture } from "../lib/device";
+import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, readSmsSenders, requestSms, openAppSettings, resetDeviceData, saveFile, setCapture } from "../lib/device";
 import { BackupError, backupName, decodeBackup, encodeBackup } from "../lib/backup";
 import { npDigits } from "../lib/bs";
 import { hydrated, snapshot } from "../lib/pouch";
@@ -130,6 +130,30 @@ export class AppController extends React.Component<Record<string, never>, AppSta
       console.error("[thaili] export failed", e);
       this.flash(np ? "फाइल सुरक्षित गर्न सकिएन। फेरि प्रयास गर्नुहोस्।" : "Couldn't save the backup file. Try again.");
     }
+  };
+  /** Clears the saved pouch and returns the app to first-run setup. */
+  resetData = async () => {
+    const current = this.state;
+    const result = await this.auth("Reset all Thaili data");
+    if (!result.ok) {
+      this.flash(result.reason === "cancelled" ? "Data was not reset" : "Could not verify your identity. Data was not reset.");
+      return;
+    }
+    try { await resetDeviceData(); }
+    catch (error) {
+      console.error("[thaili] could not clear retained notification data", error);
+      this.flash("Could not erase all saved data. Nothing was reset.");
+      return;
+    }
+    const fresh = initialState();
+    this.stack = [];
+    this.capture.dispose(); this.capture = this.createCapture();
+    this.discovery.dispose(); this.discovery = this.createDiscovery();
+    captureNotifications(false);
+    this.patch({ ...fresh, loaded: true, splash: false, screen: "welcome", storageStatus: current.storageStatus,
+      theme: current.theme, lang: current.lang, density: current.density, perms: current.perms,
+      appVersion: current.appVersion, update: current.update, moneyApps: current.moneyApps,
+      resetDataOpen: false, toast: current.lang === "NP" ? "सबै डेटा मेटाइयो" : "All Thaili data was reset" });
   };
   /** Restores a backup into a fresh install only; it never replaces data already on this phone. */
   importData = async (file: Blob | undefined) => {
