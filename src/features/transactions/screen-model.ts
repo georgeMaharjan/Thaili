@@ -39,11 +39,15 @@ export type TransactionsScreenModel = Pick<AppViewModel,
   "detailFs" |
   "detailKindIcon" |
   "detailKindLabel" |
+  "typeEditOpen" |
+  "typeEditClose" |
+  "typeOptions" |
   "detailMerchant" |
   "detailRaw" |
   "detailShowCats" |
   "filterCategories" |
   "filterResultCount" |
+  "filterSources" |
   "filterReview" |
   "filterReviewSet" |
   "filterSpending" |

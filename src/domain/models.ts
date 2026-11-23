@@ -5,6 +5,7 @@ import type { CaptureEvidence } from "../lib/transaction-capture";
 
 /** Durable values shared by presentation, import and persistence. Dates on screen are derived. */
 export type Direction = "credit" | "debit" | "transfer";
+export type TransactionPrimary = "Income" | "Expense" | "Loan" | "Lend" | "Transfer";
 export type Channel = "SMS" | "App" | "Manual";
 export type AccountRole = "spending" | "savings" | "";
 export type Account = {
@@ -13,13 +14,16 @@ export type Account = {
 };
 export type Transaction = {
   id: string; m: string; amt: number; dir: Direction; src: string; to?: string | null;
+  primary?: TransactionPrimary;
   cat?: string | null; rem?: string | null; auto?: string | null; ch: Channel;
   raw?: string | null; at: string; added?: string; capture?: CaptureEvidence[];
 };
+export const primaryOf = (t: Pick<Transaction, "dir" | "primary">): TransactionPrimary =>
+  t.primary || (t.dir === "credit" ? "Income" : t.dir === "transfer" ? "Transfer" : "Expense");
 export type DatedTransaction = Transaction & { off: number; time: string; bs: Bs };
 export type Profile = { name: string; phone: string; createdAt: string };
 // in: a money-in category; gone: deleted. customCats also holds renames/deletes of built-ins under their key.
-export type Category = { key: string; label: string; limit?: number; in?: boolean; gone?: boolean };
+export type Category = { key: string; label: string; limit?: number; in?: boolean; gone?: boolean; color?: string; createdAt?: string };
 export type Preferences = {
   smsBanks?: string[];
   picked?: string[]; customCats?: Category[]; ess?: Record<string, boolean>;

@@ -51,7 +51,15 @@ export const setCapture = (config: CaptureConfiguration) => (isDevice ? native.s
 export const resetDeviceData = () => (isDevice ? native.resetData() : Promise.resolve());
 // A tapped Thaili notification ("review" carries the spend's time).
 export const onOpen = (cb: (o: { open: string; at: number }) => void) =>
-  isDevice ? native.addListener("open", cb) : Promise.resolve({ remove() {} });
+  isDevice ? Promise.all([
+    native.addListener("open", cb),
+    import("@capacitor/local-notifications").then(({ LocalNotifications }) =>
+      LocalNotifications.addListener("localNotificationActionPerformed", action => {
+        const open = action.notification.extra?.open;
+        if (typeof open === "string") cb({ open, at: Date.now() });
+      }))
+  ]).then(handles => ({ remove: () => Promise.all(handles.map(handle => handle.remove())) }))
+    : Promise.resolve({ remove() {} });
 export const onMoneyNotification = (cb: () => void) => isDevice ? native.addListener("moneyNotification", cb) : Promise.resolve({ remove: () => {} });
 // Money notifications those apps posted since sinceMs (kept natively, even while Thaili was closed).
 export const readNotifications = (sinceMs: number) =>

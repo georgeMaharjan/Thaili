@@ -1,5 +1,6 @@
 import type { AppController } from "../application/controller";
 import { accountsViewModel } from "./accounts/view-model";
+import { budgetViewModel } from "./budget/view-model";
 import { createViewContext } from "./context";
 import { goalsViewModel } from "./goals/view-model";
 import { homeViewModel } from "./home/view-model";
@@ -14,6 +15,7 @@ export function createAppViewModel(app: AppController) {
   return {
     ...onboardingViewModel(app, context),
     ...accountsViewModel(app, context),
+    ...budgetViewModel(app, context),
     ...transactionsViewModel(app, context),
     ...goalsViewModel(app, context),
     ...insightsViewModel(app, context),

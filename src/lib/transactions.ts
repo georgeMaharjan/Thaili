@@ -2,15 +2,17 @@ import type { Transaction } from "../domain/models";
 /** Shared rules for manual entry and the transaction filters. Amounts are always
  * positive; direction alone determines whether an account gains or loses money. */
 export type Entry = { amt: number; dir: string; cat?: string | null; src: string; m: string; rem?: string | null; off: number; at: string };
-export type Filters = { query: string; categories: string[]; spending: string; review: boolean };
+export type Filters = { query: string; categories: string[]; spending: string; review: boolean; sources?: string[] };
 
 export function filterEntries<T extends Entry>(entries: T[], filters: Filters, context: {
   inRange: (t: T) => boolean; needsReview: (t: T) => boolean;
   essential: (key: string) => boolean; category: (key: string) => string; account: (key: string) => string;
 }): T[] {
   const query = filters.query.trim().toLowerCase().replace(/,/g, "");
+  const sources = filters.sources || [];
   return entries.filter(t => context.inRange(t)
     && (!filters.review || context.needsReview(t))
+    && (!sources.length || sources.includes(t.src))
     && (!filters.categories.length || filters.categories.includes(t.dir === "transfer" ? "transfer" : t.cat || "uncategorised"))
     && (filters.spending === "all" || t.dir === "debit" && !!t.cat && context.essential(t.cat) === (filters.spending === "essential"))
     && (!query || [t.m, t.rem, t.cat ? context.category(t.cat) : "Uncategorised", context.account(t.src), t.amt]
@@ -32,7 +34,7 @@ export function manualEntry(draft: { amount: string; direction: string; category
   const category = categories.find(c => c.key === draft.category);
   if (!category) throw new Error("Choose a category.");
   const note = draft.note.trim().slice(0, 80);
-  return { id, at, amt: Number(draft.amount), dir: draft.direction, src: account.key, cat: category.key,
+  return { id, at, amt: Number(draft.amount), dir: draft.direction, primary: draft.direction === "credit" ? "Income" : "Expense", src: account.key, cat: category.key,
     m: note || category.label, rem: note || category.label, ch: "Manual", raw: "Entered by hand." };
 }
 

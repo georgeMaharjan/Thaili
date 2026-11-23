@@ -139,8 +139,8 @@ export const TextLink = ({ onClick, className = "p-2 text-ink-3", children }: { 
 /** On/off switch drawn from the view model's `justify` and `track`. */
 export function Toggle({ t, small }: { t: ToggleModel; small?: boolean }) {
   return (
-    <span className={cx("flex flex-none rounded-full p-1", small ? "h-[27px] w-[46px]" : "h-[28px] w-[48px]")} style={{ justifyContent: t.justify, background: t.track }}>
-      <span className={cx("rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)]", small ? "size-[21px]" : "size-[22px]")} />
+    <span className={cx("flex flex-none items-center rounded-full p-[3px] transition-colors", small ? "h-[26px] w-[46px]" : "h-[28px] w-[48px]")} style={{ justifyContent: t.justify, background: t.track }}>
+      <span className="size-[20px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] transition-transform duration-200 motion-reduce:transition-none" />
     </span>
   );
 }

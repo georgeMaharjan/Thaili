@@ -2,7 +2,7 @@ import type { AppViewModel } from "../view-model";
 
 /** Bank selection, Android SMS access and history recovery belong to this screen. */
 export type BankSmsScreenModel = Pick<AppViewModel,
-  "bankSmsBack" | "smsPermissionTitle" | "smsPermissionOn" | "smsPermissionState" |
+  "bankSmsBack" | "smsPermissionTitle" |
   "smsPermissionNote" | "smsPermissionAction" | "manageSmsPermission" |
   "smsRecoverTitle" | "smsRecoverLabel" | "smsRecoverHint" | "smsCanRecover" | "recoverBankSms" |
   "smsAccessTitle" | "smsBanksTitle" | "smsAccessNote" | "smsBankRows" |

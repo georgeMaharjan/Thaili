@@ -22,7 +22,9 @@ function Pref({ d, label, meta, children }: { d: string; label: string; meta: st
 export function Settings({ v }: { v: V }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <TopBar onBack={v.settingsBack} title={v.t.settings} />
+      {v.settingsIsTab
+        ? <div className="flex min-h-[52px] flex-none items-center px-5 py-1"><span className="font-display text-[28px] font-bold tracking-[-0.015em]">{v.t.settings}</span></div>
+        : <TopBar onBack={v.settingsBack} title={v.t.settings} />}
       <div className="flex flex-1 flex-col gap-8 overflow-auto px-5 pt-2 pb-8">
         <div className="flex flex-col gap-3">
         <button onClick={v.toProfile} className="press flex items-center gap-4 py-1 text-left">
@@ -74,20 +76,17 @@ export function Settings({ v }: { v: V }) {
           <p className="mb-4 text-[13px] leading-[1.5] text-ink-3">{v.permissionIntro}</p>
           <div className="overflow-hidden rounded-card border border-line bg-surface">
             {v.permissionRows.map(permission => <button type="button" key={permission.key} onClick={permission.tap}
-              className="press flex min-h-[96px] w-full items-start gap-3 border-t border-line px-4 py-4 text-left first:border-t-0">
+              className="press flex min-h-[96px] w-full items-center gap-3 border-t border-line px-4 py-4 text-left first:border-t-0">
               <span aria-hidden="true" className={cx("mt-0.5 flex size-[36px] flex-none items-center justify-center rounded-xl", permission.on ? "bg-tint-g text-pos" : "bg-surface-2 text-ink-2")}>
                 <Icon d={permission.icon} size={19} sw={1.8} />
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span className="flex items-center justify-between gap-2">
                   <span className="min-w-0 flex-1 text-[15px] font-semibold leading-[1.35]">{permission.label}</span>
-                  <span className={cx("flex flex-none items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-semibold", permission.on ? "bg-tint-g text-pos" : "bg-surface-2 text-ink-3")}>
-                    {permission.on && <Icon d={P.check} size={12} sw={2.5} />}{permission.state}
-                  </span>
+                  <Icon d={P.next} size={16} sw={2.2} className="flex-none text-ink-3" />
                 </span>
                 <span className="text-[13px] leading-[1.45] text-ink-3">{permission.detail}</span>
               </span>
-              <Icon d={P.next} size={16} sw={2.2} className="mt-2 flex-none text-ink-3" />
             </button>)}
             <button type="button" onClick={v.openAndroidPermissions} className="press flex min-h-[48px] w-full items-center justify-between gap-3 border-t border-line bg-surface-2/50 px-4 py-3 text-[13px] font-semibold text-ink-2">
               <span>{v.androidPermissionsLabel}</span><Icon d="M14 4h6v6M20 4 10 14M10 5H5v14h14v-5" size={16} />

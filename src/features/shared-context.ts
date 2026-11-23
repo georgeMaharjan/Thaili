@@ -1,4 +1,4 @@
-import { CI, ESS_DEFAULT, IC, L, categoryLists, NO_SRC, NO_TX, SI, isManualSrc, needsAcctNumber } from "../application/config";
+import { CI, ESS_DEFAULT, IC, L, categoryColor, categoryLists, NO_SRC, NO_TX, SI, isManualSrc, needsAcctNumber } from "../application/config";
 import type { AppController } from "../application/controller";
 import type { Account, DatedTransaction } from "../domain/models";
 import { monthKey } from "../lib/bs";
@@ -47,7 +47,12 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
   const srcOf = (k: string | null) => s.sources.filter(x => x.key === k)[0] || s.sources[0] || NO_SRC;
   const shownSrc = srcOf(s.srcKey);
   const amtStr = (t: { dir: string; amt: number }) => (t.dir === "credit" ? "+" : t.dir === "transfer" ? "→" : "−") + fmt(t.amt);
-  const txLook = (t: { dir: string; cat?: string | null }) => { const l = t.dir === "credit" ? [SI.inA, "var(--tintG)", "var(--pos)"] : t.dir === "transfer" ? [SI.xfer, "var(--surface2)", "var(--ink2)"] : !t.cat ? [SI.ask, "var(--tintW)", "var(--warnInk)"] : [CI[t.cat] || IC.tag, "var(--surface2)", "var(--ink2)"]; return { icon: l[0], tint: l[1], ifg: l[2] }; };
+  const txLook = (t: { dir: string; cat?: string | null }) => {
+    const cat = t.cat ? catLists.every.find(c => c.key === t.cat) : null;
+    const color = cat ? categoryColor(cat) : "#A47922";
+    const l = t.dir === "transfer" ? [SI.xfer, "var(--surface2)", "var(--ink2)"] : !t.cat && t.dir === "debit" ? [SI.ask, "var(--tintW)", "var(--warnInk)"] : cat ? [CI[t.cat!] || IC.tag, color + "20", color] : t.dir === "credit" ? [SI.inA, "var(--tintG)", "var(--pos)"] : [SI.ask, "var(--tintW)", "var(--warnInk)"];
+    return { icon: l[0], tint: l[1], ifg: l[2] };
+  };
   const acctLook = (x: Account, bank: string[]) => {
     const k = /Wallet/.test(x.type) ? "wallet" : /Savings|Sahakari|deposit|SIP/i.test(x.type + " " + x.name) ? "save" : isManualSrc(x) ? "cash" : "bank";
     const l = { bank: bank, wallet: [IC.wallet, "var(--tintN)", "var(--navy)"], cash: [IC.cash, "var(--tintW)", "var(--warnInk)"], save: [IC.vault, "var(--tintG)", "var(--pos)"] }[k];
@@ -95,9 +100,9 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
   };
   const catDot = (k: string) => isEss(k) ? "var(--navy)" : "var(--warn)";
   const txCard = (from: import("../application/routes").Screen, meta?: (t: DatedTransaction) => string) => (t: DatedTransaction) => {
-    const k = kindOf(t), [ifg, tint, word] = KIND[k];
+    const k = kindOf(t), [ifg, tint, word] = KIND[k], look = txLook(t);
     return {
-      title: t.m, icon: txLook(t).icon, amount: amtStr(t), fg: amtFg(t), isUncat: k === "uncat", ifg: ifg, rowBg: tint, kindWord: word,
+      title: t.m, icon: look.icon, amount: amtStr(t), fg: amtFg(t), isUncat: k === "uncat", ifg: look.ifg, rowBg: look.tint, kindWord: word,
       chip: t.cat ? clabel(t.cat) : word, meta: meta ? meta(t) : srcOf(t.src).short,
       tap: () => app.openDetail(t.id, from, false, k === "uncat")
     };

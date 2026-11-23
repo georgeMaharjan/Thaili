@@ -1,6 +1,6 @@
 export const SCREENS = [
   "welcome", "register", "permission", "detect", "source", "src-new", "scan", "cats",
-  "home", "txns", "stack", "detail", "insights",
+  "home", "budget", "txns", "stack", "detail", "insights",
   "flow", "leaks", "baseline", "add", "rules", "accounts", "source-detail", "goals", "goal-new", "settings", "bank-sms", "profile", "privacy",
 ] as const;
 export type Screen = typeof SCREENS[number];

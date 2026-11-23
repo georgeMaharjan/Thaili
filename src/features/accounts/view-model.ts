@@ -4,7 +4,7 @@ import { openNotificationAccess } from "../../lib/device";
 import { balRs, fmt, rs } from "../../lib/format";
 import type { ViewContext } from "../context";
 
-export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "startDetection" | "flash" | "editSource" | "openDetail">, context: Pick<ViewContext, "s" | "dayLabel" | "balance" | "np" | "shownSrc" | "amtStr" | "txLook" | "amtFg" | "acctGrand" | "acctGroups" | "chip" | "savingsPot" | "newKind" | "newSrcAmtNum" | "newSrcAmtValid" | "needAcct" | "acctOk" | "inTxWin" | "txCard">) {
+export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "go" | "startDetection" | "flash" | "editSource" | "openDetail">, context: Pick<ViewContext, "s" | "dayLabel" | "balance" | "np" | "shownSrc" | "amtStr" | "txLook" | "amtFg" | "acctGrand" | "acctGroups" | "chip" | "savingsPot" | "newKind" | "newSrcAmtNum" | "newSrcAmtValid" | "needAcct" | "acctOk" | "inTxWin" | "txCard">) {
   const { s, dayLabel, balance, np, shownSrc, acctGrand, acctGroups, chip, savingsPot, newKind, newSrcAmtNum, newSrcAmtValid, needAcct, acctOk, inTxWin, txCard } = context;
   // Everything that moved this account's money in the chosen dates — transfers into it included.
   const srcList = s.tx.filter(t => (t.src === s.srcKey || (t.dir === "transfer" && t.to === s.srcKey)) && inTxWin(t));
@@ -19,6 +19,7 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     srcRows.push(t.dir === "transfer" ? { ...card, amount: (intoSrc(t) ? "+" : "−") + fmt(t.amt), fg: intoSrc(t) ? "var(--pos)" : "var(--ink)" } : card);
   });
   return {
+    accountsBack: app.back,
     totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + balRs(savingsPot, s.hideBal) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
     acctGroups: acctGroups,
     acctSplit: acctGroups.map(g => {
@@ -32,7 +33,7 @@ export function accountsViewModel(app: Pick<AppController, "patch" | "go" | "sta
     dismissNotifCard: () => app.patch({ notifCardHidden: true }),
     transactionNotificationsLabel: np ? "कारोबारका सूचनाहरू" : "Transaction notifications",
     transactionNotificationsNote: np ? "बैंक र वालेटका सूचनाबाट आम्दानी र खर्च टिपिन्छ" : "Logs money in and out from all detected banks and wallets",
-    transactionNotificationsStatus: s.perms[1] ? (np ? "चालु" : "On") : (np ? "खोल्नुहोस्" : "Enable"),
+    transactionNotificationsStatus: np ? "खोल्नुहोस्" : "Enable",
     scanAccountAppsLabel: np ? "बैंक र वालेट एप खोज्नुहोस्" : "Scan for banking & wallet apps",
     srcNewTitle: np ? (s.srcNewFrom === "source" ? "खाताको विवरण" : s.editSrcKey ? "खाता सम्पादन" : "खाता थप्नुहोस्") : s.srcNewFrom === "source" ? "Account details" : s.editSrcKey ? "Edit account" : "Add an account",
     isEditSrc: !!s.editSrcKey,

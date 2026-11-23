@@ -8,7 +8,6 @@ export function BankSms({ v }: { v: V }) {
       <div className="rounded-card border border-line bg-surface px-4 py-4">
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="text-[15px] font-semibold">{v.smsPermissionTitle}</span>
-          <span className={cx("rounded-full px-2 py-1 text-[12px] font-semibold", v.smsPermissionOn ? "bg-tint-g text-pos" : "bg-surface-2 text-ink-3")}>{v.smsPermissionState}</span>
         </div>
         <p className="mb-3 text-[13px] leading-[1.5] text-ink-3">{v.smsPermissionNote}</p>
         <button type="button" onClick={v.manageSmsPermission} className="press flex min-h-[44px] w-full items-center justify-between gap-3 border-t border-line pt-3 text-[14px] font-semibold text-action">
@@ -25,8 +24,7 @@ export function BankSms({ v }: { v: V }) {
                 <span className="text-[15px] font-semibold leading-[1.35]">{bank.label}</span>
                 <span id={"sms-bank-" + bank.key} className="text-[12px] leading-[1.4] text-ink-3">{bank.detail}</span>
               </span>
-              <span aria-hidden="true" className="flex flex-none items-center gap-2">
-                <span className={cx("text-[12px] font-semibold", bank.on ? "text-action" : "text-ink-3")}>{bank.stateLabel}</span>
+              <span aria-hidden="true" className="flex flex-none items-center">
                 <Toggle t={bank.toggle} />
               </span>
             </button>

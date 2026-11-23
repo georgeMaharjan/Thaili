@@ -10,11 +10,12 @@ import { Baseline,Flow,Insights,Leaks } from "./insights";
 import { Cats,Detect,Permission,Register,Scan,Source,Welcome } from "./onboarding";
 import { Privacy,Profile,Settings } from "./settings";
 import { BankSms } from "./bank-sms";
+import { Budget } from "./budget";
 import { Detail,Rules,Txns } from "./transactions";
 
 const SCREENS: Record<ScreenName, ComponentType<{ v: V }>> = {
   welcome: Welcome, register: Register, permission: Permission, detect: Detect, source: Source, "src-new": SrcNew, scan: Scan, cats: Cats,
-  home: Home, txns: Txns, stack: Stack, detail: Detail, insights: Insights, flow: Flow, leaks: Leaks, baseline: Baseline, add: Add, rules: Rules,
+  home: Home, budget: Budget, txns: Txns, stack: Stack, detail: Detail, insights: Insights, flow: Flow, leaks: Leaks, baseline: Baseline, add: Add, rules: Rules,
   accounts: Accounts, "source-detail": SourceDetail, goals: Goals, "goal-new": GoalNew, settings: Settings, "bank-sms": BankSms, profile: Profile, privacy: Privacy,
 };
 
@@ -51,7 +52,7 @@ const TABS = [
   { key: "home", label: "home", d: "M3.5 10.5 12 3.8l8.5 6.7V20a1 1 0 0 1-1 1h-4v-6h-7v6h-4a1 1 0 0 1-1-1Z" },
   { key: "txns", label: "txns", d: "M5 3.5h14v17l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6L7.4 19 5 20.5ZM9 9h6M9 13h4" },
   { key: "insights", label: "insights", d: "M5 20v-6M12 20V7M19 20v-9" },
-  { key: "accounts", label: "accounts", d: P.wallet },
+  { key: "settings", label: "settings", d: P.gear },
 ] as const;
 
 function TabBar({ v }: { v: V }) {

@@ -37,7 +37,6 @@ export type InsightsScreenModel = Pick<AppViewModel,
   "inMeta" |
   "keptBig" |
   "keptFg" |
-  "keptFs" |
   "keptHeadLabel" |
   "keptSentence" |
   "leakAmtLabel" |
@@ -57,7 +56,12 @@ export type InsightsScreenModel = Pick<AppViewModel,
   "leaksNone" |
   "leaksNoneLabel" |
   "outBig" |
+  "budgetOverspent" |
+  "budgetRemaining" |
+  "budgetOverLine" |
+  "budgetOver" |
   "ranges" |
+  "rangeLabel" |
   "savAcctLine" |
   "savBaseLabel" |
   "savExplain" |

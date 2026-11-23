@@ -14,9 +14,9 @@ import { npDigits } from "../lib/bs";
 import { hydrated, snapshot } from "../lib/pouch";
 import { importTransactions } from "../lib/import-transactions";
 import { rememberMoneyPackages } from "../lib/money-apps";
-import { TABS, backDismissal, gate, nextStack } from "../lib/nav";
-import { captureNotifications } from "../lib/notifications";
-import { SMS_HISTORY_MS } from "../lib/sms";
+import { TABS, backDismissal, gate, needsReview, nextStack } from "../lib/nav";
+import { captureNotifications, syncDailyReviewReminder } from "../lib/notifications";
+import { bankOf, enabledSmsBanks, SMS_HISTORY_MS } from "../lib/sms";
 import { checkForUpdate } from "../lib/update";
 import { initializeStore, load, mergeIncoming, save, subscribeStore } from "../lib/store";
 import { CalendarClock } from "./calendar-clock";
@@ -48,7 +48,8 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     this.setState(state => ({ ...state, ...(typeof update === "function" ? update(state) : update) }), done);
   };
   smsToTx(msgs: Sms[], existing: DatedTransaction[]) {
-    return importTransactions(msgs, {
+    const allowed = enabledSmsBanks(this.state.sources, this.state.smsBanks);
+    return importTransactions(msgs.filter(msg => allowed.includes(bankOf(msg.sender) || "")), {
       sources: this.state.sources, rules: this.state.rules,
       existing, now: new Date(), newId
     });
@@ -71,6 +72,13 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   openFromNotification = (o: { open: string; at: number }) => {
     if (!this.state.loaded) { this.pendingOpen = o; return; }
     if (o.open === "weekly") { this.go("home"); return; }
+    if (o.open === "daily-review") {
+      void Promise.resolve(this.catchUpSms()).then(() => {
+        const hasReview = this.state.tx.some(t => needsReview(t, Date.now()));
+        this.go(hasReview ? "txns" : "insights", hasReview ? { txFilter: "review" } : undefined);
+      });
+      return;
+    }
     Promise.resolve(this.catchUpSms()).then(() => {
       const t = this.state.tx.filter(x => x.dir === "debit" && Math.abs(Date.parse(x.at) - o.at) <= 180000)[0];
       if (t) this.openDetail(t.id, "home"); else this.go("txns", { txFilter: "review" });
@@ -84,6 +92,7 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     if (dismissal) { this.patch(dismissal as StatePatch); return true; }
     if (s.screen === "add" && (s.addEntry || s.addNote)) { this.patch({ discardAdd: true }); return true; }
     if (s.screen === "goal-new" && (s.goalName || s.goalAmt)) { this.patch({ discardGoal: true }); return true; }
+    if (s.screen === "settings" && s.settingsFrom !== "settings") { this.go(s.settingsFrom || "home"); return true; }
     while (this.stack.length) {
       const to = this.stack.pop()!;
       if (to === "scan") continue; // back never re-enters the history import
@@ -310,6 +319,10 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     if (this.saving && prev.loaded) save(prev, this.state);
     const n = this.state;
     if (n.loaded && (prev.sources !== n.sources || prev.smsBanks !== n.smsBanks || prev.rules !== n.rules || prev.notifMode !== n.notifMode || prev.moneyApps !== n.moneyApps || prev.setupComplete !== n.setupComplete || !prev.loaded)) this.syncCapture();
+    if (n.loaded && (prev.notifMode !== n.notifMode || prev.setupComplete !== n.setupComplete || !prev.loaded)) {
+      const ask = prev.loaded && !prev.setupComplete && n.setupComplete;
+      void syncDailyReviewReminder(n.setupComplete && n.notifMode !== "Off", ask, n.lang).catch(console.warn);
+    }
     if (n.loaded && n.setupComplete && (!prev.setupComplete || prev.captureStartAt !== n.captureStartAt || prev.smsBanks !== n.smsBanks || (!prev.perms[0] && n.perms[0]))) void this.catchUpSms().catch(console.warn);
     if (prev.theme !== this.state.theme) this.paintBars();
     const to = this.state.screen;
@@ -323,7 +336,8 @@ export class AppController extends React.Component<Record<string, never>, AppSta
       return;
     }
     if (this.popping) { this.popping = false; return; }
-    this.stack = nextStack(this.stack, prev.screen, to);
+    const tabs = to === "settings" && n.settingsFrom !== "settings" ? TABS.filter(tab => tab !== "settings") : TABS;
+    this.stack = nextStack(this.stack, prev.screen, to, tabs);
   }
   componentWillUnmount() { this.disposed = true; this.startup++; this.capture.dispose(); this.calendar.dispose(); this.discovery.dispose(); this.storeSub?.(); this.lifecycle.dispose(); clearTimeout(this._t); clearTimeout(this._s); }
   startSetup() {

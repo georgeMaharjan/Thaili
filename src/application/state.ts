@@ -40,7 +40,7 @@ export type AppState = {
   syncRaw: boolean; // Legacy local raw-text retention preference; no sync controls.
   goalName: string; goalAmt: string; goalPos: string; goalError: string; discardGoal: boolean;
   catsMode: string; catsFrom: Screen; goalsFrom: Screen; settingsFrom: Screen;
-  remarkDraft: string | null; txCategories: string[]; txSpending: string;
+  remarkDraft: string | null; txCategories: string[]; txSpending: string; txSources: string[]; typeEditOpen: boolean;
   filtersOpen: boolean; filterDraft: Filters | null; txQuery: string;
   txRange: string; txFrom: number | null; txTo: number | null; calOpen: boolean;
   calA: number | null; calB: number | null; calKey: number;
@@ -79,7 +79,7 @@ export function initialState(): AppState {
     goals: [],
     goalName: "", goalAmt: "", goalPos: "bottom", goalError: "", discardGoal: false,
     catsMode: "setup", catsFrom: "settings", goalsFrom: "home", settingsFrom: "home",
-    remarkDraft: null,
+    remarkDraft: null, txSources: [], typeEditOpen: false,
     txCategories: [], txSpending: "all", filtersOpen: false, filterDraft: null,
     txQuery: "", txRange: "month", txFrom: null, txTo: null, calOpen: false, calA: null, calB: null, calKey: calendarAt(new Date()).MONTH_KEY,
     flowDir: "debit", flowKind: "all", reviewHidden: 0, notifCardHidden: false, catDeleting: null, savExplain: false, baseAmt: "", baseFresh: true, baseSetup: false, baseFrom: null,

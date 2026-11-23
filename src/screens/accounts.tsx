@@ -11,9 +11,7 @@ Amount,BalEye,CARD,Chevron,Chips,Cta,GoalCard,Hero,Icon,IconBtn,LABEL,P,Seg,Tile
 export function Accounts({ v }: { v: V }) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-[52px] flex-none items-center px-5 py-1">
-        <span className="font-display text-[28px] font-bold tracking-[-0.015em]">{v.t.accounts}</span>
-      </div>
+      <TopBar onBack={v.accountsBack} title={v.t.accounts} />
       <div className="flex flex-1 flex-col gap-4 overflow-auto px-5 pt-2 pb-[104px]">
         <div className="flex flex-col gap-1.5">
           <span className="flex items-center gap-1.5"><span className={LABEL}>{v.t.totalAcross}</span><BalEye v={v} /></span>

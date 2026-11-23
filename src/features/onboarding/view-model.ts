@@ -1,4 +1,4 @@
-import { CASH, isManualSrc, needsAcctNumber, now } from "../../application/config";
+import { CASH, CATEGORY_COLORS, categoryColor, isManualSrc, needsAcctNumber, now } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import type { Category } from "../../domain/models";
 import { isDevice, openAppSettings, openNotificationAccess, readSms, requestSms } from "../../lib/device";
@@ -25,6 +25,10 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
   return {
     obBack: () => {
       if (s.screen === "cats") { app.go(s.catsMode === "edit" ? (s.catsFrom || "settings") : "scan"); return; }
+      if (s.screen === "permission" && s.user && !s.setupComplete) {
+        app.go("register", { regThen: "permission", regName: s.user.name, regPhone: digits10(s.user.phone) });
+        return;
+      }
       const m: Record<string, string> = { permission: "welcome", detect: "permission", source: "detect", scan: "source" };
       app.go(m[s.screen] || "welcome");
     },
@@ -98,8 +102,8 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       app.flash("Nothing added from the scan — add accounts by hand");
     },
     catsNext: () => {
-      if (s.picked.length < 3) return;
       if (s.catsMode === "edit") { app.go(s.catsFrom || "settings"); app.flash("Categories saved"); return; }
+      if (s.picked.length < 3) return;
       // Setup's last step: pick the savings baseline, 3 months of essentials suggested.
       app.go("baseline", { baseSetup: true, baseFrom: "cats", baseAmt: String(essMonthly ? baseFor(3) : s.savingsGoal), baseFresh: true });
     },
@@ -178,7 +182,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
         : "Nothing matched your accounts" + (s.scanOrphans ? " — " + s.scanOrphans + " messages came from banks you haven't added." : ". New messages are picked up from now on."),
     scanGroups: !s.perms[0] ? [
       { label: "Quick add", meta: "The + button, three taps per spend", tag: "Ready", tagBg: "var(--tintG)", tagFg: "var(--pos)" },
-      { label: "Notification access", meta: "Bank and wallet transaction alerts still work without SMS", tag: s.perms[1] ? "On" : "Off", tagBg: "var(--tintN)", tagFg: "var(--navy)" }
+      { label: "Notification access", meta: "Bank and wallet transaction alerts still work without SMS", tag: undefined, tagBg: undefined, tagFg: undefined }
     ] : scanGroups.slice(0, 4).map(g => {
       const tag = g.dir === "credit" ? "Income" : g.cat ? clabel(g.cat) : "Needs you";
       const ok = g.dir === "credit" || g.cat;
@@ -192,7 +196,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
     saveTargetLabel: fmt(s.saveTarget),
     saveUp: () => app.patch({ saveTarget: s.saveTarget + 1000 }),
     saveDown: () => app.patch({ saveTarget: Math.max(1000, s.saveTarget - 1000) }),
-    saveTargetNote: "On " + rs(income) + " coming in, that leaves " + rs(freeToSpend) + " free to spend — about " + rs(Math.round(freeToSpend / DAYS_IN_MONTH / 10) * 10) + " a day.",
+    saveTargetNote: rs(income) + " income − savings = " + rs(freeToSpend) + " for spending.",
     newCatName: s.newCatName,
     newCatType: (e: { target: { value: string } }) => app.patch({ newCatName: e.target.value }),
     newCatFg: s.newCatName.trim() ? "var(--action)" : "var(--ink3)",
@@ -201,17 +205,20 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       label: isIn ? "Money in" : "Money out", tap: () => app.patch({ newCatIn: isIn }),
       bg: s.newCatIn === isIn ? "var(--surface)" : "transparent", fg: s.newCatIn === isIn ? "var(--ink)" : "var(--ink3)",
     })),
-    addCatNote: s.newCatIn
-      ? "Where your money comes from. Offered when you log money in."
-      : "Anything the list misses. Rules can file into it.",
     // Renames and deletes of built-ins are stored in customCats under the same key; deleted
     // categories keep their label on past transactions, and rules filing into them are removed.
-    catRows: (s.newCatIn ? incomeCats : allCats).map((c, _, list) => {
+    catRows: (s.newCatIn ? incomeCats : allCats).slice().sort((a, b) => {
+      const aTime = Date.parse(a.createdAt || "") || 0;
+      const bTime = Date.parse(b.createdAt || "") || 0;
+      return bTime - aTime;
+    }).map((c, _, list) => {
       const save = (change: Partial<Category>) => s.customCats.some(x => x.key === c.key)
         ? s.customCats.map(x => x.key === c.key ? { ...x, ...change } : x)
         : s.customCats.concat([{ ...c, ...change }]);
+      const color = categoryColor(c);
       return {
         key: c.key + "|" + c.label, label: c.label,
+        color, colors: CATEGORY_COLORS.map(option => ({ color: option, selected: color === option, tap: () => app.patch({ customCats: save({ color: option }) }) })),
         // Pick and essential/optional only apply to money-out categories.
         on: c.in ? null : s.picked.includes(c.key),
         toggle: () => app.patch({ picked: s.picked.includes(c.key) ? s.picked.filter(k => k !== c.key) : s.picked.concat([c.key]) }),
@@ -239,15 +246,16 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       if (!name) return;
       if ((s.newCatIn ? incomeCats : allCats).some(c => sameName(c.label, name))) { app.flash(dupLine(name)); return; }
       const key = "c" + Date.now();
+      const category: Category = { key, label: name, createdAt: now(), ...(s.newCatIn ? { in: true } : {}) };
       app.patch({
-        customCats: s.customCats.concat([s.newCatIn ? { key, label: name, in: true } : { key, label: name }]),
+        customCats: s.customCats.concat([category]),
         picked: s.newCatIn ? s.picked : s.picked.concat([key]), newCatName: ""
       });
       app.flash(name + (s.newCatIn ? " added" : " added and switched on"));
     },
-    catCta: s.picked.length >= 3 ? (s.catsMode === "edit" ? T.done : (np ? "अगाडि" : "Next")) : (np ? "कम्तीमा तीन छान्नुहोस्" : "Pick at least three"),
-    catCtaBg: s.picked.length >= 3 ? "var(--action)" : "var(--surface2)",
-    catCtaFg: s.picked.length >= 3 ? "var(--onAction)" : "var(--ink3)",
+    catCta: s.catsMode === "edit" ? T.done : s.picked.length >= 3 ? (np ? "अगाडि" : "Next") : (np ? "कम्तीमा तीन छान्नुहोस्" : "Pick at least three"),
+    catCtaBg: s.catsMode === "edit" || s.picked.length >= 3 ? "var(--action)" : "var(--surface2)",
+    catCtaFg: s.catsMode === "edit" || s.picked.length >= 3 ? "var(--onAction)" : "var(--ink3)",
     ...(() => {
       const ph = digits10(s.regPhone), phoneOk = validPhone(ph), nameOk = s.regName.trim().length >= 2, ready = phoneOk && nameOk;
       return {
@@ -270,7 +278,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
         regSubmit: () => {
           if (!ready) return;
           const user = { name: s.regName.trim(), phone: "+977" + ph, createdAt: now() };
-          app.go(s.regThen || "permission", { user: user, regName: "", regPhone: "" });
+          app.go(s.regThen || "permission", { user: user, regName: user.name, regPhone: ph });
           app.flash((np ? "स्वागत छ, " : "Welcome, ") + user.name.split(/\s+/)[0]);
         }
       };

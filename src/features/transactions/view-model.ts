@@ -1,37 +1,53 @@
 import { SI, WD_FULL } from "../../application/config";
 import type { AppController } from "../../application/controller";
+import { primaryOf } from "../../domain/models";
 import { adOf, monthName, npDigits } from "../../lib/bs";
 import { rs } from "../../lib/format";
 import { checkRule, hay, words } from "../../lib/rules";
 import { evidenceFor } from "../../lib/transaction-capture";
 import { filterEntries } from "../../lib/transactions";
 import type { ViewContext } from "../context";
-export function transactionsViewModel(app: Pick<AppController, "patch" | "back" | "transactions" | "transactions" | "transactions" | "go" | "transactions" | "transactions">, context: Pick<ViewContext, "s" | "MONTH_KEY" | "dayOf" | "bsLabel" | "bsDay" | "adLabel" | "np" | "allCats" | "incomeCats" | "clabel" | "cats" | "detail" | "srcOf" | "chip" | "isEss" | "catDot" | "filterContext" | "appliedFilters" | "filtered" | "draftFilters" | "previewFilters" | "previewRows" | "filteredTotals" | "rows" | "calY" | "calM" | "calDays" | "offOf" | "calLo" | "calHi" | "fit" | "debitCount" | "autoFiled">) {
+export function transactionsViewModel(app: Pick<AppController, "patch" | "back" | "transactions" | "go">, context: Pick<ViewContext, "s" | "MONTH_KEY" | "dayOf" | "bsLabel" | "bsDay" | "adLabel" | "np" | "allCats" | "incomeCats" | "clabel" | "cats" | "detail" | "srcOf" | "chip" | "isEss" | "catDot" | "filterContext" | "appliedFilters" | "filtered" | "draftFilters" | "previewFilters" | "previewRows" | "filteredTotals" | "rows" | "calY" | "calM" | "calDays" | "offOf" | "calLo" | "calHi" | "fit" | "debitCount" | "autoFiled">) {
   const { s, MONTH_KEY, dayOf, bsLabel, bsDay, adLabel, np, allCats, incomeCats, clabel, cats, detail, srcOf, chip, isEss, catDot, filterContext, appliedFilters, filtered, draftFilters, previewFilters, previewRows, filteredTotals, rows, calY, calM, calDays, offOf, calLo, calHi, fit, debitCount, autoFiled } = context;
+  const detailPrimary = primaryOf(detail);
+  const sourceFacetRows = filterEntries(s.tx, { ...previewFilters, sources: [] }, filterContext);
+  const categoryFacetRows = filterEntries(s.tx, { ...previewFilters, categories: [] }, filterContext);
+  const sourceCounts = new Map<string, number>(), categoryCounts = new Map<string, number>();
+  sourceFacetRows.forEach(t => sourceCounts.set(t.src, (sourceCounts.get(t.src) || 0) + 1));
+  categoryFacetRows.forEach(t => {
+    const key = t.dir === "transfer" ? "transfer" : t.cat || "uncategorised";
+    categoryCounts.set(key, (categoryCounts.get(key) || 0) + 1);
+  });
+  const usedCategories = new Set(s.tx.map(t => t.cat).filter((key): key is string => !!key));
+  const toggleFilter = (field: "sources" | "categories", key: string) => {
+    const selected = (draftFilters[field] || []) as string[];
+    app.patch({ filterDraft: { ...draftFilters, [field]: selected.includes(key) ? selected.filter(value => value !== key) : [...selected, key] } });
+  };
   return {
     txRows: rows,
     txCount: filtered.length,
     txTotals: { income: rs(filteredTotals.income), expenses: rs(filteredTotals.expenses) },
     txRange: s.txRange,
     txRangeSet: (e: { target: { value: string } }) => e.target.value === "custom" ? app.patch({ calOpen: true, calA: s.txFrom, calB: s.txTo }) : app.patch({ txRange: e.target.value }),
-    txFilterCount: s.txCategories.length + (s.txSpending !== "all" ? 1 : 0) + (s.txFilter === "review" ? 1 : 0),
-    txFilterSummary: [s.txSpending !== "all" ? (s.txSpending === "essential" ? "Essential" : "Optional") : "", s.txCategories.length ? s.txCategories.length + (s.txCategories.length === 1 ? " category" : " categories") : "", s.txFilter === "review" ? "Needs review" : ""].filter(Boolean).join(" · "),
-    txReset: () => app.patch({ txQuery: "", txCategories: [], txSpending: "all", txFilter: "all", txRange: "month" }),
+    txFilterCount: s.txCategories.length + s.txSources.length + (s.txSpending !== "all" ? 1 : 0) + (s.txFilter === "review" ? 1 : 0),
+    txFilterSummary: [s.txSpending !== "all" ? (s.txSpending === "essential" ? "Essential" : "Optional") : "", s.txCategories.length ? s.txCategories.length + (s.txCategories.length === 1 ? " category" : " categories") : "", s.txSources.length ? s.txSources.length + (s.txSources.length === 1 ? " source" : " sources") : "", s.txFilter === "review" ? "Needs review" : ""].filter(Boolean).join(" · "),
+    txReset: () => app.patch({ txQuery: "", txCategories: [], txSources: [], txSpending: "all", txFilter: "all", txRange: "month" }),
     filtersOpen: s.filtersOpen,
-    filtersShow: () => app.patch({ filtersOpen: true, filterDraft: { ...appliedFilters, categories: [...s.txCategories] } }),
+    filtersShow: () => app.patch({ filtersOpen: true, filterDraft: { ...appliedFilters, categories: [...s.txCategories], sources: [...s.txSources] } }),
     filtersClose: () => app.patch({ filtersOpen: false, filterDraft: null }),
     filterSpending: draftFilters.spending,
     filterSpendingSet: (value: string) => app.patch({ filterDraft: { ...draftFilters, spending: value } }),
     filterReview: draftFilters.review,
     filterReviewSet: () => app.patch({ filterDraft: { ...draftFilters, review: !draftFilters.review } }),
-    filterCategories: allCats.concat(incomeCats).filter(c => s.picked.includes(c.key) || s.tx.some(t => t.cat === c.key) || draftFilters.categories.includes(c.key)).concat([{ key: "uncategorised", label: "Uncategorised" }, { key: "transfer", label: "Transfers" }]).map(c => ({
+    filterSources: s.sources.map(a => ({ key: a.key, label: a.name, selected: (draftFilters.sources || []).includes(a.key), count: sourceCounts.get(a.key) || 0, tap: () => toggleFilter("sources", a.key) })),
+    filterCategories: allCats.concat(incomeCats).filter(c => s.picked.includes(c.key) || usedCategories.has(c.key) || draftFilters.categories.includes(c.key)).concat([{ key: "uncategorised", label: "Uncategorised" }, { key: "transfer", label: "Transfers" }]).map(c => ({
       key: c.key, label: c.label, selected: draftFilters.categories.includes(c.key),
-      count: filterEntries(s.tx, { ...previewFilters, categories: [c.key] }, filterContext).length,
-      tap: () => app.patch({ filterDraft: { ...draftFilters, categories: draftFilters.categories.includes(c.key) ? draftFilters.categories.filter(k => k !== c.key) : [...draftFilters.categories, c.key] } }),
+      count: categoryCounts.get(c.key) || 0,
+      tap: () => toggleFilter("categories", c.key),
     })),
     filterResultCount: previewRows.length,
-    filtersReset: () => app.patch({ filterDraft: { ...draftFilters, categories: [], spending: "all", review: false } }),
-    filtersApply: () => app.patch({ txCategories: draftFilters.categories, txSpending: draftFilters.spending, txFilter: draftFilters.review ? "review" : "all", filtersOpen: false, filterDraft: null }),
+    filtersReset: () => app.patch({ filterDraft: { ...draftFilters, categories: [], sources: [], spending: "all", review: false } }),
+    filtersApply: () => app.patch({ txCategories: draftFilters.categories, txSources: draftFilters.sources || [], txSpending: draftFilters.spending, txFilter: draftFilters.review ? "review" : "all", filtersOpen: false, filterDraft: null }),
     dateChips: [["today", "Today"], ["week", "Week"], ["month", "Month"],
     ["custom", s.txRange !== "custom" ? "Custom" : s.txFrom === s.txTo ? bsDay(s.txFrom ?? 0) : bsDay(s.txFrom ?? 0) + " – " + bsDay(s.txTo ?? 0)]
     ].map(([k, label]) => {
@@ -92,7 +108,10 @@ export function transactionsViewModel(app: Pick<AppController, "patch" | "back" 
     calCtaFg: s.calA !== null ? "var(--onAction)" : "var(--ink3)",
     calApply: () => { if (s.calA === null) return; app.patch({ txRange: "custom", txFrom: calLo, txTo: calHi, calOpen: false }); },
     detailAmount: (detail.dir === "credit" ? "+" : detail.dir === "transfer" ? "→ " : "−") + rs(detail.amt),
-    detailKindLabel: detail.dir === "credit" ? "Income · money in" : detail.dir === "transfer" ? "Transfer" : "Expense · money out",
+    detailKindLabel: detail.dir === "credit" ? "Money in" : detail.dir === "transfer" ? "Money moved" : "Money out",
+    typeEditOpen: s.typeEditOpen,
+    typeEditClose: () => app.patch({ typeEditOpen: false }),
+    typeOptions: (["Income", "Expense", "Loan", "Lend", "Transfer"] as const).map(type => ({ type, selected: detailPrimary === type, tap: () => { app.patch({ tx: s.tx.map(t => t.id === detail.id ? { ...t, primary: type } : t), typeEditOpen: false }); } })),
     detailKindIcon: detail.dir === "credit" ? SI.inA : detail.dir === "transfer" ? SI.xfer : SI.outA,
     detailFg: detail.dir === "credit" ? "var(--pos)" : detail.dir === "transfer" ? "var(--navy)" : "var(--ink)",
     detailMerchant: detail.m,
@@ -135,6 +154,7 @@ export function transactionsViewModel(app: Pick<AppController, "patch" | "back" 
     })),
     rulesEmpty: s.rules.length === 0,
     detailFields: [
+      { label: "Transaction type", value: detailPrimary, fg: "var(--ink)", action: "Change", tap: () => app.patch({ typeEditOpen: true }) },
       ...(detail.dir === "transfer" ? [] : [{ label: "Category", value: detail.cat ? clabel(detail.cat) : "Not set", fg: detail.cat ? "var(--ink)" : "var(--uncat)", action: s.editing ? "" : "Change", tap: () => app.patch({ editing: true, toast: null }) }]),
       { label: "Account", value: srcOf(detail.src).name, fg: "var(--ink)" },
       ...(detail.to ? [{ label: "To account", value: srcOf(detail.to).name, fg: "var(--ink)" }] : []),

@@ -1,13 +1,12 @@
 // Back-stack rules for native navigation (Android back gesture / button).
 // The four tabs are roots: Home clears history, another tab keeps only Home behind it.
-// Settings is not a tab: it is pushed from the Home avatar, so back returns to Home.
 // Opening any other screen remembers where it came from; returning to a screen that is
 // already behind us trims the history there, so A → B → A leaves nothing to "go back" to B.
-export const TABS = ["home", "txns", "insights", "accounts"];
+export const TABS = ["home", "txns", "insights", "settings"];
 
-export function nextStack(stack: string[], from: string, to: string): string[] {
+export function nextStack(stack: string[], from: string, to: string, tabs: readonly string[] = TABS): string[] {
   if (to === "home") return [];
-  if (TABS.includes(to)) return ["home"];
+  if (tabs.includes(to)) return ["home"];
   const i = stack.indexOf(to);
   return i > -1 ? stack.slice(0, i) : stack.concat([from]);
 }

@@ -22,6 +22,9 @@ export const INCOME_CATS: Category[] = [
   { key: "interest", label: "Interest" }, { key: "giftin", label: "Gift received" },
   { key: "refund", label: "Refund" }, { key: "otherin", label: "Other income" }
 ];
+export const CATEGORY_COLORS = ["#C65B4B", "#3975B8", "#16866B", "#9664B5", "#C28A2C", "#526C82"];
+export const categoryColor = (c: Category) => c.color && CATEGORY_COLORS.includes(c.color)
+  ? c.color : CATEGORY_COLORS[(c.key.split("").reduce((n, x) => n + x.charCodeAt(0), 0)) % CATEGORY_COLORS.length];
 // Built-ins with the user's renames/deletes applied, then the user's own categories.
 // every keeps deleted ones so old transactions still show their label.
 export function categoryLists(custom: Category[]) {
@@ -102,7 +105,7 @@ export const L = {
     permSub: "Read and stored on this phone. Thaili cloud sync and backup are unavailable.",
     srcTitle: "Two things per account",
     srcSub: "The last four digits — the only part a bank SMS prints, so Thaili can tell your accounts apart — and the opening balance every figure is counted from.",
-    catsTitle: "Pick three to six", catsSub: "Flat list, no sub-categories — one tap has to finish the job. Add more any time.",
+    catsTitle: "Pick three to six categories", catsSub: "Choose the ones you use most. Add more later.",
     recent: "Recent", seeAll: "See all",
     inL: "In", outL: "Out", savedL: "Saved",
     appearance: "Appearance", appearanceMeta: "Cream by day, navy by night", light: "Light", dark: "Dark", langMeta: "English",
@@ -124,7 +127,7 @@ export const L = {
     permSub: "यही फोनमा पढिन्छ र राखिन्छ। थैलीको क्लाउड सिङ्क र ब्याकअप उपलब्ध छैन।",
     srcTitle: "हरेक खाताका दुई कुरा",
     srcSub: "अन्तिम चार अङ्क — बैंकको SMS मा छापिने यही मात्र हो, जसले खाता छुट्याउँछ — र सुरुको मौज्दात, जहाँबाट हरेक हिसाब गनिन्छ।",
-    catsTitle: "तीनदेखि छवटा छान्नुहोस्", catsSub: "सिधा सूची, उप-वर्ग छैन — एक ट्यापमै काम सकियोस्। पछि जति पनि थप्न सकिन्छ।",
+    catsTitle: "तीनदेखि छवटा वर्ग छान्नुहोस्", catsSub: "धेरै प्रयोग हुने वर्ग छान्नुहोस्। पछि थप्न सकिन्छ।",
     recent: "हालैका", seeAll: "सबै",
     inL: "आम्दानी", outL: "खर्च", savedL: "बचत",
     appearance: "रूप", appearanceMeta: "दिनमा क्रिम, रातमा नीलो", light: "उज्यालो", dark: "अँध्यारो", langMeta: "नेपाली",

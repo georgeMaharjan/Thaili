@@ -4,7 +4,6 @@ import type { AppViewModel } from "../view-model";
 export type OnboardingScreenModel = Pick<AppViewModel,
   "openPrivacy" | "privacyTitle" |
   "numericEditingLabel" |
-  "addCatNote" |
   "addCustomCat" |
   "catDeleteOpen" |
   "catDeleteTitle" |

@@ -47,10 +47,8 @@ export function Insights({ v }: { v: V }) {
       <div className="flex flex-1 flex-col gap-6 overflow-auto px-5 pt-2 pb-[48px]">
 
         <div className="flex flex-col gap-2 rounded-[20px] bg-surface-2 p-5">
-          <span className="text-[14px] font-semibold text-ink-2">{v.keptHeadLabel}</span>
-          <Hero value={v.keptBig} fs={v.keptFs} fg={v.keptFg} />
-          <span className="text-pretty text-[14px] leading-normal text-ink-2">{v.keptSentence}</span><span className="text-[12px] text-ink-3">Transfers between your accounts are excluded.</span>
-          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-4">
+          <span className="text-[14px] font-semibold text-ink-2">Income and expenses · {v.rangeLabel}</span>
+          <div className="grid grid-cols-2 gap-4 pt-2">
             <button onClick={v.toFlowIn} className="press self-start text-left">
               <Stat label={<><Dot color="var(--pos)" />Income<Chevron /></>} value={v.inBig} fg="var(--pos)" fs={v.flowFs} className="leading-[1.15] tracking-[-0.01em]">
                 <span className="text-[13px] text-ink-3">{v.inMeta}</span>
@@ -62,7 +60,20 @@ export function Insights({ v }: { v: V }) {
               </Stat>
             </button>
           </div>
+          <div className="mt-2 border-t border-line pt-3"><span className="text-[12px] text-ink-3">{v.keptHeadLabel}</span><p className="font-display text-[22px] font-bold" style={{color:v.keptFg}}>Rs {v.keptBig}</p><span className="text-[13px] text-ink-2">{v.keptSentence}</span></div>
+          <span className="text-[12px] text-ink-3">Transfers between your accounts are excluded.</span>
         </div>
+
+        <section className={cx("flex flex-col gap-1 rounded-2xl p-4",v.budgetOver?"bg-tint-w":"bg-tint-g")}>
+          <span className="text-[14px] font-semibold">{v.budgetOver?"Over budget":"Budget remaining"}</span>
+          <span className="font-display text-[28px] font-bold tabular-nums" style={{color:v.budgetOver?"var(--warnInk)":"var(--pos)"}}>{v.budgetOver?v.budgetOverspent:v.budgetRemaining}</span>
+          <span className="text-[13px] leading-normal text-ink-2">{v.budgetOverLine}</span>
+        </section>
+
+        <Section title="Most transactions by category">
+          {v.catRowsShown.map((c,i: number) => <button key={i} onClick={c.tap} className="press flex min-h-[56px] items-center gap-3 border-t border-line text-left"><Dot color={c.color} /><span className="min-w-0 flex-1 truncate text-[15px] font-medium">{c.label}</span><span className="text-[13px] text-ink-3">{c.count}</span><span className="font-display text-[16px] font-semibold">{c.amount}</span></button>)}
+          {v.catMore && <button onClick={v.toggleCatsAll} className="flex min-h-[44px] items-center text-[14px] font-semibold text-action">{v.catMoreLabel}</button>}
+        </Section>
 
         <Section title="Spending over time" className="gap-3">
           <p className="text-[13px] text-ink-3">{v.trendCaption}</p>
@@ -137,10 +148,6 @@ export function Insights({ v }: { v: V }) {
               ))}
             </div>
           </div>
-          {v.catRowsShown.map((c,i: number) => <button key={i} onClick={c.tap} className="press flex w-full flex-col gap-2 border-t border-line py-4 text-left"><span className="flex w-full items-center justify-between gap-3"><strong className="min-w-0 text-[15px] font-medium">{c.label}</strong><span className="whitespace-nowrap font-display text-[20px] font-semibold">{c.amount}</span></span><span className="flex w-full items-center justify-between text-[13px] text-ink-3"><span>{c.share} of spending</span><span style={{color:c.dFg}}>{c.dWord}</span></span><span className="h-[6px] w-full overflow-hidden rounded-full bg-bar-track"><span className="block h-full rounded-full" style={{width:c.width,background:c.color}} /></span></button>)}
-          {v.catMore && (
-            <button onClick={v.toggleCatsAll} className={cx(ROW_TOP, "flex min-h-[48px] items-center text-[14px] font-semibold text-action")}>{v.catMoreLabel}</button>
-          )}
         </Section>
 
       </div>

@@ -20,7 +20,7 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     toAccounts: () => app.go("accounts"),
     totalBal: balHero(s.sources.reduce((a, x) => a + balance(x.key), 0), s.hideBal),
     toSrcNew: () => app.go("src-new", { srcNewFrom: s.screen, editSrcKey: null, newSrcAmt: "" }),
-    showTabs: TABS.indexOf(s.screen) > -1,
+    showTabs: TABS.indexOf(s.screen) > -1 && (s.screen !== "settings" || s.settingsFrom === "settings"),
     addNewLabel: np ? "नयाँ थप्नुहोस्" : "Add new",
     toAdd: () => app.go("add", { addEntry: "", addNote: "", addError: "", addDir: "debit", addCat: cats[0]?.key || "", addSrc: s.sources.find(x => x.key === "cash")?.key || s.sources[0]?.key || "", discardAdd: false }),
     adRange: (np ? "दिन " + DAY_OF_MONTH + " / " : "Day " + DAY_OF_MONTH + " of ") + DAYS_IN_MONTH + " · " + adLabel(0),
@@ -86,7 +86,7 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     userInitials: s.user ? initials(s.user.name) : "",
     editLabel: np ? "सम्पादन" : "Edit",
 
-    goTab: (k: string) => app.go(k),
+    goTab: (k: string) => app.go(k, k === "settings" ? { settingsFrom: "settings" } : undefined),
     refreshTransactions: () => app.catchUpSms(true),
     hasToast: !!s.toast,
     toast: s.toast,

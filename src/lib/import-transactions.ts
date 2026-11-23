@@ -1,4 +1,4 @@
-import type { Transaction } from "../domain/models";
+import type { Transaction, TransactionPrimary } from "../domain/models";
 import { dated } from "./bs.ts";
 import { parseNotification,transactionReference } from "./notification-transactions.ts";
 import { autoFile,type FilingRule } from "./rules.ts";
@@ -56,7 +56,7 @@ export function importTransactions(messages: CapturedMessage[], context: {
       .sort((a, b) => Math.abs(Date.parse(a.at) - Date.parse(credit.at)) - Math.abs(Date.parse(b.at) - Date.parse(credit.at)))[0];
     if (!transfer) continue;
     const patch: Patch = { capture: mergeEvidence(evidenceFor(transfer), evidenceFor(credit)) };
-    if (transfer.dir === "debit") Object.assign(patch, { dir: "transfer", to: credit.src, cat: null, auto: null });
+    if (transfer.dir === "debit") Object.assign(patch, { dir: "transfer", primary: "Transfer", to: credit.src, cat: null, auto: null });
     Object.assign(transfer, patch);
     consumed.add(credit);
     if (transfer.id && existingIds.has(transfer.id)) updates.set(transfer.id, { ...updates.get(transfer.id), ...patch });
@@ -65,14 +65,14 @@ export function importTransactions(messages: CapturedMessage[], context: {
   return { tx: out.filter(t => !consumed.has(t)), orphans,
     updates: [...updates].map(([id, patch]) => ({ id, ...patch })), removedIds: [...removedIds] };
 }
-type Patch = { capture: CaptureEvidence[]; dir?: string; to?: string; cat?: null; auto?: null };
+type Patch = { capture: CaptureEvidence[]; dir?: string; primary?: TransactionPrimary; to?: string; cat?: null; auto?: null };
 
 function capturedEntry(msg: CapturedMessage, p: NonNullable<ReturnType<typeof parseSms>>, source: string, to: string | null,
   context: { now: Date; newId: () => string }): Transaction {
   const at = new Date(p.at).toISOString(), ch = msg.ch === "App" ? "App" : "SMS";
   const capture: CaptureEvidence[] = [{ ch, id: msg.id || null, src: source, dir: p.dir, at,
     ref: transactionReference(p.raw), fingerprint: textFingerprint(p.raw) }];
-  return { id: msg.id || context.newId(), m: p.m, amt: p.amt, dir: to ? "transfer" : p.dir, to, src: source, capture,
+  return { id: msg.id || context.newId(), m: p.m, amt: p.amt, dir: to ? "transfer" : p.dir, primary: to ? "Transfer" : p.dir === "credit" ? "Income" : "Expense", to, src: source, capture,
     cat: null as string | null, auto: null as string | null, rem: p.rem, ch: msg.ch === "App" ? "App" : "SMS", raw: p.raw,
     at, added: context.now.toISOString() };
 }

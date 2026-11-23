@@ -2,42 +2,31 @@ import { P } from "@/components/ui";
 import { newId, now } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import { dated, npDigits } from "../../lib/bs";
-import { balHero, fmt, rs, whole } from "../../lib/format";
+import { balHero, fmt, rs } from "../../lib/format";
 import { manualEntry } from "../../lib/transactions";
 import type { ViewContext } from "../context";
 
-export function homeViewModel(app: Pick<AppController, "go" | "back" | "transactions" | "patch" | "flash" | "openDetail" | "adding">, context: Pick<ViewContext, "s" | "TODAY_BS" | "DAY_OF_MONTH" | "DAYS_IN_MONTH" | "MONTH_EN" | "MONTH_NP" | "bsLabel" | "dayLabel" | "income" | "spent" | "freeToSpend" | "remaining" | "lastDay" | "allowance" | "np" | "cats" | "incomeCats" | "review" | "card" | "srcOf" | "acctGroups" | "chip" | "catDot" | "txCard" | "addCategories" | "entryError" | "alloc" | "floorShort" | "targetPctNum" | "pacePctNum">) {
-  const { s, TODAY_BS, DAY_OF_MONTH, DAYS_IN_MONTH, MONTH_EN, MONTH_NP, bsLabel, dayLabel, income, spent, freeToSpend, remaining, lastDay, allowance, np, cats, incomeCats, review, card, srcOf, acctGroups, chip, catDot, txCard, addCategories, entryError, alloc, floorShort, targetPctNum, pacePctNum } = context;
+export function homeViewModel(app: Pick<AppController, "go" | "back" | "transactions" | "patch" | "flash" | "openDetail" | "adding">, context: Pick<ViewContext, "s" | "TODAY_BS" | "MONTH_EN" | "MONTH_NP" | "bsLabel" | "dayLabel" | "spent" | "remaining" | "overspent" | "targetPctNum" | "np" | "cats" | "incomeCats" | "review" | "card" | "srcOf" | "acctGroups" | "chip" | "catDot" | "txCard" | "addCategories" | "entryError" | "alloc" | "floorShort">) {
+  const { s, TODAY_BS, MONTH_EN, MONTH_NP, bsLabel, dayLabel, spent, remaining, overspent, targetPctNum, np, cats, incomeCats, review, card, srcOf, acctGroups, chip, catDot, txCard, addCategories, entryError, alloc, floorShort } = context;
   return {
-    toSettings: () => app.go("settings", { settingsFrom: s.screen === "settings" ? s.settingsFrom : s.screen }),
     toTxns: () => app.go("txns", { txFilter: "all" }),
     toGoal: () => app.go("goals", { goalsFrom: s.screen }),
     toReviewStack: () => app.go("stack", { stackIdx: 0 }),
     bsMonth: np ? MONTH_NP + " " + npDigits(TODAY_BS.y) : MONTH_EN + " " + TODAY_BS.y,
     haveLabel: np ? "कुल मौज्दात" : "Total balance",
-    homeBalances: acctGroups.map(g => ({ label: g.label, total: balHero(g.sum, s.hideBal) })),
-    monthlyTarget: rs(freeToSpend),
-    monthlyTargetMeta: s.expenseGoalSet ? (s.expenseGoalMode === "percent"
-      ? s.expenseGoalValue + (np ? "% आम्दानीको खर्च लक्ष्य" : "% income expense goal")
-      : (np ? "मासिक खर्च लक्ष्य" : "monthly expense goal")) : (np ? "बचत लक्ष्यपछि खर्च गर्न मिल्ने" : "spendable after savings target"),
-    editPlan: () => app.go("cats", { catsMode: "edit", catsFrom: "home" }),
+    homeSpentCompact: balHero(spent, s.hideBal),
+    homeSavingsTotal: balHero((acctGroups.find(g => g.key === "savings") || { sum: 0 }).sum, s.hideBal),
+    homeSavingsTarget: rs(s.saveTarget),
+    homeBudgetAvailable: rs(Math.max(0, remaining)),
+    homeBudgetUsed: rs(spent),
+    homeBudgetOver: overspent > 0,
+    homeBudgetOverAmount: rs(overspent),
+    homeBudgetWidth: Math.min(100, targetPctNum) + "%",
+    homeBudgetRule: s.expenseGoalSet
+      ? s.expenseGoalMode === "percent" ? s.expenseGoalValue + "% of monthly income" : "Fixed monthly limit"
+      : "Income after your monthly savings target",
+    toBudget: () => app.go("budget"),
     haveMeta: np ? s.sources.length + " खाताको जम्मा" : "Across " + s.sources.length + (s.sources.length === 1 ? " account" : " accounts"),
-    dayOfLine: np ? "दिन " + DAY_OF_MONTH + " / " + DAYS_IN_MONTH : "Day " + DAY_OF_MONTH + " of " + DAYS_IN_MONTH,
-    spentWord: np ? "खर्च भयो" : "Spent",
-    homeSpent: "Rs " + whole(spent),
-    leftWord: remaining >= 0 ? (np ? "खर्च गर्न बाँकी" : "Left to spend") : (np ? "बढी खर्च" : "Overspent"),
-    homeLeft: rs(Math.abs(remaining)),
-    leftFg: remaining > 0 ? "var(--pos)" : "var(--warnInk)",
-    targetWidth: Math.min(100, targetPctNum) + "%",
-    budgetBar: targetPctNum >= 100 ? "var(--warnInk)" : targetPctNum > pacePctNum + 8 ? "var(--warn)" : "var(--navy)",
-    budgetLine: np ? rs(freeToSpend) + " को " + targetPctNum + "% खर्च भयो" : targetPctNum + "% of " + rs(freeToSpend) + " used",
-    suggestLead: remaining <= 0 ? (np ? "खर्च गर्न मिल्ने भन्दा " : "You're ") : lastDay ? (np ? "आज " : "Keep today under ") : (np ? "दिनको " : "Try to keep each day under "),
-    suggestAmt: remaining <= 0 ? rs(-remaining) : rs(allowance),
-    suggestTail: remaining <= 0 ? (s.expenseGoalSet ? (np ? " खर्च लक्ष्यभन्दा बढी भयो" : " over your expense goal") : (np ? " बढी खर्च भयो" : " past what was free to spend")) : np ? " भित्र राख्नुहोस्" : lastDay ? "" : " to stay on track",
-    suggestHow: s.expenseGoalSet
-      ? (np ? "मासिक खर्च लक्ष्य " : "Monthly expense goal ") + rs(freeToSpend) + (s.expenseGoalMode === "percent" ? " · " + s.expenseGoalValue + "% " + (np ? "आम्दानीको" : "of income") : "")
-      : (np ? MONTH_NP + "मा आएको " : "Came in this " + MONTH_EN + " ") + rs(income) + " − " + (np ? "बचत लक्ष्य " : "savings target ") + rs(s.saveTarget)
-        + " = " + rs(freeToSpend) + (np ? " खर्च गर्न मिल्ने" : " free to spend"),
     floorPending: floorShort > 0,
     floorLine: np ? "बचत आधार " + rs(s.savingsGoal) + " पुगेपछि लक्ष्य भरिन थाल्छन् · " + rs(floorShort) + " बाँकी"
       : "Goals start filling once savings clear the " + rs(s.savingsGoal) + " baseline · " + rs(floorShort) + " to go",
@@ -68,6 +57,7 @@ export function homeViewModel(app: Pick<AppController, "go" | "back" | "transact
     addCategory: s.addCat,
     addCategoryOptions: addCategories,
     addCategorySet: (e: { target: { value: string } }) => app.patch({ addCat: e.target.value, addError: "" }),
+    addCategoryNew: () => app.go("cats", { catsMode: "edit", catsFrom: "add", newCatIn: s.addDir === "credit" }),
     addAccount: s.addSrc,
     addAccounts: s.sources,
     addAccountSet: (e: { target: { value: string } }) => app.patch({ addSrc: e.target.value, addError: "" }),
@@ -91,7 +81,6 @@ export function homeViewModel(app: Pick<AppController, "go" | "back" | "transact
         });
       } catch (e) { app.patch({ addError: (e instanceof Error ? e.message : String(e)) }); }
     },
-    settingsLabel: np ? "प्रोफाइल र सेटिङ" : "Profile and settings",
     toggleBal: (e: import("react").MouseEvent<HTMLElement>) => { e.stopPropagation(); app.patch({ hideBal: !s.hideBal }); },
     balEyeD: s.hideBal ? P.eyeOff : P.eye,
     balEyeLabel: s.hideBal ? (np ? "मौज्दात देखाउनुहोस्" : "Show balance") : (np ? "मौज्दात लुकाउनुहोस्" : "Hide balance")

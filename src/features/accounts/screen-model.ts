@@ -2,6 +2,7 @@ import type { AppViewModel } from "../view-model";
 
 /** Only the values and actions consumed by this feature’s screens. */
 export type AccountsScreenModel = Pick<AppViewModel,
+  "accountsBack" |
   "newSrcAmountInput" |
   "newSrcAccountInput" |
   "newSrcInitialField" |

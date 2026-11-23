@@ -10,6 +10,7 @@ export type HomeScreenModel = Pick<AppViewModel,
   "addCancel" |
   "addCategory" |
   "addCategoryOptions" |
+  "addCategoryNew" |
   "addCategorySet" |
   "addCta" |
   "addDateLabel" |
@@ -21,10 +22,7 @@ export type HomeScreenModel = Pick<AppViewModel,
   "addReady" |
   "balEyeD" |
   "balEyeLabel" |
-  "balFs" |
   "bsMonth" |
-  "budgetBar" |
-  "budgetLine" |
   "cardAmount" |
   "cardCats" |
   "cardMerchant" |
@@ -32,8 +30,6 @@ export type HomeScreenModel = Pick<AppViewModel,
   "cardOpen" |
   "cardSkip" |
   "commitAdd" |
-  "dayOfLine" |
-  "editPlan" |
   "floorLine" |
   "floorPending" |
   "hasReview" |
@@ -41,37 +37,31 @@ export type HomeScreenModel = Pick<AppViewModel,
   "dismissReviewBanner" |
   "haveLabel" |
   "haveMeta" |
-  "homeBalances" |
+  "homeSavingsTarget" |
+  "homeBudgetAvailable" |
+  "homeBudgetUsed" |
+  "homeBudgetOver" |
+  "homeBudgetOverAmount" |
+  "homeBudgetWidth" |
+  "homeBudgetRule" |
+  "homeSpentCompact" |
+  "homeSavingsTotal" |
   "homeGoals" |
-  "homeLeft" |
-  "homeSpent" |
-  "leftFg" |
-  "leftWord" |
-  "monthlyTarget" |
-  "monthlyTargetMeta" |
   "noGoals" |
   "recent" |
   "reviewCount" |
-  "settingsLabel" |
-  "spentWord" |
   "stackDone" |
   "stackExit" |
   "stackHasCard" |
   "stackProgress" |
-  "suggestAmt" |
-  "suggestHow" |
-  "suggestLead" |
-  "suggestTail" |
   "refreshTransactions" |
   "t" |
-  "targetWidth" |
   "toAccounts" |
+  "toBudget" |
   "toGoal" |
   "toGoalNew" |
   "toReviewStack" |
-  "toSettings" |
   "toTxns" |
   "toggleBal" |
-  "totalBal" |
-  "userInitials"
+  "totalBal"
 >;

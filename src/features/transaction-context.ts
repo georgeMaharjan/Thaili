@@ -11,7 +11,7 @@ export function transactionContext(app: Pick<AppController, never>, context: Pic
     : s.txRange === "custom" ? s.txFrom !== null && s.txTo !== null && t.off <= s.txFrom && t.off >= s.txTo : monthKey(t.bs) === MONTH_KEY;
   const q = s.txQuery.trim().toLowerCase();
   const filterContext = { inRange: inTxWin, needsReview: (t: DatedTransaction) => needsReview(t, Date.now()), essential: isEss, category: clabel, account: (k: string) => srcOf(k).name };
-  const appliedFilters = { query: s.txQuery, categories: s.txCategories, spending: s.txSpending, review: s.txFilter === "review" };
+  const appliedFilters = { query: s.txQuery, categories: s.txCategories, spending: s.txSpending, review: s.txFilter === "review", sources: s.txSources };
   const filtered = filterEntries(s.tx, appliedFilters, filterContext);
   const draftFilters = s.filterDraft || appliedFilters;
   const previewFilters = { ...draftFilters, query: s.txQuery };

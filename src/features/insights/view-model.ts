@@ -3,22 +3,32 @@ import type { AppController } from "../../application/controller";
 import { balHero, balRs, fmt, fmtTyped, rs, signed, whole } from "../../lib/format";
 import { captureNotifications } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function insightsViewModel(app: Pick<AppController, "patch" | "go" | "back" | "flash">, context: Pick<ViewContext, "s" | "DAY_OF_MONTH" | "MONTH_EN" | "bsDay" | "wdShort" | "income" | "spent" | "T" | "np" | "inMonth" | "cats" | "chip" | "keypad" | "isEss" | "txCard" | "dayMeta" | "inWin" | "debitSum" | "leakCats" | "essOut" | "leakOut" | "periodOut" | "leakTx" | "leakCut" | "periodIn" | "prevTotal" | "net" | "prevLeak" | "pctDelta" | "leakShare" | "unfiled" | "optionalPatterns" | "deltaChip" | "catRows" | "vsSentence" | "perDiv" | "perName" | "fit" | "savingsSources" | "savingsPot" | "floorShort" | "surplus" | "essCats" | "essMonthly" | "baseFor" | "baseDraft" | "kept" | "openBaseline">) {
-  const { s, DAY_OF_MONTH, MONTH_EN, bsDay, wdShort, income, spent, T, np, inMonth, cats, chip, keypad, isEss, txCard, dayMeta, inWin, debitSum, leakCats, essOut, leakOut, periodOut, leakTx, leakCut, periodIn, prevTotal, net, prevLeak, pctDelta, leakShare, unfiled, optionalPatterns, deltaChip, catRows, vsSentence, perDiv, perName, fit, savingsSources, savingsPot, floorShort, surplus, essCats, essMonthly, baseFor, baseDraft, kept, openBaseline } = context;
+export function insightsViewModel(app: Pick<AppController, "patch" | "go" | "back" | "flash">, context: Pick<ViewContext, "s" | "DAY_OF_MONTH" | "MONTH_EN" | "bsDay" | "wdShort" | "income" | "spent" | "freeToSpend" | "overspent" | "T" | "np" | "inMonth" | "cats" | "chip" | "keypad" | "isEss" | "txCard" | "dayMeta" | "inWin" | "debitSum" | "leakCats" | "essOut" | "leakOut" | "periodOut" | "leakTx" | "leakCut" | "periodIn" | "prevTotal" | "net" | "prevLeak" | "pctDelta" | "leakShare" | "unfiled" | "optionalPatterns" | "deltaChip" | "catRows" | "vsSentence" | "perDiv" | "perName" | "fit" | "savingsSources" | "savingsPot" | "floorShort" | "surplus" | "essCats" | "essMonthly" | "baseFor" | "baseDraft" | "kept" | "openBaseline">) {
+  const { s, DAY_OF_MONTH, MONTH_EN, bsDay, wdShort, income, spent, freeToSpend, overspent, T, np, inMonth, cats, chip, keypad, isEss, txCard, dayMeta, inWin, debitSum, leakCats, essOut, leakOut, periodOut, leakTx, leakCut, periodIn, prevTotal, net, prevLeak, pctDelta, leakShare, unfiled, optionalPatterns, deltaChip, catRows, vsSentence, perDiv, perName, fit, savingsSources, savingsPot, floorShort, surplus, essCats, essMonthly, baseFor, baseDraft, kept, openBaseline } = context;
+  const budgetDays = s.range === "Monthly" ? DAY_OF_MONTH : s.range === "Weekly" ? Math.min(DAY_OF_MONTH, 7) : 1;
+  const budgetForPeriod = freeToSpend * budgetDays / Math.max(DAY_OF_MONTH, 1);
+  const budgetOverspent = Math.max(0, periodOut - budgetForPeriod);
+  const budgetOver = budgetOverspent > 0;
   return {
     ranges: (["Daily", "Weekly", "Monthly"] as const).map(r => ({
       label: { Daily: T.daily, Weekly: T.weeklyR, Monthly: T.monthly }[r], bg: s.range === r ? "var(--surface)" : "transparent", fg: s.range === r ? "var(--ink)" : "var(--ink3)", shadow: s.range === r ? "0 1px 2px rgba(0,0,0,.08)" : "none",
       tap: () => app.patch({ range: r })
     })),
+    rangeLabel: perName,
     keptHeadLabel: (net >= 0 ? (np ? "बचेको · " : "Kept · ") : (np ? "बढी खर्च · " : "Overspent · ")) + perName,
     keptBig: whole(net),
     keptFg: net >= 0 ? "var(--ink)" : "var(--warnInk)",
-    keptFs: fit(whole(net).length, 52, 8, 34),
     keptSentence: periodIn > 0
       ? (net >= 0 ? "Income minus expenses · " + Math.round(net / periodIn * 100) + "% of what came in stayed with you" : "Expenses ran " + rs(-net) + " past income")
       : "No income landed in this period, so spending came from what you already had",
     inBig: "+" + whole(periodIn),
     outBig: "−" + whole(periodOut),
+    budgetOverspent: rs(budgetOverspent),
+    budgetRemaining: rs(Math.max(0, budgetForPeriod - periodOut)),
+    budgetOverLine: s.range === "Monthly"
+      ? budgetOver ? "This month’s expenses are " + rs(overspent) + " over the budget baseline of " + rs(freeToSpend) : "Monthly budget baseline: " + rs(freeToSpend)
+      : "Compared with an estimated share of the monthly budget baseline",
+    budgetOver,
     flowFs: fit(Math.max(whole(periodIn).length, whole(periodOut).length) + 1, 30, 8, 18),
     inMeta: (n => n ? n + (n === 1 ? " deposit" : " deposits") : "Nothing yet")(s.tx.filter(t => t.dir === "credit" && inWin(t)).length),
     spentChip: deltaChip(periodOut, prevTotal),

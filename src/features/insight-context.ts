@@ -11,8 +11,22 @@ export function insightContext(app: Pick<AppController, "go">, context: Pick<Sha
   const inWin = (t: DatedTransaction) => s.range === "Daily" ? t.off === 0 : s.range === "Weekly" ? t.off < 7 : inMonth(t);
   const inPrev = (t: DatedTransaction) => s.range === "Daily" ? t.off === 1 : s.range === "Weekly" ? t.off >= 7 && t.off < 14 : monthKey(t.bs) === MONTH_KEY - 1 && t.bs.d <= DAY_OF_MONTH;
   const debitSum = (pred: (t: DatedTransaction) => boolean) => s.tx.filter(t => t.dir === "debit" && pred(t)).reduce((a, t) => a + t.amt, 0);
-  const catIn = (k: string) => debitSum(t => t.cat === k && inWin(t));
-  const catPrev = (k: string) => debitSum(t => t.cat === k && inPrev(t));
+  const currentCategories = new Map<string, { amount: number; count: number }>();
+  const previousCategories = new Map<string, { amount: number; count: number }>();
+  const addCategoryTotal = (totals: Map<string, { amount: number; count: number }>, t: DatedTransaction) => {
+    if (!t.cat) return;
+    const total = totals.get(t.cat) || { amount: 0, count: 0 };
+    total.amount += t.amt;
+    total.count++;
+    totals.set(t.cat, total);
+  };
+  s.tx.forEach(t => {
+    if (t.dir !== "debit") return;
+    if (inWin(t)) addCategoryTotal(currentCategories, t);
+    if (inPrev(t)) addCategoryTotal(previousCategories, t);
+  });
+  const catIn = (key: string) => currentCategories.get(key)?.amount || 0;
+  const catPrev = (key: string) => previousCategories.get(key)?.amount || 0;
   const leakCats = allCats.filter(c => !isEss(c.key)).map(c => ({ c: c, amt: catIn(c.key) })).sort((a, b) => b.amt - a.amt);
   const essOut = allCats.filter(c => isEss(c.key)).reduce((a, c) => a + catIn(c.key), 0);
   const leakOut = leakCats.reduce((a, x) => a + x.amt, 0);
@@ -33,17 +47,14 @@ export function insightContext(app: Pick<AppController, "go">, context: Pick<Sha
     const d = pctDelta(now, was);
     return { icon: d > 0 ? SI.up : d < 0 ? SI.down : SI.flat, text: Math.abs(d) + "%", fg: d === 0 ? "var(--ink3)" : d < 0 ? "var(--pos)" : "var(--warnInk)", bg: d === 0 ? "var(--surface2)" : d < 0 ? "var(--tintG)" : "var(--surface)" };
   };
-  const catAmts = allCats.map(c => ({ k: c.key, label: c.label, amt: catIn(c.key), prev: catPrev(c.key), limit: c.limit }));
-  const catRows = catAmts.filter(c => c.amt || c.prev).sort((a, b) => b.amt - a.amt).map(c => {
-    const pct = c.amt / Math.max(periodOut, 1) * 100;
-    const d = deltaChip(c.amt, c.prev);
-    return {
-      label: c.label, amount: rs(c.amt), width: pct + "%", share: Math.round(pct) + "%",
-      tap: () => app.go("txns", { txCategories: [c.k], txSpending: "all", txFilter: "all", txQuery: "", txRange: { Daily: "today", Weekly: "week", Monthly: "month" }[s.range] }),
-      color: isEss(c.k) ? "var(--navy)" : "var(--warn)",
-      dWord: c.prev && d.text !== "0%" ? (c.amt > c.prev ? "↑ " : "↓ ") + d.text : "", dFg: c.prev ? d.fg : "var(--ink3)"
-    };
-  });
+  const txRange = { Daily: "today", Weekly: "week", Monthly: "month" }[s.range];
+  const catRows = allCats.map(c => {
+    const amount = catIn(c.key), count = currentCategories.get(c.key)?.count || 0;
+    return { key: c.key, label: c.label, amount, count, color: isEss(c.key) ? "var(--navy)" : "var(--warn)" };
+  }).filter(c => c.count).sort((a, b) => b.count - a.count || b.amount - a.amount).map(c => ({
+    label: c.label, amount: rs(c.amount), count: c.count + (c.count === 1 ? " transaction" : " transactions"), color: c.color,
+      tap: () => app.go("txns", { txCategories: [c.key], txSources: [], txSpending: "all", txFilter: "all", txQuery: "", txRange })
+  }));
   const prevWord = { Daily: np ? "हिजो" : "yesterday", Weekly: np ? "गत हप्ता" : "last week", Monthly: "the same days in " + PREV_MONTH_EN }[s.range];
   const vsSentence = (now: number, was: number) => {
     const d = pctDelta(now, was);
@@ -53,6 +64,6 @@ export function insightContext(app: Pick<AppController, "go">, context: Pick<Sha
   const perDiv = s.range === "Daily" ? 1 : s.range === "Weekly" ? 7 : DAY_OF_MONTH;
   const perName = s.range === "Monthly" ? (np ? MONTH_NP : MONTH_EN) : s.range === "Weekly" ? (np ? "यो हप्ता" : "this week") : (np ? "आज" : "today");
   const fit = (len: number, full: number, n: number, min: number) => (len <= n ? full : Math.max(min, Math.floor(full * n / len))) + "px";
-  return { inWin, inPrev, debitSum, catIn, catPrev, leakCats, essOut, leakOut, periodOut, leakTx, leakCut, periodIn, prevTotal, net, prevName, prevLeak, pctDelta, leakShare, unfiled, trendDaily, optionalPatterns, deltaChip, catAmts, catRows, prevWord, vsSentence, perDiv, perName, fit };
+  return { inWin, inPrev, debitSum, catIn, catPrev, leakCats, essOut, leakOut, periodOut, leakTx, leakCut, periodIn, prevTotal, net, prevName, prevLeak, pctDelta, leakShare, unfiled, trendDaily, optionalPatterns, deltaChip, catRows, prevWord, vsSentence, perDiv, perName, fit };
 }
 export type InsightContext = ReturnType<typeof insightContext>;

@@ -1,7 +1,7 @@
 import type { OnboardingScreenModel as V } from "../features/onboarding/screen-model";
 import { Sheet } from "@/components/sheet";
 // First run: welcome → register → SMS permission → app scan → accounts → 90-day history → categories.
-import { Btn,CARD,Cta,Icon,IconBtn,P,PersonFields,SUB,Seg,StepHead,Stepper,Toggle,cx } from "@/components/ui";
+import { Btn,CARD,Cta,Icon,IconBtn,P,PersonFields,SUB,Seg,StepHead,Stepper,Toggle,TopBar,cx } from "@/components/ui";
 
 const PAGE = "flex flex-1 flex-col px-5 pt-4 pb-8";
 const ROW = "flex items-center justify-between gap-3 rounded-2xl border bg-surface px-4";
@@ -178,7 +178,7 @@ export function Scan({ v }: { v: V }) {
               <span className="text-[14px] font-semibold leading-[1.35]">{g.label}</span>
               <span className="text-[13px] leading-[1.4] text-ink-3">{g.meta}</span>
             </div>
-            <span className="flex-none rounded-lg px-3 py-1 text-[13px] font-bold" style={{ background: g.tagBg, color: g.tagFg }}>{g.tag}</span>
+            {g.tag && <span className="flex-none rounded-lg px-3 py-1 text-[13px] font-bold" style={{ background: g.tagBg, color: g.tagFg }}>{g.tag}</span>}
           </div>
         ))}
       </div>
@@ -191,7 +191,9 @@ export function Scan({ v }: { v: V }) {
 export function Cats({ v }: { v: V }) {
   return (
     <div className={cx(PAGE, "gap-4 overflow-auto")}>
-      <StepHead v={v} onBack={v.obBack} step={v.catsStepLabel} title={v.t.catsTitle} sub={v.t.catsSub} className="flex-none gap-2" />
+      {v.catsEdit
+        ? <TopBar onBack={v.obBack} title={v.t.categories} />
+        : <StepHead v={v} onBack={v.obBack} step={v.catsStepLabel} title={v.t.catsTitle} sub={v.t.catsSub} className="flex-none gap-2" />}
       <div className={cx(CARD, "flex flex-col gap-3 p-4")}>
         <Seg items={v.catDirs} itemClass="flex-1 rounded-lg px-3 py-2 text-[13px]" />
         <div className="flex items-center gap-2">
@@ -199,25 +201,28 @@ export function Cats({ v }: { v: V }) {
             className="min-w-0 flex-1 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] text-ink outline-none" />
           <button onClick={v.addCustomCat} className="flex-none rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] font-semibold" style={{ color: v.newCatFg }}>Add</button>
         </div>
-        <span className="text-pretty text-[13px] leading-[1.5] text-ink-3">{v.addCatNote}</span>
         <div className="flex flex-col">
           {v.catRows.map(r => (
-            <div key={r.key} className="flex items-center gap-2 border-b border-line py-1 last:border-b-0">
-              {r.on !== null && (
-                <button type="button" onClick={r.toggle} aria-pressed={r.on} aria-label={(r.on ? "Stop using " : "Use ") + r.label}
-                  className={cx("press flex size-[24px] flex-none items-center justify-center rounded-full border-2", r.on ? "border-action bg-action text-on-action" : "border-bar-dim")}>
-                  {r.on && <Icon d={P.check} size={14} sw={3} />}
-                </button>
-              )}
-              <input defaultValue={r.label} onBlur={r.rename} aria-label={"Rename " + r.label}
-                className={cx("min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-2 text-[14px] outline-none focus:border-line focus:bg-surface-2", r.on === false ? "text-ink-3" : "text-ink")} />
-              {v.catsEdit && r.on && (
-                <button type="button" onClick={r.toggleEss} aria-label={r.label + ": " + (r.ess ? "essential" : "optional") + ", tap to switch"}
-                  className={cx("press flex-none rounded-full px-3 py-1 text-[12px] font-semibold", r.ess ? "bg-tint-n text-navy" : "bg-tint-w text-warn-ink")}>
-                  {r.ess ? "Essential" : "Optional"}
-                </button>
-              )}
-              <IconBtn d={P.trash} label={"Delete " + r.label} onClick={r.remove} className="flex-none text-ink-3" size={18} />
+            <div key={r.key} className="flex flex-col gap-1 border-b border-line py-2 last:border-b-0">
+              <div className="flex min-h-[40px] items-center gap-2">
+                <span aria-hidden="true" className="size-3 flex-none rounded-full" style={{backgroundColor:r.color}} />
+                {r.on !== null && (
+                  <button type="button" onClick={r.toggle} aria-pressed={r.on} aria-label={(r.on ? "Stop using " : "Use ") + r.label}
+                    className={cx("press flex size-[24px] flex-none items-center justify-center rounded-full border-2", r.on ? "border-action bg-action text-on-action" : "border-bar-dim")}>
+                    {r.on && <Icon d={P.check} size={14} sw={3} />}
+                  </button>
+                )}
+                <input defaultValue={r.label} onBlur={r.rename} aria-label={"Rename " + r.label}
+                  className={cx("min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-2 text-[14px] outline-none focus:border-line focus:bg-surface-2", r.on === false ? "text-ink-3" : "text-ink")} />
+                {v.catsEdit && r.on && (
+                  <button type="button" onClick={r.toggleEss} aria-label={r.label + ": " + (r.ess ? "essential" : "optional") + ", tap to switch"}
+                    className={cx("press flex-none rounded-full px-3 py-1 text-[12px] font-semibold", r.ess ? "bg-tint-n text-navy" : "bg-tint-w text-warn-ink")}>
+                    {r.ess ? "Essential" : "Optional"}
+                  </button>
+                )}
+                <IconBtn d={P.trash} label={"Delete " + r.label} onClick={r.remove} className="flex-none text-ink-3" size={18} />
+              </div>
+              <div className="ml-5 flex items-center gap-1"><span className="mr-1 text-[11px] text-ink-3">Color</span>{r.colors.map(c => <button key={c.color} type="button" aria-label={r.label + " color " + c.color} aria-pressed={c.selected} onClick={c.tap} className="flex size-[28px] items-center justify-center rounded-full"><span className="size-[15px] rounded-full" style={{backgroundColor:c.color,boxShadow:c.selected?"0 0 0 2px var(--canvas), 0 0 0 3px var(--ink)":"none"}} /></button>)}</div>
             </div>
           ))}
         </div>
