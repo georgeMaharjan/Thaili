@@ -19,7 +19,7 @@ export function shellViewModel(app: Pick<AppController, "patch" | "go" | "flash"
     obDots: obStep ? Array.from({ length: OB_STEPS }, (_, i) => i + 1).map(i => ({ bg: i <= obStep ? "var(--action)" : "var(--barTrack)" })) : [],
     toAccounts: () => app.go("accounts"),
     totalBal: balHero(s.sources.reduce((a, x) => a + balance(x.key), 0), s.hideBal),
-    toSrcNew: () => app.go("src-new", { srcNewFrom: s.screen, editSrcKey: null, newSrcAmt: "" }),
+    toSrcNew: () => app.go("src-new", { srcNewFrom: s.screen, editSrcKey: null, newSrcKind: "bank", newSrcName: "", newSrcColor: "", newSrcAmt: "", newSrcAcct: "" }),
     showTabs: TABS.indexOf(s.screen) > -1 && (s.screen !== "settings" || s.settingsFrom === "settings"),
     addNewLabel: np ? "नयाँ थप्नुहोस्" : "Add new",
     toAdd: () => app.go("add", { addEntry: "", addNote: "", addError: "", addDir: "debit", addCat: cats[0]?.key || "", addSrc: s.sources.find(x => x.key === "cash")?.key || s.sources[0]?.key || "", discardAdd: false }),

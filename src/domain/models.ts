@@ -23,7 +23,7 @@ export const primaryOf = (t: Pick<Transaction, "dir" | "primary">): TransactionP
 export type DatedTransaction = Transaction & { off: number; time: string; bs: Bs };
 export type Profile = { name: string; phone: string; createdAt: string };
 // in: a money-in category; gone: deleted. customCats also holds renames/deletes of built-ins under their key.
-export type Category = { key: string; label: string; limit?: number; in?: boolean; gone?: boolean; color?: string; createdAt?: string };
+export type Category = { key: string; label: string; limit?: number; in?: boolean; gone?: boolean; color?: string; icon?: string; createdAt?: string };
 export type Preferences = {
   smsBanks?: string[];
   picked?: string[]; customCats?: Category[]; ess?: Record<string, boolean>;

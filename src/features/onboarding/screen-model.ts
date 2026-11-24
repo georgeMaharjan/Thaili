@@ -63,7 +63,6 @@ export type OnboardingScreenModel = Pick<AppViewModel,
   "regLabels" |
   "regName" |
   "regNameBorder" |
-  "regNamePh" |
   "regNameType" |
   "regPhone" |
   "regPhoneBorder" |

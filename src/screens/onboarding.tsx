@@ -197,7 +197,7 @@ export function Cats({ v }: { v: V }) {
       <div className={cx(CARD, "flex flex-col gap-3 p-4")}>
         <Seg items={v.catDirs} itemClass="flex-1 rounded-lg px-3 py-2 text-[13px]" />
         <div className="flex items-center gap-2">
-          <input value={v.newCatName} onChange={v.newCatType} placeholder="New category name" aria-label="New category name"
+          <input value={v.newCatName} onChange={v.newCatType} aria-label="New category name"
             className="min-w-0 flex-1 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[14px] text-ink outline-none" />
           <button onClick={v.addCustomCat} className="flex-none rounded-xl border border-line bg-surface-2 px-4 py-3 text-[13px] font-semibold" style={{ color: v.newCatFg }}>Add</button>
         </div>
@@ -205,7 +205,7 @@ export function Cats({ v }: { v: V }) {
           {v.catRows.map(r => (
             <div key={r.key} className="flex flex-col gap-1 border-b border-line py-2 last:border-b-0">
               <div className="flex min-h-[40px] items-center gap-2">
-                <span aria-hidden="true" className="size-3 flex-none rounded-full" style={{backgroundColor:r.color}} />
+                <span aria-hidden="true" className="size-[12px] flex-none rounded-full" style={{backgroundColor:r.color}} />
                 {r.on !== null && (
                   <button type="button" onClick={r.toggle} aria-pressed={r.on} aria-label={(r.on ? "Stop using " : "Use ") + r.label}
                     className={cx("press flex size-[24px] flex-none items-center justify-center rounded-full border-2", r.on ? "border-action bg-action text-on-action" : "border-bar-dim")}>
@@ -222,7 +222,9 @@ export function Cats({ v }: { v: V }) {
                 )}
                 <IconBtn d={P.trash} label={"Delete " + r.label} onClick={r.remove} className="flex-none text-ink-3" size={18} />
               </div>
-              <div className="ml-5 flex items-center gap-1"><span className="mr-1 text-[11px] text-ink-3">Color</span>{r.colors.map(c => <button key={c.color} type="button" aria-label={r.label + " color " + c.color} aria-pressed={c.selected} onClick={c.tap} className="flex size-[28px] items-center justify-center rounded-full"><span className="size-[15px] rounded-full" style={{backgroundColor:c.color,boxShadow:c.selected?"0 0 0 2px var(--canvas), 0 0 0 3px var(--ink)":"none"}} /></button>)}</div>
+              <div className="ml-5 flex min-w-0 items-center gap-1 overflow-x-auto"><span className="mr-1 text-[12px] text-ink-3">Icon</span>{r.icons.map(icon => <button key={icon.key} type="button" aria-label={r.label + " icon " + icon.label} aria-pressed={icon.selected} onClick={icon.tap}
+                className="flex size-[32px] flex-none items-center justify-center rounded-lg" style={{ color: r.color, background: icon.selected ? r.color + "20" : "transparent", boxShadow: icon.selected ? "inset 0 0 0 1.5px " + r.color : "none" }}><Icon d={icon.d} size={17} /></button>)}</div>
+              <div className="ml-5 flex items-center gap-1"><span className="mr-1 text-[12px] text-ink-3">Color</span>{r.colors.map(c => <button key={c.color} type="button" aria-label={r.label + " color " + c.color} aria-pressed={c.selected} onClick={c.tap} className="flex size-[28px] items-center justify-center rounded-full"><span className="size-[15px] rounded-full" style={{backgroundColor:c.color,boxShadow:c.selected?"0 0 0 2px var(--canvas), 0 0 0 3px var(--ink)":"none"}} /></button>)}</div>
             </div>
           ))}
         </div>
@@ -261,7 +263,7 @@ export function Register({ v }: { v: V }) {
         <div className={SUB}>{v.regSub}</div>
       </div>
       <div className="flex-1 overflow-auto px-5 pt-5 pb-1.5">
-        <PersonFields editingLabel={v.numericEditingLabel} labels={v.regLabels} name={v.regName} onName={v.regNameType} nameBorder={v.regNameBorder} namePh={v.regNamePh}
+        <PersonFields editingLabel={v.numericEditingLabel} labels={v.regLabels} name={v.regName} onName={v.regNameType} nameBorder={v.regNameBorder}
           phone={v.regPhone} onPhone={v.regPhoneType} phoneBorder={v.regPhoneBorder} hint={v.regPhoneHint} hintFg={v.regPhoneHintFg} />
       </div>
       <div className="flex flex-none flex-col gap-2 px-5 pt-3">

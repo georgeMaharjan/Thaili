@@ -7,10 +7,10 @@ import { Icon, P, cx } from "./ui";
  * Numeric inputMode requests the appropriate phone keyboard without type=number's cursor limitations.
  */
 export function NumericField({ value, onChange, label, hint, kind, maxDigits, prefix, autoFocus, inputRef, onFocus,
-  onNext, nextLabel, editingLabel, clearLabel, placeholder, errors }: {
+  onNext, nextLabel, editingLabel, clearLabel, errors }: {
   value: string; onChange(value: string): void; label: string; hint: string; kind: NumericEntryKind; maxDigits: number;
   prefix?: string; autoFocus?: boolean; inputRef?: RefObject<HTMLInputElement | null>; onFocus?(): void;
-  onNext?(): void; nextLabel?: string; editingLabel: string; clearLabel: string; placeholder: string;
+  onNext?(): void; nextLabel?: string; editingLabel: string; clearLabel: string;
   errors: Record<"characters" | "length" | "precision", string>;
 }) {
   const localRef = useRef<HTMLInputElement>(null), ref = inputRef || localRef;
@@ -32,7 +32,7 @@ export function NumericField({ value, onChange, label, hint, kind, maxDigits, pr
       <div className="flex min-h-[52px] items-center gap-2">
         {prefix && <span aria-hidden="true" className="flex-none text-[20px] font-semibold text-ink-3">{prefix}</span>}
         <input ref={ref} id={id} type="text" value={value} autoFocus={autoFocus} inputMode={kind === "amount" ? "decimal" : "numeric"}
-          autoComplete="off" spellCheck={false} enterKeyHint={onNext ? "next" : "done"} placeholder={placeholder}
+          autoComplete="off" spellCheck={false} enterKeyHint={onNext ? "next" : "done"}
           aria-describedby={id + "-hint"} aria-invalid={!!error}
           onFocus={() => { setFocused(true); onFocus?.(); }} onBlur={() => setFocused(false)}
           onChange={event => {
@@ -46,7 +46,7 @@ export function NumericField({ value, onChange, label, hint, kind, maxDigits, pr
             if (event.key !== "Enter") return;
             event.preventDefault(); if (onNext) onNext(); else event.currentTarget.blur();
           }}
-          className={cx("min-w-0 flex-1 bg-transparent py-1 font-display font-bold tabular-nums text-ink caret-action outline-none placeholder:text-bar-dim", kind === "amount" ? "text-[32px] tracking-[-0.02em]" : "text-[28px] tracking-[.12em]")} />
+          className={cx("min-w-0 flex-1 bg-transparent py-1 font-display font-bold tabular-nums text-ink caret-action outline-none", kind === "amount" ? "text-[32px] tracking-[-0.02em]" : "text-[28px] tracking-[.12em]")} />
         {value && <button type="button" aria-label={clearLabel} onMouseDown={event => event.preventDefault()}
           onClick={() => { setError(null); onChange(""); ref.current?.focus(); }}
           className="flex size-[44px] flex-none items-center justify-center rounded-full text-ink-3"><Icon d={P.close} size={18} /></button>}

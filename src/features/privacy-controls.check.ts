@@ -17,6 +17,7 @@ app.patch = (update, done) => {
   done?.();
 };
 app.state = { ...initialState(), loaded: true, splash: false, screen: "permission",
+  user: { name: "Fixture", phone: "+9779800000000", createdAt: new Date().toISOString() },
   sources: [
     { key: "manual-nabil", base: "Nabil Bank", name: "My bank", acct: "4821", type: "Bank · SMS", dot: "red", opening: 1000 },
     { key: "prime", base: "Prime Commercial Bank", name: "Prime", acct: "1234", type: "Bank · SMS", dot: "blue", opening: 2000 },
@@ -24,7 +25,7 @@ app.state = { ...initialState(), loaded: true, splash: false, screen: "permissio
 };
 try {
   const v = app.renderVals();
-  assert.ok(v.permissionRows.some(row => row.key === "sms" && row.state === "Off"));
+  assert.ok(v.permissionRows.some(row => row.key === "sms" && !row.on));
   assert.match(v.permissionNote, /backup does not restore Android permissions/);
   assert.equal(v.smsCanRecover, false);
   v.openPrivacy(); assert.equal(app.state.screen, "privacy");

@@ -34,7 +34,7 @@ function captureFixture(app: AppController) {
   });
   return { feed, capture };
 }
-const finish = (app: AppController) => { app.renderVals().catsNext(); app.renderVals().baseSave(); assert.equal(app.state.setupComplete, true); };
+const finish = (app: AppController) => { app.patch({ picked: ["food", "transport", "grocery"] }); app.renderVals().catsNext(); app.patch({ baseAmt: "50000" }); app.renderVals().baseSave(); assert.equal(app.state.setupComplete, true); };
 
 // Automatic native reads cannot commit transactions while setup is deciding about history.
 {

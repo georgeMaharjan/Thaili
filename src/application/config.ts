@@ -4,12 +4,9 @@ import { npDigits } from "../lib/bs";
 import { fmt } from "../lib/format";
 import { INSTITUTIONS } from "../lib/institutions";
 export const CATS: Category[] = [
-  { key: "food", label: "Eating out", limit: 12000 },
-  { key: "transport", label: "Transport", limit: 5000 },
-  { key: "grocery", label: "Groceries", limit: 9000 },
-  { key: "bills", label: "Bills & rent", limit: 16000 },
-  { key: "shopping", label: "Shopping", limit: 4000 },
-  { key: "health", label: "Health", limit: 3000 }
+  { key: "food", label: "Eating out" }, { key: "transport", label: "Transport" },
+  { key: "grocery", label: "Groceries" }, { key: "bills", label: "Bills & rent" },
+  { key: "shopping", label: "Shopping" }, { key: "health", label: "Health" }
 ];
 export const EXTRA_CATS: Category[] = [
   { key: "going", label: "Going out" }, { key: "family", label: "Family" },
@@ -23,6 +20,7 @@ export const INCOME_CATS: Category[] = [
   { key: "refund", label: "Refund" }, { key: "otherin", label: "Other income" }
 ];
 export const CATEGORY_COLORS = ["#C65B4B", "#3975B8", "#16866B", "#9664B5", "#C28A2C", "#526C82"];
+export const ACCOUNT_COLORS = ["#C65B4B", "#3975B8", "#16866B", "#9664B5", "#C28A2C", "#526C82", "#D02A2E", "#2B3A4A"];
 export const categoryColor = (c: Category) => c.color && CATEGORY_COLORS.includes(c.color)
   ? c.color : CATEGORY_COLORS[(c.key.split("").reduce((n, x) => n + x.charCodeAt(0), 0)) % CATEGORY_COLORS.length];
 // Built-ins with the user's renames/deletes applied, then the user's own categories.
@@ -35,12 +33,6 @@ export function categoryLists(custom: Category[]) {
   const income = INCOME_CATS.map((c): Category => ({ ...edit(c), in: true })).concat(own.filter(c => c.in));
   return { every: out.concat(income), out: out.filter(c => !c.gone), income: income.filter(c => !c.gone) };
 }
-export const SEED_RULES = [
-  { id: 1, kw: "BHATBHATENI", cat: "grocery", own: false },
-  { id: 2, kw: "PATHAO", cat: "transport", own: false },
-  { id: 3, kw: "FOODMANDU", cat: "food", own: false },
-  { id: 4, kw: "NEA BILL", cat: "bills", own: false }
-];
 export const OB_STEPS = 5;
 export const CASH: Account = { key: "cash", base: "Cash", name: "Cash", short: "Cash", type: "Manual entry", dot: "#B4721F", opening: 0, acct: null };
 export const isManualSrc = (x: Account) => /Manual|manual/.test(x.type);
@@ -91,6 +83,21 @@ export const SI = {
   up: "M7 17 17 7M9 7h8v8", down: "M7 7l10 10M17 9v8H9", flat: "M5 12h14",
   calCheck: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4",
 };
+export const CATEGORY_ICON_OPTIONS = [
+  { key: "food", label: "Food", d: CI.food }, { key: "transport", label: "Transport", d: CI.transport },
+  { key: "grocery", label: "Groceries", d: CI.grocery }, { key: "bills", label: "Bills", d: CI.bills },
+  { key: "shopping", label: "Shopping", d: CI.shopping }, { key: "health", label: "Health", d: CI.health },
+  { key: "going", label: "Going out", d: CI.going }, { key: "family", label: "Family", d: CI.family },
+  { key: "study", label: "Study", d: CI.study }, { key: "gifts", label: "Gifts", d: CI.gifts },
+  { key: "pets", label: "Pets", d: CI.pets }, { key: "bank", label: "Bank", d: IC.bank },
+  { key: "wallet", label: "Wallet", d: IC.wallet }, { key: "cash", label: "Cash", d: IC.cash },
+  { key: "vault", label: "Savings", d: IC.vault }, { key: "tag", label: "Other", d: IC.tag },
+] as const;
+const DEFAULT_CATEGORY_ICONS: Record<string, string> = {
+  salary: "bank", business: "wallet", interest: "vault", giftin: "gifts", refund: "shopping", otherin: "tag"
+};
+export const categoryIconKey = (c: Category) => c.icon || (CI[c.key] ? c.key : DEFAULT_CATEGORY_ICONS[c.key] || "tag");
+export const categoryIcon = (c: Category) => CATEGORY_ICON_OPTIONS.find(option => option.key === categoryIconKey(c))?.d || IC.tag;
 export const kfmt = (n: number) => { const a = Math.abs(n); return a >= 100000 ? (Math.round(a / 10000) / 10) + "L" : a >= 10000 ? Math.round(a / 1000) + "k" : fmt(a); };
 export const L = {
   EN: {

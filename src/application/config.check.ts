@@ -6,7 +6,7 @@ const lists = categoryLists([
   { key: "salary", label: "Salary", gone: true }, { key: "c1", label: "Rent received", in: true }, { key: "c2", label: "Puja" },
 ]);
 assert.equal(lists.out.find(c => c.key === "food")?.label, "Momo runs");
-assert.equal(lists.out.find(c => c.key === "food")?.limit, 12000);
+assert.equal(lists.out.find(c => c.key === "food")?.limit, undefined, "built-in categories have no seeded budgets");
 assert.ok(!lists.out.some(c => c.key === "health"));
 assert.ok(lists.out.some(c => c.key === "c2") && !lists.out.some(c => c.key === "c1"));
 assert.ok(lists.income.some(c => c.key === "c1") && !lists.income.some(c => c.key === "salary"));

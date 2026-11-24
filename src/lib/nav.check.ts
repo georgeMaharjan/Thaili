@@ -11,7 +11,7 @@ assert.deepEqual(walk(["welcome", "permission", "cats", "baseline", "home"]), []
 // tabs: a non-home tab has only Home behind it
 assert.deepEqual(walk(["home", "insights", "txns"]), ["home"]);
 // Accounts is a tab: switching to it drops the Transactions trail; its detail screen stacks on it
-assert.deepEqual(walk(["home", "txns", "detail", "accounts", "source-detail"]), ["home", "accounts"]);
+assert.deepEqual(walk(["home", "txns", "detail", "accounts", "source-detail"]), ["home", "txns", "detail", "accounts"]);
 // in-app back arrow to a screen behind us behaves like back
 assert.deepEqual(walk(["home", "accounts", "source-detail", "accounts"]), ["home"]);
 // Back closes nested sheets before filters, and preserves even empty note drafts.
@@ -25,18 +25,19 @@ assert.equal(backDismissal({ remarkDraft: null, calOpen: false }), null);
 assert.deepEqual(walk(["home", "txns", "add", "txns"]), ["home"]);
 assert.deepEqual(walk(["home", "insights", "flow", "detail", "flow"]), ["home", "insights"]);
 // no Home (or any tab) without a registered user; onboarding screens stay reachable
-for (const tab of ["home", "txns", "insights", "accounts"]) {
+for (const tab of ["home", "txns", "insights", "settings"]) {
   assert.equal(gate(tab, false), "register");
   assert.equal(gate(tab, true), tab);
 }
+assert.equal(gate("accounts", false), "accounts", "Accounts is a nested screen, not a navigation tab");
 for (const s of ["welcome", "register", "permission", "cats"]) assert.equal(gate(s, false), s);
 
 // Settings is pushed from the Home avatar: back returns Home, and its own sub-screens come back to it
 assert.deepEqual(walk(["home", "settings"]), ["home"]);
 assert.deepEqual(walk(["home", "settings", "profile"]), ["home", "settings"]);
 assert.deepEqual(walk(["home", "settings", "profile", "settings"]), ["home"]);
-// Accounts is a tab root now: only Home sits behind it
-assert.deepEqual(walk(["home", "txns", "accounts"]), ["home"]);
+// Accounts is a nested screen, so it keeps the active tab behind it
+assert.deepEqual(walk(["home", "txns", "accounts"]), ["home", "txns"]);
 // Account scans and account-detail editing return to Accounts without re-entering setup.
 assert.deepEqual(walk(["home", "accounts", "detect", "accounts"]), ["home"]);
 assert.deepEqual(walk(["home", "accounts", "detect", "src-new", "accounts"]), ["home"]);

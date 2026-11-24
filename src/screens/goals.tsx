@@ -94,11 +94,11 @@ export function GoalNew({ v }: { v: V }) {
       <TopBar onBack={v.goalCancel} icon={P.close} label="Cancel goal" title={v.t.newGoal} />
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-5 pt-3 pb-6">
         <label className="field">Goal name
-          <input value={v.goalDraftName} onChange={v.goalNameType} maxLength={60} autoComplete="off" enterKeyHint="next" placeholder="What are you saving for?" required />
+          <input value={v.goalDraftName} onChange={v.goalNameType} maxLength={60} autoComplete="off" enterKeyHint="next" required />
         </label>
         <label className="flex flex-col gap-2 rounded-[20px] bg-surface-2 p-5">
           <span className="text-[14px] text-ink-2">Target amount</span>
-          <span className="flex min-w-0 items-baseline gap-2"><span className="font-display text-[22px] text-ink-3">Rs</span><input aria-label="Target amount" inputMode="decimal" autoComplete="off" placeholder="0.00" value={v.goalAmount} onChange={v.goalAmountType} className="min-w-0 w-full bg-transparent font-display text-[44px] font-bold tabular-nums outline-none" /></span>
+          <span className="flex min-w-0 items-baseline gap-2"><span className="font-display text-[22px] text-ink-3">Rs</span><input aria-label="Target amount" inputMode="decimal" autoComplete="off" value={v.goalAmount} onChange={v.goalAmountType} className="min-w-0 w-full bg-transparent font-display text-[44px] font-bold tabular-nums outline-none" /></span>
         </label>
         <p className="text-[14px] text-ink-2">{v.goalNeedLine}</p>
         <div className="flex flex-col gap-3"><span className="text-[14px] font-semibold text-ink-2">Funding priority</span><Chips items={v.goalPosChips} className="px-0" /></div>

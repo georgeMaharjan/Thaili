@@ -368,7 +368,7 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     const kind = SRC_KINDS.filter(k => k.type === x.type)[0] || SRC_KINDS[2];
     this.go("src-new", {
       editSrcKey: key, srcNewFrom: this.state.screen,
-      newSrcKind: kind.key, newSrcName: x.base || x.name, newSrcAmt: x.openedAt || x.opening ? String(x.opening) : "",
+      newSrcKind: kind.key, newSrcName: x.base || x.name, newSrcColor: x.dot, newSrcAmt: x.openedAt || x.opening ? String(x.opening) : "",
       newSrcAcct: x.acct ? x.acct.slice(-4) : "", newSrcField: kind.key === "manual" ? "amt" : (x.acct ? "amt" : "acct"),
       newSrcRole: this.state.roles[key || ""] || "savings"
     });

@@ -10,7 +10,7 @@ export type ToggleModel = { justify: string; track: string };
 export type ChipModel = { label: string; tap: () => void; bg: string; fg: string; border: string; weight?: CSSProperties["fontWeight"]; check?: string; dot?: string };
 export type SegmentModel = { label: string; tap: () => void; bg: string; fg: string; shadow?: string };
 export type KeyModel = { label: string; tap: () => void; fg: string; isBack?: boolean };
-export type TransactionCardModel = { title: string; tap: () => void; icon: string; amount: string; fg: string; isUncat: boolean; chip: string; meta?: string };
+export type TransactionCardModel = { title: string; tap: () => void; icon: string; amount: string; fg: string; isUncat: boolean; chip: string; meta?: string; accent?: string; iconBg?: string; iconFg?: string };
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -267,8 +267,8 @@ export const BalEye = ({ v }: { v: Pick<V, "toggleBal" | "balEyeLabel" | "balEye
 );
 
 /** Labelled name + "+977" mobile fields, as Register and Profile both use them. */
-export function PersonFields({ name, onName, nameBorder, namePh, phone, onPhone, phoneBorder, hint, hintFg, labels, editingLabel = "Editing" }: {
-  name: string; onName: import("react").ChangeEventHandler<HTMLInputElement>; nameBorder: string; namePh?: string; phone: string; onPhone: import("react").ChangeEventHandler<HTMLInputElement>;
+export function PersonFields({ name, onName, nameBorder, phone, onPhone, phoneBorder, hint, hintFg, labels, editingLabel = "Editing" }: {
+  name: string; onName: import("react").ChangeEventHandler<HTMLInputElement>; nameBorder: string; phone: string; onPhone: import("react").ChangeEventHandler<HTMLInputElement>;
   phoneBorder: string; hint: string; hintFg: string; labels: { name: string; phone: string }; editingLabel?: string;
 }) {
   const [focused, setFocused] = useState<"name" | "phone" | null>(null);
@@ -277,15 +277,15 @@ export function PersonFields({ name, onName, nameBorder, namePh, phone, onPhone,
     <div className="flex flex-col gap-5">
       <label className="flex flex-col gap-2">
         <span className="flex min-h-[24px] items-center justify-between gap-2"><span className={LABEL}>{labels.name}</span>{focused === "name" && editing}</span>
-        <input value={name} onChange={onName} placeholder={namePh} autoComplete="name" aria-label={labels.name} onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
-          className={cx("rounded-2xl border-2 px-4 py-4 text-[16px] text-ink outline-none placeholder:text-ink-3", focused === "name" ? "bg-tint-r" : "bg-surface")} style={{ borderColor: focused === "name" ? "var(--action)" : nameBorder }} />
+        <input value={name} onChange={onName} autoComplete="name" aria-label={labels.name} onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
+          className={cx("rounded-2xl border-2 px-4 py-4 text-[16px] text-ink outline-none", focused === "name" ? "bg-tint-r" : "bg-surface")} style={{ borderColor: focused === "name" ? "var(--action)" : nameBorder }} />
       </label>
       <label className="flex flex-col gap-2">
         <span className="flex min-h-[24px] items-center justify-between gap-2"><span className={LABEL}>{labels.phone}</span>{focused === "phone" && editing}</span>
         <div className={cx("flex items-stretch overflow-hidden rounded-2xl border-2", focused === "phone" ? "bg-tint-r" : "bg-surface")} style={{ borderColor: focused === "phone" ? "var(--action)" : phoneBorder }}>
           <span className="flex flex-none items-center border-r border-line pr-3 pl-4 text-[16px] font-semibold text-ink-2">+977</span>
-          <input value={phone} onChange={onPhone} inputMode="numeric" autoComplete="tel-national" aria-label={labels.phone} onFocus={() => setFocused("phone")} onBlur={() => setFocused(null)} placeholder="98XXXXXXXX"
-            className="min-w-0 flex-1 bg-transparent px-4 py-4 text-[16px] tracking-[.02em] text-ink outline-none placeholder:text-ink-3" />
+          <input value={phone} onChange={onPhone} inputMode="numeric" autoComplete="tel-national" aria-label={labels.phone} onFocus={() => setFocused("phone")} onBlur={() => setFocused(null)}
+            className="min-w-0 flex-1 bg-transparent px-4 py-4 text-[16px] tracking-[.02em] text-ink outline-none" />
         </div>
         <span className="text-[13px] leading-normal" style={{ color: hintFg }}>{hint}</span>
       </label>
@@ -304,9 +304,11 @@ export const Hero = ({ value, fs = "52px", fg, rs = "text-[22px]" }: { value: Re
 
 /** One transaction as a card: kind-tinted icon, title over kind and account, amount over category. `r` comes from rowLook(). */
 export function TxCard({ r }: { r: TransactionCardModel }) {
-  return <button type="button" onClick={r.tap} className="press flex min-h-[72px] w-full items-center gap-3 border-b border-line py-3 text-left">
-    <span className="flex size-[38px] flex-none items-center justify-center rounded-xl bg-surface-2 text-ink-2"><Icon d={r.icon} size={19} sw={1.8} /></span>
-    <span className="flex min-w-0 flex-1 flex-col gap-1"><strong className="truncate text-[15px] font-semibold leading-snug">{r.title}</strong><span className={cx("text-[13px] leading-snug",r.isUncat ? "text-uncat" : "text-ink-3")}>{r.chip} · {r.meta}</span></span>
+  const accent = r.accent || (r.isUncat ? "var(--uncat)" : "var(--line)");
+  return <button type="button" onClick={r.tap} className="press relative flex min-h-[72px] w-full items-center gap-3 border-b border-line py-3 pl-3 text-left">
+    <span className="absolute inset-y-[12px] left-0 w-[3px] rounded-full" style={{ background: accent }} />
+    <span className="flex size-[38px] flex-none items-center justify-center rounded-xl" style={{ background: r.iconBg || (r.isUncat ? "var(--tintU)" : "var(--surface2)"), color: r.iconFg || (r.isUncat ? "var(--uncat)" : "var(--ink2)") }}><Icon d={r.icon} size={19} sw={1.8} /></span>
+    <span className="flex min-w-0 flex-1 flex-col gap-1"><strong className="truncate text-[15px] font-semibold leading-snug">{r.title}</strong><span className={cx("text-[13px] leading-snug",r.isUncat ? "font-semibold text-uncat" : "text-ink-3")}>{r.chip} · {r.meta}</span></span>
     <span className="flex-none whitespace-nowrap font-display text-[20px] font-semibold tabular-nums" style={{color:r.fg}}>{r.amount}</span>
   </button>;
 }

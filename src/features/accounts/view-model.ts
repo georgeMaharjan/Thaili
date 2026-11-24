@@ -1,4 +1,4 @@
-import { SRC_KINDS, isManualSrc, needsAcctNumber, tailName } from "../../application/config";
+import { ACCOUNT_COLORS, SRC_KINDS, isManualSrc, needsAcctNumber, tailName } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import { openNotificationAccess } from "../../lib/device";
 import { balRs, fmt, rs } from "../../lib/format";
@@ -71,16 +71,18 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
       label: k.label,
       bg: s.newSrcKind === k.key ? "var(--navy)" : "transparent",
       fg: s.newSrcKind === k.key ? "var(--canvas)" : "var(--ink2)",
-      tap: () => app.patch({ newSrcKind: k.key, newSrcName: k.names[0], newSrcField: k.key === "manual" ? "amt" : s.newSrcField })
+      tap: () => app.patch({ newSrcKind: k.key, newSrcName: "", newSrcColor: k.dot, newSrcField: k.key === "manual" ? "amt" : s.newSrcField })
     })),
     newSrcPickLabel: newKind.key === "manual" ? "Which one" : "Which " + newKind.label.toLowerCase(),
     newSrcUsesPicker: newKind.key !== "manual",
-    newSrcName: s.newSrcName,
-    newSrcNameOptions: newKind.names.includes(s.newSrcName) ? newKind.names : newKind.names.concat(s.newSrcName),
+    newSrcName: s.newSrcName || (s.editSrcKey ? "Account" : "New account"),
+    newSrcColor: s.newSrcColor || newKind.dot,
+    newSrcColors: ACCOUNT_COLORS.map(color => ({ color, selected: (s.newSrcColor || newKind.dot) === color, tap: () => app.patch({ newSrcColor: color }) })),
+    newSrcNameOptions: newKind.names,
     pickSrcName: (event: { target: { value: string } }) => {
       if (newKind.names.includes(event.target.value)) app.patch({ newSrcName: event.target.value });
     },
-    newSrcNameChips: (newKind.names.indexOf(s.newSrcName) > -1 ? newKind.names : newKind.names.concat([s.newSrcName])).map(n => chip(n, s.newSrcName === n, () => app.patch({ newSrcName: n }))),
+    newSrcNameChips: newKind.names.map(n => chip(n, s.newSrcName === n, () => app.patch({ newSrcName: n }))),
     newSrcRoles: [["savings", "Saving"], ["spending", "Spending"]].map(r => ({
       label: r[1],
       bg: s.newSrcRole === r[0] ? "var(--navy)" : "transparent",
@@ -93,10 +95,10 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
         ? "Thaili watches " + s.newSrcName + " notifications and matches its alerts to this account."
         : "Thaili reads recognized " + s.newSrcName + " SMS and transaction notifications from its detected app. Set the last four digits to match your account. SMS sender names and alert wording vary by bank.",
     newSrcCta: !newSrcAmtValid ? "Type the opening balance" : !acctOk ? "Add the last 4 digits" : s.editSrcKey ? "Save " + s.newSrcName : "Add " + s.newSrcName,
-    newSrcCtaBg: newSrcAmtValid && acctOk ? "var(--action)" : "var(--surface2)",
-    newSrcCtaFg: newSrcAmtValid && acctOk ? "var(--onAction)" : "var(--ink3)",
+    newSrcCtaBg: s.newSrcName.trim() && newSrcAmtValid && acctOk ? "var(--action)" : "var(--surface2)",
+    newSrcCtaFg: s.newSrcName.trim() && newSrcAmtValid && acctOk ? "var(--onAction)" : "var(--ink3)",
     newSrcCreate: () => {
-      if (!newSrcAmtValid || !acctOk) return;
+      if (!s.newSrcName.trim() || !newSrcAmtValid || !acctOk) return;
       const prevS = s.sources, prevR = s.roles;
       // A wallet number Thaili detected itself is kept; it is never asked for.
       const acct = needAcct ? s.newSrcAcct : newKind.key === "wallet" ? s.sources.find(x => x.key === s.editSrcKey)?.acct ?? null : null;
@@ -106,7 +108,7 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
         app.patch({
           sources: prevS.map(x => x.key === s.editSrcKey
             ? Object.assign({}, x, {
-              name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: newKind.dot, opening: newSrcAmtNum,
+              name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: s.newSrcColor || newKind.dot, opening: newSrcAmtNum,
               openedAt: !x.openedAt || newSrcAmtNum !== x.opening ? new Date().toISOString() : x.openedAt
             }) : x),
           roles: Object.assign({}, prevR, { [s.editSrcKey]: s.newSrcRole }),
@@ -117,7 +119,7 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
       }
       const key = "src" + Date.now();
       app.patch({
-        sources: prevS.concat([{ key: key, name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: newKind.dot, opening: newSrcAmtNum, openedAt: new Date().toISOString() }]),
+        sources: prevS.concat([{ key: key, name: shown, base: s.newSrcName, short: s.newSrcName, acct: acct, type: newKind.type, dot: s.newSrcColor || newKind.dot, opening: newSrcAmtNum, openedAt: new Date().toISOString() }]),
         roles: Object.assign({}, prevR, { [key]: s.newSrcRole }),
         screen: back, newSrcAmt: "", newSrcAcct: ""
       });

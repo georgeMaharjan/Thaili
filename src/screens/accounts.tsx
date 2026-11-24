@@ -57,7 +57,7 @@ export function Accounts({ v }: { v: V }) {
             <div className="rounded-2xl border border-line bg-surface px-4">
               {grp.rows.map((a, i: number) => (
                 <button key={i} onClick={a.tap} className={cx("flex min-h-[64px] w-full items-center gap-3 text-left", i > 0 && "border-t border-line")}>
-                  <Tile d={a.icon} tint={grp.tint} fg={grp.fg} size={19} />
+                  <Tile d={a.icon} tint={a.dot + "20"} fg={a.dot} size={19} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[15px] font-medium leading-[1.3]">{a.name}</span>
                     <span className="truncate text-[13px] leading-[1.35] text-ink-3">{a.meta}</span>
@@ -112,7 +112,7 @@ export function SourceDetail({ v }: { v: V }) {
         </div>
         <div className="flex min-w-0 items-center rounded-full border border-line pr-3">
           <IconBtn d={P.calendar} label="Choose custom dates" onClick={v.calShow} size={17} />
-          <Picker placeholder="Date range" value={v.txRange} onChange={v.txRangeSet} options={v.dateChips.map((c, i: number) => ({ value: ["today", "week", "month", "custom"][i], label: c.label }))} className="min-h-[44px] text-[14px]" />
+          <Picker value={v.txRange} onChange={v.txRangeSet} options={v.dateChips.map((c, i: number) => ({ value: ["today", "week", "month", "custom"][i], label: c.label }))} className="min-h-[44px] text-[14px]" />
         </div>
         <div>
           {v.srcRows.map((r, i: number) => "isHeader" in r
@@ -139,11 +139,11 @@ export function SrcNew({ v }: { v: V }) {
           <p className="font-display text-[20px] font-bold leading-[1.3]">{v.newSrcName}</p>
           <p className="text-[13px] leading-[1.5] text-ink-2">{v.numericEditHint}</p>
           {v.srcNeedsAcct && <NumericField value={v.newSrcAccountInput} onChange={v.changeSourceAccount}
-            label={v.acctFieldLabel} hint={v.accountInputHint} kind="digits" maxDigits={4} prefix="••" placeholder="0000"
+            label={v.acctFieldLabel} hint={v.accountInputHint} kind="digits" maxDigits={4} prefix="••"
             autoFocus={v.newSrcInitialField === "acct"} onFocus={v.pickAcctField} onNext={focusAmount} nextLabel={v.accountNextLabel}
             editingLabel={v.numericEditingLabel} clearLabel={v.clearAccountLabel} errors={v.accountInputErrors} />}
           <NumericField inputRef={amountInput} value={v.newSrcAmountInput} onChange={v.changeSourceAmount}
-            label={v.balanceFieldLabel} hint={v.amountInputHint} kind="amount" maxDigits={9} prefix="Rs" placeholder="0.00"
+            label={v.balanceFieldLabel} hint={v.amountInputHint} kind="amount" maxDigits={9} prefix="Rs"
             autoFocus={v.newSrcInitialField === "amt"} onFocus={v.pickAmtField}
             editingLabel={v.numericEditingLabel} clearLabel={v.clearAmountLabel} errors={v.amountInputErrors} />
           <p className="text-pretty text-[12px] leading-[1.5] text-ink-3">{v.newSrcOpeningNote}</p>
@@ -155,10 +155,18 @@ export function SrcNew({ v }: { v: V }) {
           <div className="px-5 pt-2">
             <select aria-label={v.newSrcPickLabel} value={v.newSrcName} onChange={v.pickSrcName}
               className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-[14px] text-ink">
+              <option value="">Choose a bank or wallet</option>
               {v.newSrcNameOptions.map(name => <option key={name} value={name}>{name}</option>)}
             </select>
           </div>
         ) : <Chips items={v.newSrcNameChips} />}
+        <div className={cx(heading, "pt-4")}>Color</div>
+        <div className="flex gap-3 px-5 pt-2">
+          {v.newSrcColors.map(({ color, selected, tap }) => <button key={color} type="button" onClick={tap} aria-label={"Choose color " + color} aria-pressed={selected}
+            className="flex size-[36px] items-center justify-center rounded-full" style={{ background: color }}>
+            {selected && <Icon d="M5 12.5 9.5 17 19 7.5" size={18} className="text-white" sw={2.5} />}
+          </button>)}
+        </div>
         <div className={cx(heading, "pt-4")}>What is it for</div>
         <div className="px-5 pt-2"><Seg items={v.newSrcRoles} itemClass={seg} /></div>
         <div className="text-pretty px-5 pt-3 pb-2 text-[13px] leading-[1.6] text-ink-2">{v.newSrcFeedNote}</div>

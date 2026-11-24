@@ -6,8 +6,8 @@ export function Txns({ v }: { v: V }) {
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
     <header className="flex flex-none flex-col gap-3 px-5 pt-4 pb-3">
       <div className="flex items-center justify-between"><h1 className="font-display text-[28px] font-bold">{v.t.txns}</h1><IconBtn d={P.refresh} label="Refresh transactions" onClick={v.refreshTransactions} className="text-ink-3" /></div>
-      <label className="flex min-h-[48px] items-center gap-3 rounded-2xl bg-surface-2 pl-4 pr-1"><Icon d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14ZM20 20l-4-4" size={18} className="text-ink-3" /><input value={v.txQuery} onChange={v.txQueryType} placeholder="Search transactions" aria-label="Search transactions" className="min-w-0 flex-1 bg-transparent py-3 text-[16px] outline-none placeholder:text-ink-3" />{v.txQuery && <IconBtn d={P.close} label="Clear search" onClick={v.txQueryClear} size={18} />}</label>
-      <div className="flex items-center gap-3"><div className="flex min-w-0 flex-1 items-center rounded-full border border-line pr-3"><IconBtn d={P.calendar} label="Choose custom dates" onClick={v.calShow} size={17} /><Picker placeholder="Date range" value={v.txRange} onChange={v.txRangeSet} options={v.dateChips.map((c,i: number) => ({ value: ["today","week","month","custom"][i], label: c.label }))} className="min-h-[44px] text-[14px]" /></div><button onClick={v.filtersShow} className={cx("press flex min-h-[44px] items-center gap-2 rounded-full px-4 text-[14px] font-semibold",v.txFilterCount ? "bg-navy text-canvas" : "border border-line")}><Icon d="M4 7h16M7 12h10M10 17h4" size={18} />Filters{v.txFilterCount > 0 && <span>{v.txFilterCount}</span>}</button></div>
+      <label className="flex min-h-[48px] items-center gap-3 rounded-2xl bg-surface-2 pl-4 pr-1"><Icon d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14ZM20 20l-4-4" size={18} className="text-ink-3" /><input value={v.txQuery} onChange={v.txQueryType} aria-label="Search transactions" className="min-w-0 flex-1 bg-transparent py-3 text-[16px] outline-none" />{v.txQuery && <IconBtn d={P.close} label="Clear search" onClick={v.txQueryClear} size={18} />}</label>
+      <div className="flex items-center gap-3"><div className="flex min-w-0 flex-1 items-center rounded-full border border-line pr-3"><IconBtn d={P.calendar} label="Choose custom dates" onClick={v.calShow} size={17} /><Picker value={v.txRange} onChange={v.txRangeSet} options={v.dateChips.map((c,i: number) => ({ value: ["today","week","month","custom"][i], label: c.label }))} className="min-h-[44px] text-[14px]" /></div><button onClick={v.filtersShow} className={cx("press flex min-h-[44px] items-center gap-2 rounded-full px-4 text-[14px] font-semibold",v.txFilterCount ? "bg-navy text-canvas" : "border border-line")}><Icon d="M4 7h16M7 12h10M10 17h4" size={18} />Filters{v.txFilterCount > 0 && <span>{v.txFilterCount}</span>}</button></div>
       {v.txFilterSummary && <button onClick={v.filtersShow} className="text-left text-[13px] text-ink-2">{v.txFilterSummary}</button>}
     </header>
     <Pull onRefresh={v.refreshTransactions} className="min-h-0 flex-1 px-5 pb-[48px]">
@@ -46,7 +46,7 @@ export function Detail({ v }: { v: V }) {
     </div>
     {v.detailShowCats && <Sheet title={v.detailCatsTitle} onClose={v.detailEditClose}><div className="flex flex-wrap gap-2">{v.detailCats.map((c,i: number) => <Chip key={i} c={c} className="min-h-[44px] px-4 py-2 text-[15px]" />)}</div><p className="text-[13px] text-ink-3">Your choice is saved when you select a category.</p></Sheet>}
     {v.typeEditOpen && <Sheet title="Transaction type" onClose={v.typeEditClose}><div className="flex flex-col">{v.typeOptions.map(o => <button key={o.type} onClick={o.tap} className="flex min-h-[52px] items-center justify-between border-b border-line text-left text-[15px] last:border-0">{o.type}<span className="text-pos">{o.selected ? "✓" : ""}</span></button>)}</div><p className="text-[13px] text-ink-3">This label does not change the account balance movement.</p></Sheet>}
-    {v.remarkOpen && <Sheet title={v.remarkTitle} onClose={v.remarkCancel}><label className="field">Note<textarea value={v.remarkDraft} onChange={v.remarkType} maxLength={80} rows={3} placeholder="What was this for?" /></label><p className="text-[13px] text-ink-3">{v.remarkCount} · Original message stays unchanged.</p><Btn onClick={v.remarkSave}>Save note</Btn></Sheet>}
+    {v.remarkOpen && <Sheet title={v.remarkTitle} onClose={v.remarkCancel}><label className="field">Note<textarea value={v.remarkDraft} onChange={v.remarkType} maxLength={80} rows={3} /></label><p className="text-[13px] text-ink-3">{v.remarkCount} · Original message stays unchanged.</p><Btn onClick={v.remarkSave}>Save note</Btn></Sheet>}
     {v.promptOpen && <Sheet title="Remember this merchant?" onClose={v.promptNo}><p className="text-[15px] leading-relaxed text-ink-2">{v.promptLine}</p><Btn onClick={v.promptYes}>Yes, file it for me</Btn><Btn kind="secondary" onClick={v.promptNo}>Just this time</Btn></Sheet>}
   </div>;
 }
@@ -129,9 +129,9 @@ function RuleSheet({ v }: { v: V }) {
       <div className="flex flex-col gap-2">
         <span className="text-[13px] font-semibold text-ink-3">When the bank message contains</span>
         <div className="flex min-h-[52px] items-center gap-1 rounded-[16px] border-[1.5px] bg-surface pr-1 pl-4" style={{ borderColor: v.ruleKwBorder }}>
-          <input autoFocus value={v.ruleKw} onChange={v.ruleKwType} placeholder="Word from the message" autoComplete="off" spellCheck={false}
+          <input autoFocus value={v.ruleKw} onChange={v.ruleKwType} autoComplete="off" spellCheck={false}
             onKeyDown={(e) => { if (e.key === "Enter") v.ruleSave(); if (e.key === "Escape") v.ruleClose(); }}
-            className="min-w-0 flex-1 bg-transparent py-3 font-mono text-[16px] tracking-[.03em] text-ink outline-none placeholder:text-ink-3" />
+            className="min-w-0 flex-1 bg-transparent py-3 font-mono text-[16px] tracking-[.03em] text-ink outline-none" />
           {v.ruleKw && <IconBtn d={P.close} label="Clear" onClick={v.ruleKwClear} size={18} sw={2.2} className="text-ink-3" />}
         </div>
         {v.ruleMsg

@@ -95,7 +95,7 @@ export function insightsViewModel(app: Pick<AppController, "patch" | "go" | "bac
       ? "Covered — " + balRs(savingsPot) + " in savings, " + rs(savingsPot - baseDraft) + " above it for goals"
       : rs(baseDraft - savingsPot) + " to go — " + balRs(savingsPot) + " in savings today. Goals wait until it's reached.",
     baseStatusFg: savingsPot >= baseDraft ? "var(--pos)" : "var(--warnInk)",
-    baseAmtLabel: s.baseAmt ? fmtTyped(s.baseAmt) : "0",
+    baseAmtLabel: s.baseAmt ? fmtTyped(s.baseAmt) : "",
     baseAmtFg: s.baseAmt ? "var(--ink)" : "var(--barDim)",
     baseKeys: keypad("baseAmt", s.baseFresh ? "" : s.baseAmt, 9, true).map(k => Object.assign({}, k, { tap: () => { k.tap(); app.patch({ baseFresh: false }); } })),
     baseChips: essMonthly ? ([[3, np ? "३ महिना" : "3 months"], [6, np ? "६ महिना" : "6 months"]] as const).map(([m, label]) =>

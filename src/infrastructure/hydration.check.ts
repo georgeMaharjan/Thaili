@@ -12,6 +12,8 @@ const migrated = decodeLedgerRecord(record)!;
 assert.equal(migrated.snapshot.sources[0].type, "Manual entry"); assert.deepEqual(migrated.snapshot.sources[0].packages, []);
 assert.deepEqual(migrated.snapshot.tx[0].capture, []); assert.equal(accountBalances(migrated.snapshot.sources, migrated.snapshot.tx).cash, 900);
 assert.equal(migrated.deleted.tx.removed, 2); assert.equal(migrated.uncertain, true); assert.equal(migrated.owner, "fixture");
+assert.deepEqual(decodePreferences({ customCats: [{ key: "c1", label: "Cafe", color: "#3975B8", icon: "food" }] }).customCats,
+  [{ key: "c1", label: "Cafe", color: "#3975B8", icon: "food" }]);
 assert.equal("screen" in migrated.snapshot.prefs, false); assert.equal(decodeLedgerRecord(null), null);
 assert.throws(() => decodeLedgerRecord({ ...record, version: 2 }), /Unsupported/);
 assert.throws(() => decodePreferences({ picked: "food" }), /Invalid/);

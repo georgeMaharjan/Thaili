@@ -1,4 +1,4 @@
-import { CASH, CATEGORY_COLORS, categoryColor, isManualSrc, needsAcctNumber, now } from "../../application/config";
+import { CASH, CATEGORY_COLORS, CATEGORY_ICON_OPTIONS, categoryColor, categoryIcon, categoryIconKey, isManualSrc, needsAcctNumber, now } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import type { Category } from "../../domain/models";
 import { isDevice, openAppSettings, openNotificationAccess, readSms, requestSms } from "../../lib/device";
@@ -55,7 +55,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
     detectManual: () => {
       if (detectAccounts) {
         app.cancelDetection();
-        app.go("src-new", { srcNewFrom: "accounts", editSrcKey: null, newSrcAmt: "", newSrcAcct: "" });
+        app.go("src-new", { srcNewFrom: "accounts", editSrcKey: null, newSrcKind: "bank", newSrcName: "", newSrcColor: "", newSrcAmt: "", newSrcAcct: "" });
       } else {
         app.go("source", { sources: [CASH], roles: { cash: "spending" } });
       }
@@ -105,7 +105,7 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       if (s.catsMode === "edit") { app.go(s.catsFrom || "settings"); app.flash("Categories saved"); return; }
       if (s.picked.length < 3) return;
       // Setup's last step: pick the savings baseline, 3 months of essentials suggested.
-      app.go("baseline", { baseSetup: true, baseFrom: "cats", baseAmt: String(essMonthly ? baseFor(3) : s.savingsGoal), baseFresh: true });
+      app.go("baseline", { baseSetup: true, baseFrom: "cats", baseAmt: essMonthly ? String(baseFor(3)) : "", baseFresh: true });
     },
     toPermission: () => app.startSetup(),
     restoreLabel: np ? "ब्याकअपबाट फिर्ता ल्याउनुहोस्" : "Restore from a backup",
@@ -216,8 +216,10 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
         ? s.customCats.map(x => x.key === c.key ? { ...x, ...change } : x)
         : s.customCats.concat([{ ...c, ...change }]);
       const color = categoryColor(c);
+      const iconKey = categoryIconKey(c);
       return {
         key: c.key + "|" + c.label, label: c.label,
+        icon: categoryIcon(c), icons: CATEGORY_ICON_OPTIONS.map(option => ({ ...option, selected: iconKey === option.key, tap: () => app.patch({ customCats: save({ icon: option.key }) }) })),
         color, colors: CATEGORY_COLORS.map(option => ({ color: option, selected: color === option, tap: () => app.patch({ customCats: save({ color: option }) }) })),
         // Pick and essential/optional only apply to money-out categories.
         on: c.in ? null : s.picked.includes(c.key),
@@ -260,7 +262,6 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       const ph = digits10(s.regPhone), phoneOk = validPhone(ph), nameOk = s.regName.trim().length >= 2, ready = phoneOk && nameOk;
       return {
         regLabels: np ? { name: "नाम", phone: "मोबाइल नम्बर" } : { name: "Name", phone: "Mobile number" },
-        regNamePh: np ? "तपाईंको पूरा नाम" : "Your full name",
         regCanBack: s.regThen === "permission",
         regBack: () => app.go("welcome"),
         regStepLabel: np ? "तपाईंको खाता" : "Your account",

@@ -22,6 +22,8 @@ function categories(value: unknown): Category[] {
     return {
       key: string(c.key, "category key"), label: string(c.label, "category label"),
       ...(c.limit === undefined ? {} : { limit: number(c.limit, "category limit") }),
+      ...(c.color === undefined ? {} : { color: string(c.color, "category color") }),
+      ...(c.icon === undefined ? {} : { icon: string(c.icon, "category icon") }),
       ...(c.in === true ? { in: true } : {}), ...(c.gone === true ? { gone: true } : {})
     };
   });

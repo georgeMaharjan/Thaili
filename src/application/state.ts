@@ -32,7 +32,7 @@ export type AppState = {
   smsSince: number | null; notificationSince: number | null; captureStartAt: number | null; theme: "light" | "dark"; lang: "EN" | "NP";
   txFilter: string; savingsGoal: number; splitMode: SplitMode; customCats: Category[]; newCatName: string; newCatIn: boolean;
   rulePrompt: { kw: string | null; cat: string; label: string } | null;
-  newSrcKind: string; newSrcName: string; newSrcAmt: string; newSrcRole: string;
+  newSrcKind: string; newSrcName: string; newSrcColor: string; newSrcAmt: string; newSrcRole: string;
   newSrcAcct: string; newSrcField: string;
   detState: "done" | "scanning" | "reading" | "unsupported" | "error"; detFrom: string;
   detOn: Record<string, boolean>; detFound: MoneyApp[]; moneyApps: MoneyApp[];
@@ -54,24 +54,23 @@ export type StateWriter = (patch: StatePatch | ((state: AppState) => StatePatch)
 
 import { calendarAt } from "../lib/calendar";
 import { DENSITY } from "../lib/format";
-import { newId, SEED_RULES } from "./config";
 
 export function initialState(): AppState {
   return {
     calendarDay: new Date().toDateString(), loaded: false, splash: true, screen: "welcome", tx: [], setupComplete: false, storageStatus: { kind: "local", pending: false }, resetDataOpen: false,
     expenseGoalMode: "amount", expenseGoalValue: 0, expenseGoalSet: false, expenseGoalOpen: false, expenseGoalDraftMode: "amount", expenseGoalDraft: "",
-    picked: ["food", "transport", "grocery", "bills", "shopping", "health"],
-    saveTarget: 10000, ess: {}, stackIdx: 0, detailId: null, from: "txns", srcFrom: "insights",
+    picked: [],
+    saveTarget: 0, ess: {}, stackIdx: 0, detailId: null, from: "txns", srcFrom: "insights",
     rawOpen: false, editing: false, deleting: false,
-    range: "Monthly", insCatsAll: false, ruleEdit: null, addEntry: "", addCat: "food", addSrc: "cash", addDir: "debit", addNote: "", addError: "", discardAdd: false,
+    range: "Monthly", insCatsAll: false, ruleEdit: null, addEntry: "", addCat: "", addSrc: "", addDir: "debit", addNote: "", addError: "", discardAdd: false,
     srcKey: null, toast: null, undoState: null, appVersion: "", update: null, perms: [false, false], // real device state; see refreshPerms()
     appLock: false, locked: false, unlockBusy: false, unlockError: null, notifMode: "On",
     detTails: {}, scanTx: [], scanResult: null, scanOrphans: 0, smsSince: null, notificationSince: null, captureStartAt: null,
     theme: "light", lang: "EN", txFilter: "all",
-    savingsGoal: 200000, splitMode: "Queue",
-    customCats: [], newCatName: "", newCatIn: false, rules: SEED_RULES.map(r => Object.assign({}, r, { id: newId() })), rulePrompt: null,
+    savingsGoal: 0, splitMode: "Queue",
+    customCats: [], newCatName: "", newCatIn: false, rules: [], rulePrompt: null,
     sources: [],
-    newSrcKind: "bank", newSrcName: "Nabil Bank", newSrcAmt: "", newSrcRole: "spending",
+    newSrcKind: "bank", newSrcName: "", newSrcColor: "", newSrcAmt: "", newSrcRole: "spending",
     newSrcAcct: "", newSrcField: "acct",
     detState: "done", detFrom: "setup", detOn: {}, detFound: [], moneyApps: [],
     smsBanks: [], syncRaw: true,

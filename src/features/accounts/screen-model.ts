@@ -40,6 +40,8 @@ export type AccountsScreenModel = Pick<AppViewModel,
   "newSrcFeedNote" |
   "newSrcKinds" |
   "newSrcNameChips" |
+  "newSrcColors" |
+  "newSrcColor" |
   "newSrcUsesPicker" |
   "newSrcName" |
   "newSrcNameOptions" |
