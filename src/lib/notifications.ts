@@ -29,6 +29,7 @@ export async function syncDailyReviewReminder(on: boolean, ask = false, lang: "E
     title: lang === "NP" ? "आजको खर्च समीक्षा" : "Daily money check-in",
     body: lang === "NP" ? "विश्लेषण हेर्नुहोस् र वर्गीकरण नभएका कारोबार मिलाउनुहोस्।" : "Review your insights and sort uncategorized transactions.",
     schedule: { on: { hour: 9, minute: 0 }, repeats: true },
+    isExactNotification: false,
     extra: { open: "daily-review" }
   }] });
 }
