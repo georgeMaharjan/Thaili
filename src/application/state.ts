@@ -36,7 +36,8 @@ export type AppState = {
   newSrcAcct: string; newSrcField: string;
   detState: "done" | "scanning" | "reading" | "unsupported" | "error"; detFrom: string;
   detOn: Record<string, boolean>; detFound: MoneyApp[]; moneyApps: MoneyApp[];
-  smsBanks: string[];
+  smsBanks: string[]; smsSenders: Record<string, string[]>;
+  smsSenderCandidates: string[]; smsSenderScan: "idle" | "loading" | "ready" | "error";
   syncRaw: boolean; // Legacy local raw-text retention preference; no sync controls.
   goalName: string; goalAmt: string; goalPos: string; goalError: string; discardGoal: boolean;
   catsMode: string; catsFrom: Screen; goalsFrom: Screen; settingsFrom: Screen;
@@ -73,7 +74,7 @@ export function initialState(): AppState {
     newSrcKind: "bank", newSrcName: "", newSrcColor: "", newSrcAmt: "", newSrcRole: "spending",
     newSrcAcct: "", newSrcField: "acct",
     detState: "done", detFrom: "setup", detOn: {}, detFound: [], moneyApps: [],
-    smsBanks: [], syncRaw: true,
+    smsBanks: [], smsSenders: {}, smsSenderCandidates: [], smsSenderScan: "idle", syncRaw: true,
     roles: {},
     goals: [],
     goalName: "", goalAmt: "", goalPos: "bottom", goalError: "", discardGoal: false,

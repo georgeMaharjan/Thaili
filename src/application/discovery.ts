@@ -3,7 +3,7 @@ import type { Account } from "../domain/models.ts";
 import type { Sms } from "../lib/device.ts";
 import { INSTITUTIONS } from "../lib/institutions.ts";
 import { appendMoneyAccounts, detectMoneyApps, rememberMoneyPackages, sourceForMoneyApp, type InstalledApp, type MoneyApp } from "../lib/money-apps.ts";
-import { bankOf, tailsByBank } from "../lib/sms.ts";
+import { bankOf } from "../lib/sms.ts";
 import type { AppState, StateWriter } from "./state.ts";
 export type DiscoveryPorts = {
   snapshot(): AppState; commit: StateWriter;
@@ -57,14 +57,12 @@ export class MoneyAppDiscovery {
     if (!selected.length) return;
     const generation = this.generation;
     this.confirming = true;
-    this.ports.commit({ detState: "reading" });
     try {
-      const messages = await this.ports.history(this.ports.now() - 90 * 86400000, selected.map(app => app.key)).catch(() => []);
       if (this.disposed || generation !== this.generation || this.ports.snapshot().screen !== "detect") return;
-      const tails = tailsByBank(messages);
+      const tails: Record<string, string> = {};
       const made: Account[] = selected.map(app => {
         const kind = SRC_KINDS.find(kind => kind.key === app.kind)!;
-        return { key: app.key, base: app.base, name: tailName(app.base, tails[app.key] || null), short: app.base,
+        return { key: app.key, base: app.base, name: tailName(app.base, null), short: app.base,
           packages: app.packages, type: kind.type, dot: kind.dot, opening: 0, acct: tails[app.key] || null };
       });
       if (state.detFrom === "accounts") {

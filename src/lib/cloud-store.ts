@@ -6,6 +6,11 @@ import { decodePouch, decodePreferences } from "../infrastructure/hydration.ts";
 import type { CloudDriver, Deletions, Pouch } from "./local-ledger";
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const cloudPrefs = (prefs: Pouch["prefs"]) => {
+  const shareable = { ...prefs };
+  delete shareable.smsSenders;
+  return shareable;
+};
 function must<T>(res: { data: T; error: unknown }): T {
   if (res.error) throw res.error;
   return res.data;
@@ -46,6 +51,7 @@ export function createCloudDriver(db: SupabaseClient<Database>, ensureSession: (
       db.from("profiles").select("name,phone,created_at").maybeSingle().then(must),
     ]);
     const prefs = decodePreferences(settings?.prefs || {});
+    delete prefs.smsSenders; // Exact SMS sender choices stay on this phone.
     // Cloud-only versions did not save setup progress. Their accounts imply completed setup.
     if (sources.length && prefs.setupComplete === undefined) prefs.setupComplete = true;
     const result = { owner, pouch: decodePouch({
@@ -99,7 +105,8 @@ export function createCloudDriver(db: SupabaseClient<Database>, ensureSession: (
       const u = next.user;
       must(await db.from("profiles").upsert({ name: u.name, phone: u.phone, created_at: u.createdAt, updated_at: new Date().toISOString() }));
     }
-    if (full || !same(next.prefs, before.prefs)) must(await db.from("settings").upsert({ prefs: next.prefs, updated_at: new Date().toISOString() }));
+    const nextPrefs = cloudPrefs(next.prefs), beforePrefs = cloudPrefs(before.prefs);
+    if (full || !same(nextPrefs, beforePrefs)) must(await db.from("settings").upsert({ prefs: nextPrefs, updated_at: new Date().toISOString() }));
   }
 
   return { read: cloudRead, write: cloudWrite };

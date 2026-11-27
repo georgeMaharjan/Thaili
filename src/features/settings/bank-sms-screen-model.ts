@@ -7,5 +7,6 @@ export type BankSmsScreenModel = Pick<AppViewModel,
   "smsRecoverTitle" | "smsRecoverLabel" | "smsRecoverHint" | "smsCanRecover" | "recoverBankSms" |
   "smsAccessTitle" | "smsBanksTitle" | "smsAccessNote" | "smsBankRows" |
   "smsAccessIntro" | "smsAccessDetailsLabel" | "smsBankCount" |
+  "smsSenderRefreshLabel" | "smsSenderChooseLabel" | "smsSenderScanLabel" | "smsSenderRefreshing" | "smsSenderCanScan" | "refreshSmsSenders" |
   "smsEmptyTitle" | "smsEmptyNote" | "smsAccountsLabel" | "openSmsAccounts"
 >;

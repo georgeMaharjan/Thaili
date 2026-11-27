@@ -4,10 +4,10 @@ import { applyImportResult, importTransactions } from "../lib/import-transaction
 import { allMoneyPackages, appendMoneyAccounts, type MoneyApp } from "../lib/money-apps.ts";
 import { notificationInbox, notificationRules } from "../lib/notification-transactions.ts";
 import { words } from "../lib/rules.ts";
-import { bankOf, enabledSmsBanks, nativeRules, SMS_HISTORY_MS } from "../lib/sms.ts";
+import { bankOf, enabledSmsBanks, nativeRules, selectedSmsSenderIds, selectedSmsSendersByBank, SMS_HISTORY_MS } from "../lib/sms.ts";
 import type { AppState, StatePatch } from "./state.ts";
 
-export type CaptureSnapshot = Pick<AppState, "loaded" | "setupComplete" | "captureStartAt" | "user" | "sources" | "roles" | "rules" | "tx" | "moneyApps" | "smsSince" | "notificationSince" | "notifMode" | "smsBanks" | "lang">;
+export type CaptureSnapshot = Pick<AppState, "loaded" | "setupComplete" | "captureStartAt" | "user" | "sources" | "roles" | "rules" | "tx" | "moneyApps" | "smsSince" | "notificationSince" | "notifMode" | "smsBanks" | "smsSenders" | "lang">;
 export type CapturePorts = {
   snapshot(): CaptureSnapshot;
   commit(update: (state: CaptureSnapshot) => StatePatch): Promise<void>;
@@ -43,7 +43,8 @@ export class CaptureCoordinator {
     if (this.disposed || !s.loaded || !s.setupComplete || !s.user || !s.sources.length) return Promise.resolve();
     if (this.state.kind === "reading") { this.state.again = true; this.state.manualAgain ||= manual; return this.state.promise; }
     const at = this.ports.now();
-    const selected = enabledSmsBanks(s.sources, s.smsBanks);
+    const selectedBanks = enabledSmsBanks(s.sources, s.smsBanks);
+    const selected = selectedSmsSenderIds(s.sources, selectedBanks, s.smsSenders);
     const read = <T>(promise: Promise<T[]>) => promise.then(items => ({ ok: true, items })).catch(() => ({ ok: false, items: [] as T[] }));
     const promise = Promise.all([
       selected.length ? read(this.ports.readSms(Math.max(s.captureStartAt ?? 0, at - SMS_HISTORY_MS, manual ? 0 : (s.smsSince ?? at) - 180000), selected))
@@ -59,7 +60,9 @@ export class CaptureCoordinator {
       const allowed = (message: { at: number }) => current.captureStartAt == null || message.at > current.captureStartAt;
       const inbox = notificationInbox(notes.items.filter(allowed), apps, current.sources, allMoneyPackages(current.sources, apps));
       const merged = appendMoneyAccounts(current.sources, inbox.additions, current.roles);
-      const imported = importTransactions([...sms.items.filter(message => allowed(message) && enabledSmsBanks(current.sources, current.smsBanks).includes(bankOf(message.sender) || "")), ...inbox.messages], {
+      const currentSenderIds = new Set(selectedSmsSenderIds(current.sources, current.smsBanks, current.smsSenders).map(sender => sender.toLocaleLowerCase()));
+      const imported = importTransactions([...sms.items.filter(message => allowed(message) && currentSenderIds.has(message.sender.trim().toLocaleLowerCase())
+        && enabledSmsBanks(current.sources, current.smsBanks).includes(bankOf(message.sender) || "")), ...inbox.messages], {
         sources: merged.sources, rules: current.rules, existing: current.tx,
         now: new Date(at), newId: this.ports.newId,
       });
@@ -69,13 +72,16 @@ export class CaptureCoordinator {
         const accounts = appendMoneyAccounts(latest.sources, inbox.additions, latest.roles);
         return {
           sources: accounts.sources, roles: accounts.roles,
-          smsSince: sms.ok && enabledSmsBanks(latest.sources, latest.smsBanks).join("|") === selected.join("|") ? at : latest.smsSince,
+          smsSince: sms.ok && selectedSmsSenderIds(latest.sources, latest.smsBanks, latest.smsSenders).join("|") === selected.join("|") ? at : latest.smsSince,
           notificationSince: notes.ok ? at : latest.notificationSince,
           tx: applyImportResult(latest.tx, imported)
         };
       });
       if (this.disposed || !this.ports.snapshot().setupComplete || this.ports.snapshot().captureStartAt !== current.captureStartAt) return;
       if (found) this.ports.message(found + (found === 1 ? " new transaction" : " new transactions") + " from bank and wallet alerts");
+      else if (manual && !selected.length) this.ports.message(selectedBanks.length
+        ? (current.lang === "NP" ? "पहिले बैंक SMS पहुँचमा प्रेषक छान्नुहोस्।" : "Choose sender IDs under Settings → Bank SMS access first.")
+        : (current.lang === "NP" ? "छुटेका SMS खोज्न सेटिङ → बैंक SMS पहुँचबाट बैंक छान्नुहोस्।" : "Choose banks under Settings → Bank SMS access to check for missed SMS."));
       else if (manual && !sms.ok) this.ports.message(selected.length
         ? (current.lang === "NP" ? "बैंक SMS पढ्न सकिएन। सेटिङमा SMS अनुमति जाँचेर फेरि प्रयास गर्नुहोस्।" : "Bank SMS could not be read. Check SMS permission in Settings, then try again.")
         : (current.lang === "NP" ? "छुटेका SMS खोज्न सेटिङ → बैंक SMS पहुँचबाट बैंक छान्नुहोस्।" : "Choose banks under Settings → Bank SMS access to check for missed SMS."));
@@ -95,7 +101,9 @@ export class CaptureCoordinator {
 
 export function captureConfiguration(s: CaptureSnapshot): CaptureConfiguration {
   return {
-    ...nativeRules(enabledSmsBanks(s.sources, s.smsBanks)), packages: allMoneyPackages(s.sources, s.moneyApps), notification: notificationRules(),
+    ...nativeRules(enabledSmsBanks(s.sources, s.smsBanks)),
+    senders: selectedSmsSendersByBank(s.sources, s.smsBanks, s.smsSenders),
+    packages: allMoneyPackages(s.sources, s.moneyApps), notification: notificationRules(),
     rules: s.rules.map(r => words(r.kw)).filter(Boolean), notify: s.setupComplete && s.notifMode !== "Off",
   };
 }

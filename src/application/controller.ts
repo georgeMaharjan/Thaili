@@ -3,21 +3,18 @@ import { App as CapApp } from "@capacitor/app";
 import { SystemBars, SystemBarsStyle } from "@capacitor/core";
 import React from "react";
 import type { AppState, StatePatch } from "../application/state";
-import type { DatedTransaction } from "../domain/models";
 import { TransactionCommands } from "../features/transactions/commands";
 import { createAppViewModel } from "../features/view-model";
 import { AuthenticationSession, authenticationMessage } from "../lib/authentication";
-import type { Sms } from "../lib/device";
 import { authenticate, installedApps, installUpdate as installUpdateApk, isDevice, permStatus, readNotifications, readSms, readSmsSenders, requestSms, openAppSettings, resetDeviceData, saveFile, setCapture } from "../lib/device";
 import { BackupError, backupName, decodeBackup, encodeBackup } from "../lib/backup";
 import { npDigits } from "../lib/bs";
 import { accountBalances } from "../lib/finance";
 import { hydrated, snapshot } from "../lib/pouch";
-import { importTransactions } from "../lib/import-transactions";
 import { rememberMoneyPackages } from "../lib/money-apps";
 import { TABS, backDismissal, gate, needsReview, nextStack } from "../lib/nav";
 import { captureNotifications, syncDailyReviewReminder } from "../lib/notifications";
-import { bankOf, enabledSmsBanks, SMS_HISTORY_MS } from "../lib/sms";
+import { SMS_HISTORY_MS } from "../lib/sms";
 import { checkForUpdate } from "../lib/update";
 import { initializeStore, load, mergeIncoming, save, subscribeStore } from "../lib/store";
 import { CalendarClock } from "./calendar-clock";
@@ -36,6 +33,7 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   private startup = 0;
   saving = false;
   pendingOpen: { open: string; at: number } | null = null;
+  smsSenderGeneration = 0;
   _t?: ReturnType<typeof setTimeout>;
   _s?: ReturnType<typeof setTimeout>;
   storeSub?: () => void;
@@ -48,13 +46,6 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     if (this.disposed) { done?.(); return; }
     this.setState(state => ({ ...state, ...(typeof update === "function" ? update(state) : update) }), done);
   };
-  smsToTx(msgs: Sms[], existing: DatedTransaction[]) {
-    const allowed = enabledSmsBanks(this.state.sources, this.state.smsBanks);
-    return importTransactions(msgs.filter(msg => allowed.includes(bankOf(msg.sender) || "")), {
-      sources: this.state.sources, rules: this.state.rules,
-      existing, now: new Date(), newId
-    });
-  }
   private createCapture = () => new CaptureCoordinator({
     snapshot: () => this.state,
     commit: update => new Promise<void>(done => this.patch(update, done)),
@@ -213,12 +204,28 @@ export class AppController extends React.Component<Record<string, never>, AppSta
       this.patch(state => ({ perms: [permissions.sms, permissions.notifications],
         ...(permissions.sms ? { smsSince: Math.min(state.smsSince ?? Date.now(), Date.now() - SMS_HISTORY_MS) } : {}) }));
       this.flash(permissions.sms
-        ? (np ? "SMS अनुमति चालु छ। पढ्न दिने बैंकहरू छान्नुहोस्।" : "SMS permission is on. Choose the banks Thaili may read.")
+        ? (np ? "SMS अनुमति चालु छ। बैंक र प्रेषक छान्नुहोस्।" : "SMS permission is on. Choose banks and sender IDs.")
         : (np ? "SMS अनुमति बन्द छ। Android सेटिङ → अनुमति → SMS बाट चालु गर्न सकिन्छ।" : "SMS permission is off. Use Android app settings → Permissions → SMS if the dialog no longer appears."));
     } catch { this.flash(np ? "SMS अनुमति जाँच्न सकिएन" : "Could not check SMS permission"); }
   };
   openSmsPermission = () => this.state.perms[0] ? void openAppSettings() : void this.requestSmsPermission();
   refreshPerms = () => permStatus().then(p => this.patch({ perms: [p.sms, p.notifications] }));
+  refreshSmsSenders = async () => {
+    const generation = (this.smsSenderGeneration || 0) + 1;
+    this.smsSenderGeneration = generation;
+    if (!isDevice || !this.state.perms[0]) {
+      this.patch({ smsSenderCandidates: [], smsSenderScan: "ready" });
+      return;
+    }
+    this.patch({ smsSenderScan: "loading" });
+    try {
+      const candidates = await readSmsSenders(Date.now() - SMS_HISTORY_MS);
+      if (this.disposed || generation !== this.smsSenderGeneration) return;
+      this.patch({ smsSenderCandidates: [...new Set(candidates.map(sender => sender.trim()).filter(Boolean))], smsSenderScan: "ready" });
+    } catch {
+      if (!this.disposed && generation === this.smsSenderGeneration) this.patch({ smsSenderScan: "error" });
+    }
+  };
   authentication = new AuthenticationSession(authenticate, () => document.visibilityState === "visible",
     active => this.patch({ unlockBusy: active }));
   get authing() { return this.authentication.active; }
@@ -333,12 +340,13 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   componentDidUpdate(_: Record<string, never>, prev: AppState) {
     if (this.saving && prev.loaded) save(prev, this.state);
     const n = this.state;
-    if (n.loaded && (prev.sources !== n.sources || prev.smsBanks !== n.smsBanks || prev.rules !== n.rules || prev.notifMode !== n.notifMode || prev.moneyApps !== n.moneyApps || prev.setupComplete !== n.setupComplete || !prev.loaded)) this.syncCapture();
+    if (n.loaded && (prev.sources !== n.sources || prev.smsBanks !== n.smsBanks || prev.smsSenders !== n.smsSenders || prev.rules !== n.rules || prev.notifMode !== n.notifMode || prev.moneyApps !== n.moneyApps || prev.setupComplete !== n.setupComplete || !prev.loaded)) this.syncCapture();
     if (n.loaded && (prev.notifMode !== n.notifMode || prev.setupComplete !== n.setupComplete || !prev.loaded)) {
       const ask = prev.loaded && !prev.setupComplete && n.setupComplete;
       void syncDailyReviewReminder(n.setupComplete && n.notifMode !== "Off", ask, n.lang).catch(console.warn);
     }
-    if (n.loaded && n.setupComplete && (!prev.setupComplete || prev.captureStartAt !== n.captureStartAt || prev.smsBanks !== n.smsBanks || (!prev.perms[0] && n.perms[0]))) void this.catchUpSms().catch(console.warn);
+    if (n.loaded && n.setupComplete && (!prev.setupComplete || prev.captureStartAt !== n.captureStartAt || prev.smsBanks !== n.smsBanks || prev.smsSenders !== n.smsSenders || (!prev.perms[0] && n.perms[0]))) void this.catchUpSms().catch(console.warn);
+    if (n.screen === "bank-sms" && (prev.screen !== n.screen || (!prev.perms[0] && n.perms[0]))) void this.refreshSmsSenders();
     if (prev.theme !== this.state.theme) this.paintBars();
     const to = this.state.screen;
     if (prev.screen === to) return;

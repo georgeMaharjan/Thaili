@@ -32,8 +32,8 @@ final class Capture {
     static JSONObject config(Context ctx) {
         try {
             JSONObject config = new JSONObject(ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("config", "{}"));
-            // v1.3's saved sender map predates explicit per-bank SMS consent.
-            if (config.optInt("smsSelectionVersion", 0) < 1) config.put("senders", new JSONObject());
+            // Pre-v2 saved maps contain broad bank patterns; fail closed until exact IDs are saved.
+            if (config.optInt("smsSelectionVersion", 0) < 2) config.put("senders", new JSONObject());
             return config;
         } catch (Exception e) {
             return new JSONObject();
@@ -46,11 +46,14 @@ final class Capture {
 
     /** The account key for an SMS sender ID, or null when it isn't one of the user's banks. */
     static String bankForSender(JSONObject c, String sender) {
+        if (c.optInt("smsSelectionVersion", 0) < 2) return null;
         JSONObject senders = c.optJSONObject("senders");
         if (senders == null || sender == null) return null;
         for (Iterator<String> it = senders.keys(); it.hasNext(); ) {
-            String k = it.next();
-            if (re(senders.optString(k)).matcher(sender.trim()).find()) return k;
+            String bank = it.next();
+            JSONArray ids = senders.optJSONArray(bank);
+            for (int i = 0; ids != null && i < ids.length(); i++)
+                if (sender.trim().equalsIgnoreCase(ids.optString(i).trim())) return bank;
         }
         return null;
     }

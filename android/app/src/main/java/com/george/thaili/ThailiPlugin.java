@@ -393,7 +393,7 @@ public class ThailiPlugin extends Plugin {
      */
     @PluginMethod
     public void setCapture(PluginCall call) {
-        call.getData().put("smsSelectionVersion", 1);
+        call.getData().put("smsSelectionVersion", 2);
         getContext().getSharedPreferences(Capture.PREFS, Context.MODE_PRIVATE)
             .edit().putString("config", call.getData().toString()).apply();
         ThailiNotificationListener.refresh();
@@ -457,6 +457,16 @@ public class ThailiPlugin extends Plugin {
         call.resolve(r);
     }
 
+    private List<String> selectedSmsAddresses(PluginCall call) {
+        List<String> addresses = new ArrayList<>();
+        JSArray selected = call.getArray("senderIds");
+        if (selected != null) for (int i = 0; i < selected.length(); i++) {
+            String address = selected.optString(i, "").trim();
+            if (!address.isEmpty() && !addresses.contains(address)) addresses.add(address);
+        }
+        return addresses; // Exact addresses only; missing/empty selection means no body access.
+    }
+
     private List<Pattern> selectedSmsSenders(PluginCall call) {
         List<Pattern> patterns = new ArrayList<>();
         JSONObject senders = call.getData().optJSONObject("senders");
@@ -511,7 +521,7 @@ public class ThailiPlugin extends Plugin {
         } catch (RuntimeException error) { call.reject("Unable to read SMS sender names", error); }
     }
 
-    /** Only selected bank sender bodies are queried. OTP/amount filtering then applies locally. */
+    /** Only exact sender IDs selected by the user are queried for bodies. */
     @PluginMethod
     public void readSms(PluginCall call) {
         if (getPermissionState("sms") != PermissionState.GRANTED) {
@@ -520,7 +530,7 @@ public class ThailiPlugin extends Plugin {
         }
         JSArray out = new JSArray();
         try {
-            for (SmsInboxReader.Message message : SmsInboxReader.read(smsInbox(), call.getLong("sinceMs", 0L), selectedSmsSenders(call))) {
+            for (SmsInboxReader.Message message : SmsInboxReader.readSelected(smsInbox(), call.getLong("sinceMs", 0L), selectedSmsAddresses(call))) {
                 String body = message.body;
                 if (body == null) continue;
                 String normalized = MoneyNotificationText.normalize(body);

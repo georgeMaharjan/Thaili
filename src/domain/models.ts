@@ -26,6 +26,7 @@ export type Profile = { name: string; phone: string; createdAt: string };
 export type Category = { key: string; label: string; limit?: number; in?: boolean; gone?: boolean; color?: string; icon?: string; createdAt?: string };
 export type Preferences = {
   smsBanks?: string[];
+  smsSenders?: Record<string, string[]>;
   picked?: string[]; customCats?: Category[]; ess?: Record<string, boolean>;
   saveTarget?: number; savingsGoal?: number; expenseGoalMode?: "amount" | "percent"; expenseGoalValue?: number; expenseGoalSet?: boolean; theme?: "light" | "dark"; lang?: "EN" | "NP";
   splitMode?: SplitMode; syncCell?: boolean; syncRaw?: boolean; syncAlert?: boolean;

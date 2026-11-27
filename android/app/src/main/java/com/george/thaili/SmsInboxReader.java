@@ -33,6 +33,20 @@ final class SmsInboxReader {
         return addresses.isEmpty() ? new ArrayList<>() : source.messages(since, addresses);
     }
 
+    /** Query bodies only for sender IDs explicitly selected by the user. */
+    static List<Message> readSelected(Source source, long since, List<String> selected) {
+        if (selected.isEmpty()) return new ArrayList<>();
+        LinkedHashSet<String> requested = new LinkedHashSet<>();
+        for (String address : source.senderAddresses(since)) {
+            if (address == null) continue;
+            for (String sender : selected) if (sender != null && sender.trim().equalsIgnoreCase(address.trim())) {
+                requested.add(address);
+                break;
+            }
+        }
+        return requested.isEmpty() ? new ArrayList<>() : source.messages(since, new ArrayList<>(requested));
+    }
+
     static String selection(int count) {
         if (count < 1 || count > 100) throw new IllegalArgumentException("Invalid sender batch size");
         return "date >= ? AND address IN (" + String.join(",", java.util.Collections.nCopies(count, "?")) + ")";

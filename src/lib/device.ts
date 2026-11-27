@@ -3,7 +3,7 @@ import type { CaptureConfiguration } from "../domain/capture-contract";
 // In a browser there is no device: nothing granted, nothing installed.
 import { Capacitor,registerPlugin } from "@capacitor/core";
 import type { InstalledApp } from "./money-apps";
-import { knownSmsSenders, nativeRules } from "./sms";
+import { knownSmsSenders } from "./sms";
 
 export type Perms = { sms: boolean; notifications: boolean };
 
@@ -16,7 +16,7 @@ type Native = {
   authenticate(o: { title?: string; deviceCredentialOnly?: boolean }): Promise<{ ok: boolean; reason?: string }>;
   installUpdate(o: { url: string }): Promise<void>;
   readSmsSenders(o: { sinceMs: number; senders: Record<string, string> }): Promise<{ senders: string[] }>;
-  readSms(o: { sinceMs: number; senders: Record<string, string> }): Promise<{ messages: Sms[] }>;
+  readSms(o: { sinceMs: number; senderIds: string[] }): Promise<{ messages: Sms[] }>;
   setCapture(o: CaptureConfiguration): Promise<void>;
   addListener(e: "open", cb: (o: { open: string; at: number }) => void): Promise<{ remove: () => void }>;
   addListener(e: "moneyNotification", cb: () => void): Promise<{ remove: () => void }>;
@@ -44,11 +44,11 @@ export const authenticate = (title?: string, method: "biometric" | "device-crede
   isDevice ? native.authenticate({ title, deviceCredentialOnly: method === "device-credential" }) : Promise.resolve({ ok: true, reason: undefined as string | undefined });
 export const installUpdate = (url: string) =>
   isDevice ? native.installUpdate({ url }) : Promise.reject(new Error("Updates are available in the Android app."));
-// Discovery queries sender addresses only. Message bodies require an explicit account scope.
+// Discovery queries sender addresses only. Message bodies require exact selected sender IDs.
 export const readSmsSenders = (sinceMs: number) =>
   isDevice ? native.readSmsSenders({ sinceMs, senders: knownSmsSenders }).then(r => r.senders) : Promise.resolve([] as string[]);
-export const readSms = (sinceMs: number, selected: Parameters<typeof nativeRules>[0]) =>
-  isDevice ? native.readSms({ sinceMs, senders: nativeRules(selected).senders }).then((r) => r.messages) : Promise.resolve([] as Sms[]);
+export const readSms = (sinceMs: number, senderIds: string[]) =>
+  isDevice ? native.readSms({ sinceMs, senderIds }).then((r) => r.messages) : Promise.resolve([] as Sms[]);
 // What background capture watches and checks; see Capture.java and sms.ts nativeRules.
 export const setCapture = (config: CaptureConfiguration) => (isDevice ? native.setCapture(config).catch(() => {}) : Promise.resolve());
 export const resetDeviceData = () => (isDevice ? native.resetData() : Promise.resolve());

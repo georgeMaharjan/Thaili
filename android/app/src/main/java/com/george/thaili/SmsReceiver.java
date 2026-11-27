@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.json.JSONObject;
 
-/** A bank SMS arriving while Thaili is closed: hand it to Capture to decide on a review nudge. */
+/** An explicitly selected bank sender arriving while Thaili is closed. */
 public class SmsReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context ctx, Intent intent) {
@@ -20,7 +20,7 @@ public class SmsReceiver extends BroadcastReceiver {
         long at = System.currentTimeMillis();
         for (SmsMessage m : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
             String sender = m.getDisplayOriginatingAddress();
-            if (Capture.bankForSender(c, sender) == null) continue; // Do not request an unselected sender’s body.
+            if (Capture.bankForSender(c, sender) == null) continue; // Do not read an unselected sender’s body.
             bodies.computeIfAbsent(sender, k -> new StringBuilder()).append(m.getMessageBody());
             at = m.getTimestampMillis();
         }

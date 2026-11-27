@@ -33,7 +33,7 @@ export function categoryLists(custom: Category[]) {
   const income = INCOME_CATS.map((c): Category => ({ ...edit(c), in: true })).concat(own.filter(c => c.in));
   return { every: out.concat(income), out: out.filter(c => !c.gone), income: income.filter(c => !c.gone) };
 }
-export const OB_STEPS = 5;
+export const OB_STEPS = 4;
 export const CASH: Account = { key: "cash", base: "Cash", name: "Cash", short: "Cash", type: "Manual entry", dot: "#B4721F", opening: 0, acct: null };
 export const isManualSrc = (x: Account) => /Manual|manual/.test(x.type);
 // Only banks ask for a number: wallets match by institution, manual accounts by hand.
@@ -113,8 +113,8 @@ export const L = {
     tagline: "Every rupee that moves — bank, wallet, sahakari, cash — in one pouch, so you can understand where it goes.",
     w1: "No bank login", w2: "Reads bank SMS", w3: "Finds your apps",
     getStarted: "Get started", 
-    step1: "Step 1 of " + OB_STEPS + " · messages", step2: "Step 2 of " + OB_STEPS + " · this phone", step3: "Step 3 of " + OB_STEPS + " · accounts", step4: "Step 4 of " + OB_STEPS + " · history",
-    step5: "Step 5 of " + OB_STEPS + " · categories", editCats: "Categories", 
+    step1: "Step 1 of " + OB_STEPS + " · messages", step2: "Step 2 of " + OB_STEPS + " · this phone", step3: "Step 3 of " + OB_STEPS + " · accounts", step4: "Step 4 of " + OB_STEPS + " · categories",
+    editCats: "Categories",
     permTitle: "Choose which banks Thaili reads",
     permSub: "Read and stored on this phone. Thaili cloud sync and backup are unavailable.",
     srcTitle: "Two things per account",
@@ -135,8 +135,8 @@ export const L = {
     tagline: "बैंक, वालेट, सहकारी, नगद — चल्ने हरेक रुपैयाँ एउटै थैलीमा, ताकि कहाँ चुहिन्छ देखियोस्।",
     w1: "बैंक लगइन छैन", w2: "बैंक SMS पढ्छ", w3: "एप आफैँ भेट्छ",
     getStarted: "सुरु गरौँ", 
-    step1: "चरण १ / " + npDigits(OB_STEPS) + " · सन्देश", step2: "चरण २ / " + npDigits(OB_STEPS) + " · यो फोन", step3: "चरण ३ / " + npDigits(OB_STEPS) + " · खाता", step4: "चरण ४ / " + npDigits(OB_STEPS) + " · इतिहास",
-    step5: "चरण ५ / " + npDigits(OB_STEPS) + " · वर्ग", editCats: "वर्गहरू", 
+    step1: "चरण १ / " + npDigits(OB_STEPS) + " · सन्देश", step2: "चरण २ / " + npDigits(OB_STEPS) + " · यो फोन", step3: "चरण ३ / " + npDigits(OB_STEPS) + " · खाता", step4: "चरण ४ / " + npDigits(OB_STEPS) + " · वर्ग",
+    editCats: "वर्गहरू",
     permTitle: "थैलीले पढ्ने बैंकहरू छान्नुहोस्",
     permSub: "यही फोनमा पढिन्छ र राखिन्छ। थैलीको क्लाउड सिङ्क र ब्याकअप उपलब्ध छैन।",
     srcTitle: "हरेक खाताका दुई कुरा",

@@ -148,4 +148,25 @@ export function tailsByBank(msgs: { sender: string; body: string; at: number }[]
 export const enabledSmsBanks = (accounts: (string | MatchableSource)[], selected: string[]) =>
   Object.keys(nativeRules(accounts).senders).filter(key => selected.includes(key));
 
+/** Exact sender IDs a user has selected, restricted to their linked and opted-in banks. */
+export function selectedSmsSenderIds(accounts: (string | MatchableSource)[], selectedBanks: string[], byBank: Record<string, string[]>) {
+  const enabled = new Set(enabledSmsBanks(accounts, selectedBanks));
+  const ids = new Map<string, string>();
+  for (const bank of enabled) for (const sender of byBank[bank] || []) {
+    if (bankOf(sender) === bank && sender.trim()) ids.set(sender.trim().toLocaleLowerCase(), sender.trim());
+  }
+  return [...ids.values()];
+}
+
+/** Native receiver configuration uses bank → exact sender IDs, never bank-wide patterns. */
+export function selectedSmsSendersByBank(accounts: (string | MatchableSource)[], selectedBanks: string[], byBank: Record<string, string[]>) {
+  const enabled = new Set(enabledSmsBanks(accounts, selectedBanks));
+  const result: Record<string, string[]> = {};
+  for (const bank of enabled) {
+    const senders = [...new Set((byBank[bank] || []).map(sender => sender.trim()).filter(sender => sender && bankOf(sender) === bank))];
+    if (senders.length) result[bank] = senders;
+  }
+  return result;
+}
+
 export const SMS_HISTORY_MS = 90 * 86400000;

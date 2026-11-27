@@ -37,6 +37,8 @@ export function decodePreferences(value: unknown): Preferences {
   for (const key of ["saveTarget", "savingsGoal"] as const) if (input[key] !== undefined) out[key] = number(input[key], key);
   for (const key of ["smsSince", "notificationSince", "captureStartAt"] as const) if (input[key] !== undefined) out[key] = input[key] === null ? null : number(input[key], key);
   if (input.smsBanks !== undefined) out.smsBanks = [...new Set(strings(input.smsBanks, "SMS banks"))];
+  if (input.smsSenders !== undefined) out.smsSenders = Object.fromEntries(Object.entries(object(input.smsSenders, "SMS senders"))
+    .map(([bank, senders]) => [string(bank, "SMS sender bank"), [...new Set(strings(senders, "SMS senders").map(sender => sender.trim()).filter(Boolean))]]));
   if (input.picked !== undefined) out.picked = strings(input.picked, "picked");
   if (input.customCats !== undefined) out.customCats = categories(input.customCats);
   if (input.ess !== undefined) {
