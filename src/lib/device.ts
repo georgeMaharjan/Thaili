@@ -13,7 +13,7 @@ type Native = {
   openNotificationAccess(): Promise<void>;
   openAppSettings(): Promise<void>;
   installedApps(): Promise<{ apps: InstalledApp[] }>;
-  authenticate(o: { title?: string; deviceCredentialOnly?: boolean }): Promise<{ ok: boolean; reason?: string }>;
+  authenticate(o: { title?: string }): Promise<{ ok: boolean; reason?: string }>;
   installUpdate(o: { url: string }): Promise<void>;
   readSmsSenders(o: { sinceMs: number; senders: Record<string, string> }): Promise<{ senders: string[] }>;
   readSms(o: { sinceMs: number; senderIds: string[] }): Promise<{ messages: Sms[] }>;
@@ -40,8 +40,8 @@ export const openAppSettings = () => (isDevice ? native.openAppSettings() : Prom
 export const installedApps = () =>
   isDevice ? native.installedApps().then((r) => r.apps) : Promise.resolve([] as InstalledApp[]);
 // Browser preview has no lock to check, so it always passes.
-export const authenticate = (title?: string, method: "biometric" | "device-credential" = "biometric") =>
-  isDevice ? native.authenticate({ title, deviceCredentialOnly: method === "device-credential" }) : Promise.resolve({ ok: true, reason: undefined as string | undefined });
+export const authenticate = (title?: string) =>
+  isDevice ? native.authenticate({ title }) : Promise.resolve({ ok: true, reason: undefined as string | undefined });
 export const installUpdate = (url: string) =>
   isDevice ? native.installUpdate({ url }) : Promise.reject(new Error("Updates are available in the Android app."));
 // Discovery queries sender addresses only. Message bodies require exact selected sender IDs.

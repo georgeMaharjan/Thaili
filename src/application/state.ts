@@ -25,7 +25,7 @@ export type AppState = {
   addEntry: string; addCat: string; addSrc: string; addDir: "debit" | "credit";
   addNote: string; addError: string; discardAdd: boolean;
   srcKey: string | null; toast: string | null; undoState: Partial<AppState> | null;
-  appVersion: string; update: AppUpdate | null; updateBusy: boolean;
+  appVersion: string; update: AppUpdate | null; updateBusy: boolean; appBackgrounded: boolean;
   perms: boolean[]; appLock: boolean; locked: boolean; unlockBusy: boolean; unlockError: string | null;
   notifMode: "On" | "Off"; detTails: Record<string, string>; scanTx: DatedTransaction[];
   scanResult: ReturnType<typeof importTransactions> | null; scanOrphans: number;
@@ -64,7 +64,7 @@ export function initialState(): AppState {
     saveTarget: 0, ess: {}, stackIdx: 0, detailId: null, from: "txns", srcFrom: "insights",
     rawOpen: false, editing: false, deleting: false,
     range: "Monthly", insCatsAll: false, ruleEdit: null, addEntry: "", addCat: "", addSrc: "", addDir: "debit", addNote: "", addError: "", discardAdd: false,
-    srcKey: null, toast: null, undoState: null, appVersion: "", update: null, updateBusy: false, perms: [false, false], // real device state; see refreshPerms()
+    srcKey: null, toast: null, undoState: null, appVersion: "", update: null, updateBusy: false, appBackgrounded: false, perms: [false, false], // real device state; see refreshPerms()
     appLock: false, locked: false, unlockBusy: false, unlockError: null, notifMode: "On",
     detTails: {}, scanTx: [], scanResult: null, scanOrphans: 0, smsSince: null, notificationSince: null, captureStartAt: null,
     theme: "light", lang: "EN", txFilter: "all",

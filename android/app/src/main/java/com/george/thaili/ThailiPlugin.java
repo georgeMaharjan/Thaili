@@ -291,19 +291,14 @@ public class ThailiPlugin extends Plugin {
         call.resolve();
     }
 
-    /**
-     * Fingerprint / face with the phone's PIN, pattern or password as fallback (spec §19).
-     * Resolves { ok }; ok is false when cancelled or when the phone has no screen lock at all.
-     */
+    /** Fingerprint / face with the phone's PIN, pattern or password as system fallback. */
     @PluginMethod
     public void authenticate(PluginCall call) {
         // BIOMETRIC_STRONG | DEVICE_CREDENTIAL is unsupported on Android 9-10.
-        boolean credentialOnly = call.getBoolean("deviceCredentialOnly", false);
         int biometric = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
             ? BiometricManager.Authenticators.BIOMETRIC_STRONG
             : BiometricManager.Authenticators.BIOMETRIC_WEAK;
-        int auth = credentialOnly ? BiometricManager.Authenticators.DEVICE_CREDENTIAL
-            : biometric | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+        int auth = biometric | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
         FragmentActivity activity = getActivity();
         if (activity == null) {
             authResult(call, false, "not-ready");
@@ -321,19 +316,6 @@ public class ThailiPlugin extends Plugin {
             KeyguardManager keyguard = (KeyguardManager) activity.getSystemService(Context.KEYGUARD_SERVICE);
             if (keyguard == null || !keyguard.isDeviceSecure()) {
                 authResult(call, false, "no-lock");
-                return;
-            }
-            if (credentialOnly && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                try {
-                    Intent intent = keyguard.createConfirmDeviceCredentialIntent(call.getString("title", "Unlock Thaili"), null);
-                    if (intent == null) {
-                        authResult(call, false, "unavailable");
-                        return;
-                    }
-                    startActivityForResult(call, intent, "credentialOnlyResult");
-                } catch (RuntimeException error) {
-                    authResult(call, false, "unavailable");
-                }
                 return;
             }
             if (BiometricManager.from(activity).canAuthenticate(auth) != BiometricManager.BIOMETRIC_SUCCESS) {
@@ -366,13 +348,6 @@ public class ThailiPlugin extends Plugin {
                 authResult(call, false, "unavailable");
             }
         });
-    }
-
-    @ActivityCallback
-    private void credentialOnlyResult(PluginCall call, ActivityResult result) {
-        if (call == null) return;
-        boolean ok = result.getResultCode() == Activity.RESULT_OK;
-        authResult(call, ok, ok ? null : "cancelled");
     }
 
     private void authResult(PluginCall call, boolean ok, String reason) {

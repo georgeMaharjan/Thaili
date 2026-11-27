@@ -1,27 +1,26 @@
 export type AuthenticationResult = { ok: boolean; reason?: string };
-export type AuthenticationMethod = "biometric" | "device-credential";
 
 // One prompt at a time. Hidden WebViews must not start a native prompt, and
 // rejected requests must release the gate so the next Unlock tap can retry.
 export class AuthenticationSession {
   active = false;
-  private authenticate: (title: string, method: AuthenticationMethod) => Promise<AuthenticationResult>;
+  private authenticate: (title: string) => Promise<AuthenticationResult>;
   private visible: () => boolean;
   private changed: (active: boolean) => void;
 
-  constructor(authenticate: (title: string, method: AuthenticationMethod) => Promise<AuthenticationResult>, visible: () => boolean,
+  constructor(authenticate: (title: string) => Promise<AuthenticationResult>, visible: () => boolean,
     changed: (active: boolean) => void = () => {}) {
     this.authenticate = authenticate;
     this.visible = visible;
     this.changed = changed;
   }
 
-  async run(title: string, method: AuthenticationMethod = "biometric"): Promise<AuthenticationResult> {
+  async run(title: string): Promise<AuthenticationResult> {
     if (this.active) return { ok: false, reason: "busy" };
     if (!this.visible()) return { ok: false, reason: "not-ready" };
     this.active = true;
     this.changed(true);
-    try { return await this.authenticate(title, method); }
+    try { return await this.authenticate(title); }
     catch { return { ok: false, reason: "unavailable" }; }
     finally { this.active = false; this.changed(false); }
   }

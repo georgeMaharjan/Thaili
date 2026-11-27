@@ -229,22 +229,21 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   authentication = new AuthenticationSession(authenticate, () => document.visibilityState === "visible",
     active => this.patch({ unlockBusy: active }));
   get authing() { return this.authentication.active; }
-  auth = (title: string, method?: "biometric" | "device-credential") => this.authentication.run(title, method);
-  private unlockWith = (method: "biometric" | "device-credential") => {
+  auth = (title: string) => this.authentication.run(title);
+  unlock = () => {
     if (this.authing || document.visibilityState !== "visible") return;
     this.patch({ unlockError: null });
-    this.auth("Unlock Thaili", method).then(r => {
+    this.auth("Unlock Thaili").then(r => {
       if (r.ok) this.patch({ locked: false, unlockError: null });
       else this.patch({ unlockError: authenticationMessage(r.reason) });
     });
   };
-  unlock = () => this.unlockWith("biometric");
-  unlockWithPin = () => this.unlockWith("device-credential");
   onVisible = () => {
     if (document.visibilityState === "hidden") {
-      if (this.state.appLock && !this.authing) this.patch({ locked: true });
+      this.patch({ appBackgrounded: true, ...(this.state.appLock && !this.authing ? { locked: true } : {}) });
       return;
     }
+    this.patch({ appBackgrounded: false });
     this.refreshCalendar();
     this.refreshPerms();
     void this.discovery.refresh(true);
