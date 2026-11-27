@@ -64,26 +64,21 @@ export function Insights({ v }: { v: V }) {
           <span className="text-[12px] text-ink-3">Transfers between your accounts are excluded.</span>
         </div>
 
-        <section className={cx("flex flex-col gap-1 rounded-2xl p-4",v.budgetOver?"bg-tint-w":"bg-tint-g")}>
-          <span className="text-[14px] font-semibold">{v.budgetOver?"Over budget":"Budget remaining"}</span>
-          <span className="font-display text-[28px] font-bold tabular-nums" style={{color:v.budgetOver?"var(--warnInk)":"var(--pos)"}}>{v.budgetOver?v.budgetOverspent:v.budgetRemaining}</span>
-          <span className="text-[13px] leading-normal text-ink-2">{v.budgetOverLine}</span>
+        <section className={cx("flex flex-col gap-3 rounded-2xl p-4",v.budgetOver?"bg-tint-w":"bg-tint-g")}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-[14px] font-semibold">{v.budgetOver?"Over budget":"Budget remaining"}</span>
+            </div>
+            <span className="flex-none font-display text-[24px] font-bold tabular-nums" style={{color:v.budgetOver?"var(--warnInk)":"var(--pos)"}}>{v.budgetOver?v.budgetOverspent:v.budgetRemaining}</span>
+          </div>
+          <div className="h-[7px] overflow-hidden rounded-full bg-surface/70"><div className="h-full rounded-full" style={{ width: v.budgetProgress, background: v.budgetOver ? "var(--warn)" : "var(--pos)" }} /></div>
+          <div className="flex justify-between gap-3 text-[12px] tabular-nums text-ink-3"><span>Used {v.budgetSpent}</span><span>Budget {v.budgetLimit}</span></div>
         </section>
 
-        <Section title="Most transactions by category">
+        <Section title="Top categories">
           {v.catRowsShown.map((c,i: number) => <button key={i} onClick={c.tap} className="press flex min-h-[56px] items-center gap-3 border-t border-line text-left"><Dot color={c.color} /><span className="min-w-0 flex-1 truncate text-[15px] font-medium">{c.label}</span><span className="text-[13px] text-ink-3">{c.count}</span><span className="font-display text-[16px] font-semibold">{c.amount}</span></button>)}
           {v.catMore && <button onClick={v.toggleCatsAll} className="flex min-h-[44px] items-center text-[14px] font-semibold text-action">{v.catMoreLabel}</button>}
         </Section>
-
-        <Section title="Spending over time" className="gap-3">
-          <p className="text-[13px] text-ink-3">{v.trendCaption}</p>
-          <div className="flex h-[128px] items-end gap-2" role="img" aria-label={v.trendSummary}>
-            {v.spendingTrend.map((d,i: number) => <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5"><span className="text-[12px] tabular-nums text-ink-2">{d.value}</span><div className="flex h-[80px] w-full items-end rounded-t-md bg-surface-2"><div className="w-full rounded-t-md bg-navy" style={{height:d.height}} /></div><span className="text-[12px] text-ink-3">{d.label}</span></div>)}
-          </div>
-        </Section>
-        <button onClick={v.toLeaks} className="press flex flex-col gap-3 rounded-2xl bg-tint-w p-4 text-left">
-          <span className="flex w-full items-center justify-between gap-2"><span className="text-[15px] font-semibold">Optional spending</span><Chevron /></span><span className="font-display text-[32px] font-bold tabular-nums">{v.leakAmtLabel}</span><span className="text-[13px] leading-normal text-ink-2">One-third less would leave {v.leakCutLabel} more to keep. Explore categories and patterns.</span>
-        </button>
 
         <Section title="Savings" action={<HeadLink onClick={v.toBaseline}>{v.editLabel}</HeadLink>}>
           <button onClick={v.toAccounts} className="press flex flex-col gap-1 pt-1 pb-3 text-left">
@@ -134,8 +129,19 @@ export function Insights({ v }: { v: V }) {
           )}
         </Section>
 
-        <Section title={v.whereTitle}>
-          <div className="flex flex-col gap-3 pt-1 pb-5">
+        <Section title="Spending patterns" className="gap-4">
+          <div className="flex flex-col gap-3">
+            <span className="text-[14px] font-semibold text-ink-2">Spending over time</span>
+            <p className="text-[12px] text-ink-3">{v.trendCaption}</p>
+            <div className="flex h-[128px] items-end gap-2" role="img" aria-label={v.trendSummary}>
+              {v.spendingTrend.map((d,i: number) => <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1.5"><span className="text-[12px] tabular-nums text-ink-2">{d.value}</span><div className="flex h-[80px] w-full items-end rounded-t-md bg-surface-2"><div className="w-full rounded-t-md bg-navy" style={{height:d.height}} /></div><span className="text-[12px] text-ink-3">{d.label}</span></div>)}
+            </div>
+          </div>
+          <button onClick={v.toLeaks} className="press flex flex-col gap-2 rounded-2xl bg-tint-w p-4 text-left">
+            <span className="flex w-full items-center justify-between gap-2"><span className="text-[15px] font-semibold">Optional spending</span><Chevron /></span><span className="font-display text-[28px] font-bold tabular-nums">{v.leakAmtLabel}</span><span className="text-[12px] leading-normal text-ink-2">One-third less could leave {v.leakCutLabel} more.</span>
+          </button>
+          <div className="flex flex-col gap-3">
+            <span className="text-[14px] font-semibold text-ink-2">{v.whereTitle}</span>
             <div className="flex h-[10px] gap-0.5 overflow-hidden rounded-[5px] bg-bar-track">
               {v.splitRows.map((g, i: number) => <div key={i} className="h-full" style={{ width: g.width, background: g.color }} />)}
             </div>

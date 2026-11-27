@@ -17,7 +17,7 @@ export type SettingsScreenModel = Pick<AppViewModel,
   "lightBg" |
   "lightFg" |
   "lightSh" |
-  "manageTitle" |
+  "moneyTitle" | "appTitle" | "dataTitle" |
   "npBg" |
   "npFg" |
   "npSh" |

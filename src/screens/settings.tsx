@@ -99,9 +99,13 @@ export function Settings({ v }: { v: V }) {
         </Section>
 
 
-        <Section title={v.manageTitle}>
-          {v.settingRows.map((s, i: number) => (
-            <button key={i} onClick={s.tap} role={s.toggle ? "switch" : undefined} aria-checked={s.toggle ? s.on : undefined} className={cx(ROW, "press py-3 text-left")}>
+        {([
+          ["money", v.moneyTitle],
+          ["app", v.appTitle],
+          ["data", v.dataTitle],
+        ] as const).map(([group, title]) => <Section key={group} title={title}>
+          {v.settingRows.filter(row => row.group === group).map(s => (
+            <button key={s.label} onClick={s.tap} disabled={s.busy} aria-busy={s.busy || undefined} role={s.toggle ? "switch" : undefined} aria-checked={s.toggle ? s.on : undefined} className={cx(ROW, "press py-3 text-left", s.busy && "opacity-70")}>
               <Icon d={s.icon} size={20} sw={1.8} className="text-ink-3" />
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className={cx("text-[16px] font-medium leading-[1.3]", s.danger && "text-action")}>{s.label}</span>
@@ -112,7 +116,7 @@ export function Settings({ v }: { v: V }) {
               </span> : <><span className="flex-none text-[14px] font-semibold text-ink-2">{s.value}</span><Chevron /></>}
             </button>
           ))}
-        </Section>
+        </Section>)}
       </div>
       {v.expenseGoalOpen && <Sheet title={v.expenseGoalTitle} onClose={v.cancelExpenseGoal}>
         <p className="text-[14px] leading-[1.6] text-ink-2">{v.expenseGoalDescription}</p>

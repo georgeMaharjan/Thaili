@@ -9,7 +9,7 @@ import { enabledSmsBanks, SMS_HISTORY_MS } from "../../lib/sms";
 import { openAppSettings, openNotificationAccess } from "../../lib/device";
 import { captureNotifications, syncDailyReviewReminder } from "../../lib/notifications";
 import type { ViewContext } from "../context";
-export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "exportData" | "resetData" | "back" | "openSmsPermission" | "catchUpSms">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "freeToSpend" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
+export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "auth" | "flash" | "checkUpdate" | "installUpdate" | "exportData" | "resetData" | "back" | "openSmsPermission" | "catchUpSms">, context: Pick<ViewContext, "s" | "T" | "np" | "dark" | "surplus" | "freeToSpend" | "openBaseline" | "autoFiled" | "segBg" | "segFg" | "segSh">) {
   const { s, T, np, dark, surplus, freeToSpend, openBaseline, autoFiled, segBg, segFg, segSh } = context;
   const privacyTitle = np ? "गोपनीयता नीति" : "Privacy policy";
   const smsInstitutions = INSTITUTIONS.filter(bank => bank.sms && s.sources.some(account => institutionForAccount(account)?.key === bank.key));
@@ -79,7 +79,9 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
       : (np ? "डेटा यही फोनमा राखिन्छ। थैलीको क्लाउड सिङ्क र ब्याकअप उपलब्ध छैन।" : "Data is stored on this phone. Thaili cloud sync and backup are unavailable."),
     storageProblem: s.storageStatus.kind === "error",
     prefsTitle: np ? "प्राथमिकता" : "Preferences",
-    manageTitle: np ? "व्यवस्थापन" : "Manage",
+    moneyTitle: np ? "आर्थिक योजना" : "Money plan",
+    appTitle: np ? "एप" : "App & alerts",
+    dataTitle: np ? "डेटा र गोपनीयता" : "Data & privacy",
     spacingLabel: np ? "ठाउँ · Spacing" : "Spacing",
     spacingMeta: (np ? { compact: "कम ठाउँ — धेरै देखिन्छ", default: "सामान्य", airy: "बढी ठाउँ — खुला" }
       : { compact: "Tighter — more on screen", default: "Balanced", airy: "Roomier — easier to scan" })[s.density],
@@ -91,8 +93,9 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
     userPhone: s.user ? fmtPhone(s.user.phone) : "",
     toProfile: () => s.user && app.go("profile", { profName: s.user.name, profPhone: s.user.phone.slice(-10) }),
     settingRows: [
-      { icon: IC.lock, label: privacyTitle, meta: np ? "अनुमति, भण्डारण, ब्याकअप र डेटा मेटाउने" : "Permissions, storage, backups and deletion", value: "", tap: () => app.go("privacy") },
+      { group: "data", icon: IC.lock, label: privacyTitle, meta: np ? "थैलीले तपाईंको डेटा कसरी प्रयोग गर्छ" : "How Thaili handles your data", value: "", tap: () => app.go("privacy") },
       {
+        group: "app",
         icon: IC.bell, label: np ? "थैलीका कारोबार सूचना" : "Thaili transaction alerts",
         on: s.notifMode !== "Off",
         toggle: { justify: s.notifMode === "Off" ? "flex-start" : "flex-end", track: s.notifMode === "Off" ? "var(--line)" : "var(--action)" },
@@ -106,6 +109,7 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
         }
       },
       {
+        group: "app",
         icon: IC.lock, label: T.appLock, meta: "Fingerprint or phone PIN on open", value: "", on: s.appLock,
         toggle: { justify: s.appLock ? "flex-end" : "flex-start", track: s.appLock ? "var(--action)" : "var(--line)" },
         tap: () => app.auth(s.appLock ? "Turn off app lock" : "Turn on app lock").then(r => {
@@ -113,33 +117,39 @@ export function settingsViewModel(app: Pick<AppController, "patch" | "go" | "aut
           else app.flash(authenticationMessage(r.reason));
         })
       },
-      { icon: IC.bolt, label: T.rules, meta: s.rules.length + " rules · " + autoFiled + " filed this month", value: "", tap: () => app.go("rules") },
-      { icon: IC.tag, label: T.categories, meta: s.picked.length + " in use · essential or optional", value: "", tap: () => app.go("cats", { catsMode: "edit", catsFrom: "settings" }) },
+      { group: "money", icon: IC.bolt, label: T.rules, meta: s.rules.length + " rules · " + autoFiled + " filed this month", value: "", tap: () => app.go("rules") },
+      { group: "money", icon: IC.tag, label: T.categories, meta: s.picked.length + " in use · essential or optional", value: "", tap: () => app.go("cats", { catsMode: "edit", catsFrom: "settings" }) },
       {
+        group: "money",
         icon: IC.vault, label: np ? "बचत आधार" : "Savings baseline", meta: "Protected before any goal is funded", value: rs(s.savingsGoal),
         tap: openBaseline
       },
       { icon: IC.target, label: np ? "मासिक खर्च लक्ष्य" : "Monthly expense goal",
+        group: "money",
         meta: s.expenseGoalSet
           ? (s.expenseGoalMode === "percent" ? s.expenseGoalValue + "% of monthly income" : rs(s.expenseGoalValue) + " per month")
           : (np ? "रकम वा आम्दानीको प्रतिशत छान्नुहोस्" : "Not set · configure an amount or percent of income"),
         value: "", tap: () => app.patch({ expenseGoalOpen: true, expenseGoalDraftMode: s.expenseGoalSet ? s.expenseGoalMode : "amount",
           expenseGoalDraft: String(s.expenseGoalSet ? s.expenseGoalValue : freeToSpend) }) },
-      { icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) },
+      { group: "money", icon: IC.target, label: T.goals, meta: s.goals.length ? s.goals.length + " claiming " + rs(surplus) + " of surplus" : "None yet", value: "", tap: () => app.go("goals", { goalsFrom: "settings" }) },
       {
+        group: "data",
         icon: IC.exportI, label: np ? "सबै डेटा निर्यात" : "Export all data",
         meta: np ? "पढ्न मिल्ने JSON — आफूले रोजेको स्थानमा" : "Readable JSON; saved to the location you choose",
         value: "", tap: () => void app.exportData()
       },
       {
+        group: "app",
         icon: IC.importI, label: np ? "एप अपडेट" : "App update",
-        meta: s.update ? (np ? "संस्करण " + s.update.version + " आयो — डाउनलोड गर्न थिच्नुहोस्" : "Version " + s.update.version + " is ready — tap to download")
+        meta: s.updateBusy
+          ? (np ? "अपडेट डाउनलोड हुँदैछ…" : "Downloading update…")
+          : s.update ? (np ? "संस्करण " + s.update.version + " आयो — डाउनलोड र इन्स्टल गर्न थिच्नुहोस्" : "Version " + s.update.version + " is ready — tap to download and install")
           : (np ? "नयाँ संस्करण जाँच्न थिच्नुहोस्" : "Tap to check for a new version"),
         value: s.appVersion ? "v" + s.appVersion : "",
-        // Opens in the phone's browser; Android installs the APK over this one.
-        tap: () => { if (s.update) window.location.href = s.update.url; else void app.checkUpdate(true); }
+        busy: s.updateBusy,
+        tap: () => { if (s.updateBusy) return; if (s.update) void app.installUpdate(); else void app.checkUpdate(true); }
       },
-      { icon: "M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3", label: np ? "सबै डेटा मेटाउनुहोस्" : "Delete or reset all data",
+      { group: "data", icon: "M4 7h16M10 11v6M14 11v6M5 7l1 14h12l1-14M9 7V4h6v3", label: np ? "सबै डेटा मेटाउनुहोस्" : "Delete or reset all data",
         meta: np ? "फोनको थैली डेटा मेटाएर फेरि सुरु गर्नुहोस्" : "Erase this phone’s Thaili data and start over", value: "", danger: true,
         tap: () => app.patch({ resetDataOpen: true }) },
     ],

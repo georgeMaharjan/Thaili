@@ -57,8 +57,10 @@ export type InsightsScreenModel = Pick<AppViewModel,
   "leaksNoneLabel" |
   "outBig" |
   "budgetOverspent" |
+  "budgetSpent" |
+  "budgetLimit" |
+  "budgetProgress" |
   "budgetRemaining" |
-  "budgetOverLine" |
   "budgetOver" |
   "ranges" |
   "rangeLabel" |
