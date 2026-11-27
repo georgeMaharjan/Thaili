@@ -84,6 +84,8 @@ export const SI = {
   calCheck: "M4 6h16v14H4ZM4 10h16M8 3.5v4M16 3.5v4M9 15l2 2 4-4",
 };
 export const CATEGORY_ICON_OPTIONS = [
+  { key: "transfer", label: "Transfer", d: SI.xfer }, { key: "income", label: "Income", d: SI.inA },
+  { key: "expense", label: "Expense", d: SI.outA },
   { key: "food", label: "Food", d: CI.food }, { key: "transport", label: "Transport", d: CI.transport },
   { key: "grocery", label: "Groceries", d: CI.grocery }, { key: "bills", label: "Bills", d: CI.bills },
   { key: "shopping", label: "Shopping", d: CI.shopping }, { key: "health", label: "Health", d: CI.health },
@@ -91,6 +93,11 @@ export const CATEGORY_ICON_OPTIONS = [
   { key: "study", label: "Study", d: CI.study }, { key: "gifts", label: "Gifts", d: CI.gifts },
   { key: "pets", label: "Pets", d: CI.pets }, { key: "bank", label: "Bank", d: IC.bank },
   { key: "wallet", label: "Wallet", d: IC.wallet }, { key: "cash", label: "Cash", d: IC.cash },
+  { key: "loan", label: "Loan", d: "M12 3v18M17 7.5c0-1.7-2-3-5-3s-5 1.3-5 3 1.5 2.5 5 3 5 1.3 5 3-2 3-5 3-5-1.3-5-3" },
+  { key: "lend", label: "Lend", d: "M7 7h13M16 3l4 4-4 4M17 17H4m4-4-4 4 4 4" },
+  { key: "home", label: "Home", d: "m3 11 9-7 9 7M5 10v10h14V10M9 20v-6h6v6" },
+  { key: "travel", label: "Travel", d: "m3 12 18-8-6 18-3-8-9-2Zm9 2 4-4" },
+  { key: "utilities", label: "Utilities", d: IC.bolt },
   { key: "vault", label: "Savings", d: IC.vault }, { key: "tag", label: "Other", d: IC.tag },
 ] as const;
 const DEFAULT_CATEGORY_ICONS: Record<string, string> = {
