@@ -3,7 +3,7 @@ import { CaptureCoordinator } from "./capture.ts";
 import { initialState } from "./state.ts";
 import type { Sms } from "../lib/device.ts";
 const at = Date.parse("2026-11-11T12:00:00Z"), day = 86400000;
-const seed = (): import("./state").AppState => ({ ...initialState(), loaded: true, setupComplete: true, smsBanks: ["nabil"],
+const seed = (): import("./state").AppState => ({ ...initialState(), loaded: true, setupComplete: true, smsBanks: ["nabil"], smsSenders: { nabil: ["NABIL"] },
   user: { name: "Fixture", phone: "+9779800000000", createdAt: new Date(at - 10 * day).toISOString() },
   sources: [{ key: "nabil", name: "Nabil", type: "Bank · SMS", opening: 1000, acct: "4821", dot: "red" }],
   smsSince: at, captureStartAt: at - 7 * day,
@@ -13,7 +13,7 @@ const missed: Sms = { id: "device-missed", sender: "NABIL", at: at - 2 * day,
 let state = seed(); const queries: number[] = [], notices: string[] = [];
 const capture = new CaptureCoordinator({
   snapshot: () => state, commit: async update => { state = { ...state, ...update(state) }; }, apps: async () => [],
-  readSms: async (since, selected) => { assert.deepEqual(selected, ["nabil"]); queries.push(since); return since <= missed.at ? [missed] : []; },
+  readSms: async (since, selected) => { assert.deepEqual(selected, ["NABIL"]); queries.push(since); return since <= missed.at ? [missed] : []; },
   readNotifications: async () => [], message: text => notices.push(text), now: () => at, newId: () => "recovered",
 });
 await capture.catchUp(); assert.equal(state.tx.length, 0, "recent reads cannot recover an already-skipped gap");

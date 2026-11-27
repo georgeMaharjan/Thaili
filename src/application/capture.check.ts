@@ -4,7 +4,7 @@ import { initialState } from "./state.ts";
 import type { Sms } from "../lib/device.ts";
 const at = Date.parse("2026-10-11T12:00:00Z");
 const seed = (): import("./state").AppState => ({
-  ...initialState(), smsBanks: ["nabil"], loaded: true, setupComplete: true, user: { name: "Fixture", phone: "+9779800000000", createdAt: new Date(at).toISOString() },
+  ...initialState(), smsBanks: ["nabil"], smsSenders: { nabil: ["NABIL"] }, loaded: true, setupComplete: true, user: { name: "Fixture", phone: "+9779800000000", createdAt: new Date(at).toISOString() },
   sources: [{ key: "nabil", name: "Nabil", type: "Bank · SMS", opening: 1000, acct: "4821", dot: "red" }], smsSince: at - 60000, notificationSince: at - 60000
 });
 const message: Sms = { id: "sms", sender: "NABIL", body: "NPR 100 has been debited from A/C XXXX4821. Remarks: SHOP. Ref: TXN10001", at };
@@ -12,7 +12,7 @@ let state = seed(), resolveRead!: (messages: Sms[]) => void, reads = 0, commits 
 const coordinator = new CaptureCoordinator({
   snapshot: () => state,
   commit: async update => { commits++; state = { ...state, ...update(state) }; },
-  apps: async () => [], readSms: async (_since, banks) => { assert.deepEqual(banks, ["nabil"]); reads++; return new Promise<Sms[]>(done => { resolveRead = done; }); },
+  apps: async () => [], readSms: async (_since, senders) => { assert.deepEqual(senders, ["NABIL"]); reads++; return new Promise<Sms[]>(done => { resolveRead = done; }); },
   readNotifications: async () => { throw new Error("permission denied"); }, message() { }, now: () => at, newId: () => "generated",
 });
 const first = coordinator.catchUp(), second = coordinator.catchUp();

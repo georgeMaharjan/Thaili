@@ -42,6 +42,9 @@ try {
   const nabil = app.renderVals().smsBankRows.find(bank => bank.key === "nabil")!;
   assert.equal(nabil.on, false); nabil.tap();
   assert.ok(app.state.smsSince! <= Date.now() - 89 * 86400000, "enabling a bank reopens the recovery window");
+  assert.deepEqual(captureConfiguration(app.state).senders, {}, "a bank opt-in alone does not choose sender IDs");
+  app.patch({ smsSenderCandidates: ["NABIL"] });
+  app.renderVals().smsBankRows.find(bank => bank.key === "nabil")!.senderRows[0].tap();
   assert.deepEqual(Object.keys(captureConfiguration(app.state).senders), ["nabil"], "account identity works even with a custom account key");
   assert.equal(app.state.sources.length, 2, "turning SMS on must not change accounts");
   const senders = captureConfiguration(app.state).senders, permissions = [...app.state.perms];

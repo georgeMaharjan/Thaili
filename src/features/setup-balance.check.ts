@@ -38,7 +38,8 @@ const finish = (app: AppController) => { app.patch({ picked: ["food", "transport
 
 // Automatic native reads cannot commit transactions while setup is deciding about history.
 {
-  const app = fixture(), { capture, feed } = captureFixture(app);
+  const app = fixture(); app.patch({ smsSenders: { nabil: ["NABIL"] } });
+  const { capture, feed } = captureFixture(app);
   try {
     assert.equal(captureConfiguration(app.state).notify, false);
     await capture.catchUp(); assert.deepEqual(feed.smsQueries, []); assert.deepEqual(feed.noteQueries, []);
@@ -62,14 +63,15 @@ const finish = (app: AppController) => { app.patch({ picked: ["food", "transport
     assert.equal(app.state.tx.length, 1); assert.equal(accountBalances(app.state.sources, app.state.tx).nabil, 9900);
   } finally { capture.dispose(); app.componentWillUnmount(); }
 }
-// Choosing no SMS history also excludes old push alerts, including recently re-buffered ones.
+// SMS permission is independent from transaction notifications already allowed by Android.
 {
   const app = fixture(), { capture } = captureFixture(app);
   try {
     app.patch({ perms: [false, true], screen: "source" });
     app.renderVals().setupNext(); assert.equal(app.state.screen, "cats"); finish(app);
-    await capture.catchUp(); assert.equal(app.state.tx.length, 0); assert.equal(app.state.sources.length, 1);
+    await capture.catchUp(); assert.equal(app.state.tx.length, 1); assert.equal(app.state.sources.length, 2);
     assert.equal(accountBalances(app.state.sources, app.state.tx).nabil, 10000);
+    assert.equal(app.state.tx[0].src, "prabhu");
   } finally { capture.dispose(); app.componentWillUnmount(); }
 }
 // Explicitly accepted history remains available for insights without being added to today's opening twice.

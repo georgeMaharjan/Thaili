@@ -52,26 +52,25 @@ assert.deepEqual(Object.values(state.detOn), [false, false, false]);
 await smsDiscovery.confirm(); assert.equal(bodyReads, 0, "empty selection cannot read message bodies");
 state = { ...state, screen: "detect", detOn: { prime: true } };
 await smsDiscovery.confirm();
-assert.equal(bodyReads, 1); assert.equal(state.detTails.prime, "4821");
+assert.equal(bodyReads, 0, "choosing a bank does not authorize reading its message bodies"); assert.deepEqual(state.detTails, {});
 assert.deepEqual(state.sources.map(account => account.key), ["prime", "cash"]);
+assert.equal(state.sources[0].acct, null, "account suffix is not inferred before the user chooses a sender");
 assert.deepEqual(state.smsBanks, ["prime"]); assert.equal(state.screen, "source");
 
 smsDiscovery.dispose();
 console.log("discovery: stale scans, denied SMS, browser fallback and SMS-only banks pass");
 
-// Leaving the scan while selected history is pending must not reopen setup or add accounts.
-state = initialState(); let finishHistory!: (messages: import("../lib/device").Sms[]) => void;
+// Leaving a sender scan in flight must not reopen setup or add accounts.
+state = initialState(); let finishInstalled!: (apps: InstalledApp[]) => void;
 const cancelled = new MoneyAppDiscovery({
   snapshot: () => state,
   commit(update) { state = { ...state, ...(typeof update === "function" ? update(state) : update) }; },
   navigate(screen, patch) { state = { ...state, ...patch, screen: screen as typeof state.screen }; },
-  supported: true, installed: async () => [], senders: async () => ["NABIL"],
-  history: () => new Promise(done => { finishHistory = done; }), now: Date.now, message() {},
+  supported: true, installed: () => new Promise(done => { finishInstalled = done; }), senders: async () => ["NABIL"],
+  history: async () => { throw new Error("sender discovery must not read message bodies"); }, now: Date.now, message() {},
 });
-await cancelled.scan(); state = { ...state, detOn: { nabil: true } };
-const pendingConfirmation = cancelled.confirm();
-await cancelled.confirm(); // Double tap must not create a second read.
+const pendingScan = cancelled.scan();
 cancelled.cancel(); state = { ...state, screen: "permission" };
-finishHistory([]); await pendingConfirmation;
+finishInstalled([]); await pendingScan;
 assert.equal(state.screen, "permission"); assert.deepEqual(state.sources, []); assert.deepEqual(state.smsBanks, []);
 cancelled.dispose();
