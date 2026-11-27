@@ -37,7 +37,7 @@ export function monthlyBudget(entries: PeriodEntry[], month: Bs, daysInMonth: nu
   const daysLeft = Math.max(1, daysInMonth - month.d);
   return { income: rupees(income), spent: rupees(spent), freeToSpend: rupees(free), remaining: rupees(remaining),
     daysLeft, lastDay: month.d >= daysInMonth,
-    allowance: Math.max(0, Math.round(rupees(remaining) / daysLeft / 10) * 10) };
+    allowance: Math.max(0, Math.floor(rupees(remaining) / daysLeft / 10) * 10) };
 }
 
 /** Net money reaching savings over this and the preceding two BS months.
