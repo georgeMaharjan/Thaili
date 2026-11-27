@@ -154,8 +154,8 @@ export function SrcNew({ v }: { v: V }) {
           <div className={cx(heading, "pt-4")}>{v.newSrcPickLabel}</div>
           {v.newSrcUsesPicker ? (
             <div className="px-5 pt-2">
-              <select aria-label={v.newSrcPickLabel} value={v.newSrcName} onChange={v.pickSrcName}
-                className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-[14px] text-ink">
+              <select aria-label={v.newSrcPickLabel} value={v.newSrcName} onChange={v.pickSrcName} disabled={v.isEditSrc}
+                className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-[14px] text-ink disabled:cursor-not-allowed disabled:opacity-60">
                 <option value="">Choose a bank or wallet</option>
                 {v.newSrcNameOptions.map(name => <option key={name} value={name}>{name}</option>)}
               </select>

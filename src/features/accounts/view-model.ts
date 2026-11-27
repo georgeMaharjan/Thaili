@@ -72,6 +72,7 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
       label: k.label,
       bg: s.newSrcKind === k.key ? "var(--navy)" : "transparent",
       fg: s.newSrcKind === k.key ? "var(--canvas)" : "var(--ink2)",
+      disabled: !!s.editSrcKey,
       tap: () => app.patch({ newSrcKind: k.key, newSrcName: "", newSrcColor: k.dot, newSrcField: k.key === "manual" ? "amt" : s.newSrcField })
     })),
     newSrcPickLabel: newKind.key === "manual" ? "Which one" : "Which " + newKind.label.toLowerCase(),
@@ -83,7 +84,7 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
     pickSrcName: (event: { target: { value: string } }) => {
       if (newKind.names.includes(event.target.value)) app.patch({ newSrcName: event.target.value });
     },
-    newSrcNameChips: newKind.names.map(n => chip(n, s.newSrcName === n, () => app.patch({ newSrcName: n }))),
+    newSrcNameChips: newKind.names.map(n => Object.assign(chip(n, s.newSrcName === n, () => app.patch({ newSrcName: n })), { disabled: !!s.editSrcKey })),
     newSrcRoles: [["savings", "Saving"], ["spending", "Spending"]].map(r => ({
       label: r[1],
       bg: s.newSrcRole === r[0] ? "var(--navy)" : "transparent",
