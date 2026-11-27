@@ -20,7 +20,7 @@ assert.equal(moved.spend + moved.save, 300);
 const budget = monthlyBudget([entry("credit", "spend", 1000), entry("debit", "spend", 100.1),
   entry("debit", "spend", 0.2), entry("transfer", "spend", 900, "save"), entry("credit", "spend", 5000, null, 1)], month, 31, 200);
 assert.deepEqual(budget, { income: 1000, spent: 100.3, freeToSpend: 800, remaining: 699.7,
-  daysLeft: 1, lastDay: true, allowance: 700 });
+  daysLeft: 1, lastDay: true, allowance: 690 });
 assert.equal(monthlyBudget([], month, 31, 200).allowance, 0);
 assert.equal(monthlyBudget([entry("debit", "spend", 10)], month, 31, 200).remaining, -10);
 

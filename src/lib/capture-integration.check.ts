@@ -82,7 +82,7 @@ assert.equal(commit([app("after-restart", "TXN10001", at + 30 * 60000)], reopene
 
 // Identified bank → wallet loads are stored once even across separate capture reads.
 const load: CapturedMessage = { ...sms("load", "LOAD1001"), body: "NPR 500 has been debited from A/C XXXX4821. Remarks: eSewa Load. Ref: LOAD1001" };
-const wallet: CapturedMessage = { id: "wallet-credit", ch: "App", bank: "esewa", body: "You received Rs 500. Ref: WALLET1001", at };
+const wallet: CapturedMessage = { id: "wallet-credit", ch: "App", bank: "esewa", body: "You received Rs 500. Ref: LOAD1001", at };
 for (const messages of [[load, wallet], [wallet, load]]) {
   const initial = commit([messages[0]]), combined = commit([messages[1]], initial);
   assert.equal(combined.length, 1); assert.equal(combined[0].dir, "transfer");
@@ -91,4 +91,9 @@ for (const messages of [[load, wallet], [wallet, load]]) {
   assert.equal(commit(messages, combined).length, 1);
 }
 assert.equal(commit([load], [{ ...manual, src: "esewa", dir: "credit", amt: 500 }]).length, 2);
+const conflictingWallet = { ...wallet, body: "You received Rs 500. Ref: WALLET1001" };
+for (const messages of [[load, conflictingWallet], [conflictingWallet, load]]) {
+  const separate = commit(messages);
+  assert.equal(separate.length, 2, "different transaction references must not be reconciled as one transfer");
+}
 console.log("capture integration: institution catalog, accounts, SMS/push orders, delays, replay, raw-off restart and wallet transfers pass");
