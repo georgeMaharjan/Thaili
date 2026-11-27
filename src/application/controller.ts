@@ -67,13 +67,26 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     if (o.open === "daily-review") {
       void Promise.resolve(this.catchUpSms()).then(() => {
         const hasReview = this.state.tx.some(t => needsReview(t, Date.now()));
-        this.go(hasReview ? "txns" : "insights", hasReview ? { txFilter: "review" } : undefined);
+        this.go(hasReview ? "txns" : "insights", hasReview ? {
+          txFilter: "review", txCategories: [], txSources: [], txSpending: "all",
+          txQuery: "", txRange: "month", txFrom: null, txTo: null
+        } : undefined);
       });
       return;
     }
     Promise.resolve(this.catchUpSms()).then(() => {
-      const t = this.state.tx.filter(x => x.dir === "debit" && Math.abs(Date.parse(x.at) - o.at) <= 180000)[0];
-      if (t) this.openDetail(t.id, "home"); else this.go("txns", { txFilter: "review" });
+      const matches = this.state.tx.filter(x => Math.abs(Date.parse(x.at) - o.at) <= 180000);
+      if (matches.length === 1) {
+        this.openDetail(matches[0].id, "home");
+        return;
+      }
+      // A money-capture notification can represent income, a transfer, or an
+      // already-filed spend. Don't send those to Needs review when identity is
+      // ambiguous or catch-up has not produced a matching row yet.
+      this.go("txns", {
+        txFilter: "all", txCategories: [], txSources: [], txSpending: "all",
+        txQuery: "", txRange: "month", txFrom: null, txTo: null
+      });
     });
   };
   stack: string[] = [];
