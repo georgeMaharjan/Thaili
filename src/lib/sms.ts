@@ -55,22 +55,21 @@ export function parseSms(msg: { sender: string; body: string; at: number; bank?:
     const parsed = parseNotification({ bank, body, at: msg.at });
     return parsed ? { ...parsed, raw: msg.body } : null;
   };
-  const a = AMOUNT.exec(body);
   if (NOT_A_TXN.test(body)) return null;
-  if (!a) return generic();
-  const amt = parseFloat(a[1].replace(/,/g, ""));
-  if (!(amt > 0) || !Number.isFinite(amt)) return null;
-  const dir = TXN.find(([re]) => re.test(body))?.[1];
-  if (!dir) return generic();
+  // Use the same movement-aware amount and direction parser as app notifications.
+  // A bank SMS can mention the balance before the actual debit or credit.
+  const parsed = generic();
+  if (!parsed) return null;
   const t = TAIL.exec(body);
   const r = REMARK.exec(body);
   const rem = r ? (r[1] || r[2]).trim().replace(/\s{2,}/g, " ") || null : null;
   // FonePay QR arrives as "MPAY FPQR" for every shop in the country (spec §12.1).
-  const m = rem && /FPQR|FONEPAY/i.test(rem) ? "FONEPAY"
-    : rem ? rem
+  const note = rem || parsed.rem;
+  const m = note && /FPQR|FONEPAY/i.test(note) ? "FONEPAY"
+    : note ? note
     : /\bPOS\b/i.test(body) ? "POS transaction"
-    : dir === "credit" ? "Money in" : "Money out";
-  return { amt, dir, tail: t ? t[1] || t[2] || t[3] : null, rem, m, bank, raw: msg.body, at: msg.at };
+    : parsed.m;
+  return { ...parsed, tail: t ? t[1] || t[2] || t[3] : parsed.tail, rem: note, m, raw: msg.body, bank, at: msg.at };
 }
 
 // Resolve the institution before comparing suffixes, so two banks sharing a tail

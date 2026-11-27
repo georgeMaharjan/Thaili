@@ -48,10 +48,12 @@ export function importTransactions(messages: CapturedMessage[], context: {
   const existingIds = new Set(existing.map(t => t.id));
   const consumed = new Set<CapturedEntry>();
   for (const credit of combined.filter(t => t.dir === "credit" && t.ch !== "Manual")) {
+    const creditRefs = evidenceFor(credit).map(e => e.ref).filter((ref): ref is string => !!ref);
     const transfer = combined.filter(t => t.ch !== "Manual" && t.src !== credit.src
       && (t.dir === "transfer" ? t.to === credit.src : t.dir === "debit" && (walletNamed(t.rem, context.sources)?.key === credit.src
         || walletNamed(credit.rem, context.sources)?.key === t.src))
       && t.amt === credit.amt && Math.abs(Date.parse(t.at) - Date.parse(credit.at)) <= 900000
+      && !(creditRefs.length && evidenceFor(t).some(e => e.ref && !creditRefs.includes(e.ref)))
       && !evidenceFor(t).some(e => e.src === credit.src && e.dir === "credit"))
       .sort((a, b) => Math.abs(Date.parse(a.at) - Date.parse(credit.at)) - Math.abs(Date.parse(b.at) - Date.parse(credit.at)))[0];
     if (!transfer) continue;
