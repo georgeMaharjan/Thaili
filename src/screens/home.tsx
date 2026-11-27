@@ -22,7 +22,7 @@ export function Home({ v }: { v: V }) {
             {v.homeAccountsGroups.map(group => <div key={group.key} className="mb-3 last:mb-0">
               <h2 className="mb-1 px-1 text-[12px] font-semibold text-ink-2">{group.label}</h2>
               {group.rows.map((account, i: number) => <button key={account.key} type="button" onClick={account.tap} className={cx("press flex min-h-[56px] w-full items-center gap-3 text-left", i > 0 && "border-t border-white/10")}>
-                <Tile d={account.icon} tint={account.dot + "30"} fg={account.dot} className="size-[34px] rounded-[11px]" size={17} />
+                <Tile d={account.icon} tint={account.dot + "30"} fg={account.dot} className="size-[34px] rounded-xl" size={17} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="truncate text-[14px] font-semibold">{account.name}</span><span className="truncate text-[12px] text-ink-2">{account.meta}</span></span>
                 <span className="flex-none font-display text-[15px] font-semibold tabular-nums">{account.balance}</span><Chevron />
               </button>)}
