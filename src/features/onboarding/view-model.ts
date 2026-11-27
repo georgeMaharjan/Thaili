@@ -6,8 +6,8 @@ import { digits10, fmt, rs, validPhone } from "../../lib/format";
 import { applyImportResult } from "../../lib/import-transactions";
 import { sourceForMoneyApp } from "../../lib/money-apps";
 import type { ViewContext } from "../context";
-export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "confirmDetection" | "state" | "flash" | "startSetup" | "editSource" | "importData">, context: Pick<ViewContext, "s" | "DAYS_IN_MONTH" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
-  const { s, DAYS_IN_MONTH, income, freeToSpend, T, np, allCats, incomeCats, clabel, scanAccts, scanGroups, isEss, essMonthly, baseFor, srcMissing, detectAccounts, detAvailable, detOnKeys } = context;
+export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "startDetection" | "cancelDetection" | "confirmDetection" | "state" | "flash" | "startSetup" | "editSource" | "importData">, context: Pick<ViewContext, "s" | "income" | "freeToSpend" | "T" | "np" | "allCats" | "incomeCats" | "clabel" | "scanAccts" | "scanGroups" | "isEss" | "essMonthly" | "baseFor" | "srcMissing" | "detectAccounts" | "detAvailable" | "detOnKeys">) {
+  const { s, income, freeToSpend, T, np, allCats, incomeCats, clabel, scanAccts, scanGroups, isEss, essMonthly, baseFor, srcMissing, detectAccounts, detAvailable, detOnKeys } = context;
   // "Food", "food " and "FOOD" are one category.
   const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, " ").toLowerCase() === b.trim().replace(/\s+/g, " ").toLowerCase();
   // Deleted categories keep their label on past transactions; rules filing into them go.

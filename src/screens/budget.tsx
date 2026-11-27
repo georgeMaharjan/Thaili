@@ -1,5 +1,5 @@
 import type { BudgetScreenModel as V } from "../features/budget/screen-model";
-import { Chevron,Hero,Section,TopBar,TxCard,cx } from "@/components/ui";
+import { Hero,Section,TopBar,TxCard,cx } from "@/components/ui";
 
 export function Budget({ v }: { v: V }) {
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
