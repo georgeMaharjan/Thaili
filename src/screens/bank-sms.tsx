@@ -37,7 +37,7 @@ export function BankSms({ v }: { v: V }) {
                 {bank.senderRows.length ? bank.senderRows.map(sender => (
                   <button type="button" key={sender.id} role="checkbox" aria-checked={sender.selected} onClick={sender.tap}
                     className="press flex min-h-[44px] w-full items-center gap-3 text-left">
-                    <span aria-hidden="true" className={cx("flex size-5 items-center justify-center rounded-md border", sender.selected ? "border-action bg-action text-on-action" : "border-line bg-surface text-ink-3")}>
+                    <span aria-hidden="true" className={cx("flex size-[20px] items-center justify-center rounded-md border", sender.selected ? "border-action bg-action text-on-action" : "border-line bg-surface text-ink-3")}>
                       {sender.selected && <Icon d="M5 12 10 17 20 7" size={14} sw={2.4} />}
                     </span>
                     <span className="break-all text-[14px] font-medium text-ink">{sender.id}</span>
