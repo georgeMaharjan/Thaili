@@ -138,7 +138,7 @@ export function SrcNew({ v }: { v: V }) {
         <div className="flex flex-col gap-3 px-5 pt-3">
           <p className="font-display text-[20px] font-bold leading-[1.3]">{v.newSrcName}</p>
           <p className="text-[13px] leading-[1.5] text-ink-2">{v.numericEditHint}</p>
-          {v.srcNeedsAcct && <NumericField value={v.newSrcAccountInput} onChange={v.changeSourceAccount}
+          {!v.simplifiedBalanceEdit && v.srcNeedsAcct && <NumericField value={v.newSrcAccountInput} onChange={v.changeSourceAccount}
             label={v.acctFieldLabel} hint={v.accountInputHint} kind="digits" maxDigits={4} prefix="••"
             autoFocus={v.newSrcInitialField === "acct"} onFocus={v.pickAcctField} onNext={focusAmount} nextLabel={v.accountNextLabel}
             editingLabel={v.numericEditingLabel} clearLabel={v.clearAccountLabel} errors={v.accountInputErrors} />}
@@ -148,18 +148,20 @@ export function SrcNew({ v }: { v: V }) {
             editingLabel={v.numericEditingLabel} clearLabel={v.clearAmountLabel} errors={v.amountInputErrors} />
           <p className="text-pretty text-[12px] leading-[1.5] text-ink-3">{v.newSrcOpeningNote}</p>
         </div>
-        <div className={cx(heading, "pt-4")}>What kind</div>
-        <div className="px-5 pt-2"><Seg items={v.newSrcKinds} itemClass={seg} /></div>
-        <div className={cx(heading, "pt-4")}>{v.newSrcPickLabel}</div>
-        {v.newSrcUsesPicker ? (
-          <div className="px-5 pt-2">
-            <select aria-label={v.newSrcPickLabel} value={v.newSrcName} onChange={v.pickSrcName}
-              className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-[14px] text-ink">
-              <option value="">Choose a bank or wallet</option>
-              {v.newSrcNameOptions.map(name => <option key={name} value={name}>{name}</option>)}
-            </select>
-          </div>
-        ) : <Chips items={v.newSrcNameChips} />}
+        {!v.simplifiedBalanceEdit && <>
+          <div className={cx(heading, "pt-4")}>What kind</div>
+          <div className="px-5 pt-2"><Seg items={v.newSrcKinds} itemClass={seg} /></div>
+          <div className={cx(heading, "pt-4")}>{v.newSrcPickLabel}</div>
+          {v.newSrcUsesPicker ? (
+            <div className="px-5 pt-2">
+              <select aria-label={v.newSrcPickLabel} value={v.newSrcName} onChange={v.pickSrcName}
+                className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-[14px] text-ink">
+                <option value="">Choose a bank or wallet</option>
+                {v.newSrcNameOptions.map(name => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </div>
+          ) : <Chips items={v.newSrcNameChips} />}
+        </>}
         <div className={cx(heading, "pt-4")}>Color</div>
         <div className="flex gap-3 px-5 pt-2">
           {v.newSrcColors.map(({ color, selected, tap }) => <button key={color} type="button" onClick={tap} aria-label={"Choose color " + color} aria-pressed={selected}

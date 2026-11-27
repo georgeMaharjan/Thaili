@@ -25,12 +25,19 @@ import java.util.Iterator;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URI;
 import androidx.activity.result.ActivityResult;
 import java.lang.ref.WeakReference;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Lifecycle;
 import com.getcapacitor.JSArray;
@@ -101,6 +108,141 @@ public class ThailiPlugin extends Plugin {
         startActivityForResult(call, intent, "saveFileResult");
     }
 
+    /** Download this app's signed GitHub release APK and hand it to Android's package installer. */
+    @PluginMethod
+    public void installUpdate(PluginCall call) {
+        String source = call.getString("url", "");
+        if (!isReleaseApkUrl(source)) {
+            call.reject("Update URL is not a Thaili release APK");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:" + getContext().getPackageName()));
+            startActivityForResult(call, settings, "installUpdatePermissionResult");
+            return;
+        }
+        downloadAndInstall(call, source);
+    }
+
+    @ActivityCallback
+    private void installUpdatePermissionResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            call.reject("Allow Thaili to install apps in Android settings, then try again");
+            return;
+        }
+        downloadAndInstall(call, call.getString("url", ""));
+    }
+
+    private boolean isReleaseApkUrl(String source) {
+        try {
+            URI uri = URI.create(source);
+            return "https".equalsIgnoreCase(uri.getScheme())
+                && "github.com".equalsIgnoreCase(uri.getHost())
+                && uri.getPath() != null
+                && uri.getPath().startsWith("/georgeMaharjan/Thaili/releases/download/")
+                && uri.getPath().endsWith("/thaili.apk");
+        } catch (RuntimeException error) {
+            return false;
+        }
+    }
+
+    private boolean isAllowedReleaseHost(URL url) {
+        String host = url.getHost().toLowerCase(java.util.Locale.ROOT);
+        return "https".equalsIgnoreCase(url.getProtocol())
+            && (host.equals("github.com") || host.endsWith(".githubusercontent.com"));
+    }
+
+    private void downloadAndInstall(PluginCall call, String source) {
+        new Thread(() -> {
+            try {
+                File apk = downloadReleaseApk(source);
+                android.app.Activity activity = getActivity();
+                if (activity == null || activity.isFinishing()) {
+                    call.reject("Thaili closed before the update could be opened");
+                    return;
+                }
+                activity.runOnUiThread(() -> openUpdateInstaller(call, apk));
+            } catch (Exception error) {
+                call.reject("Couldn't download the update", error);
+            }
+        }, "thaili-update-download").start();
+    }
+
+    private File downloadReleaseApk(String source) throws Exception {
+        URL current = new URL(source);
+        HttpURLConnection connection = null;
+        InputStream input = null;
+        FileOutputStream output = null;
+        File temporary = null;
+        try {
+            for (int redirects = 0; redirects <= 5; redirects++) {
+                if (!isAllowedReleaseHost(current)) throw new java.io.IOException("Unexpected update host");
+                connection = (HttpURLConnection) current.openConnection();
+                connection.setInstanceFollowRedirects(false);
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(30000);
+                connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream");
+                connection.setRequestProperty("User-Agent", "Thaili-Android-Updater");
+                int status = connection.getResponseCode();
+                if (status >= 300 && status < 400) {
+                    String location = connection.getHeaderField("Location");
+                    connection.disconnect(); connection = null;
+                    if (location == null || redirects == 5) throw new java.io.IOException("Invalid update redirect");
+                    current = new URL(current, location);
+                    continue;
+                }
+                if (status != HttpURLConnection.HTTP_OK) throw new java.io.IOException("Update server returned " + status);
+                long length = connection.getContentLengthLong();
+                if (length > 80L * 1024L * 1024L) throw new java.io.IOException("Update APK is too large");
+
+                File directory = new File(getContext().getCacheDir(), "updates");
+                if (!directory.exists() && !directory.mkdirs()) throw new java.io.IOException("Couldn't create update cache");
+                temporary = new File(directory, "thaili.apk.part");
+                File apk = new File(directory, "thaili.apk");
+                input = connection.getInputStream();
+                output = new FileOutputStream(temporary);
+                byte[] buffer = new byte[16384];
+                long total = 0;
+                for (int count; (count = input.read(buffer)) != -1;) {
+                    total += count;
+                    if (total > 80L * 1024L * 1024L) throw new java.io.IOException("Update APK is too large");
+                    output.write(buffer, 0, count);
+                }
+                output.flush();
+                if (total == 0) throw new java.io.IOException("Update APK is empty");
+                output.close(); output = null;
+                input.close(); input = null;
+                connection.disconnect(); connection = null;
+                if (apk.exists() && !apk.delete()) throw new java.io.IOException("Couldn't replace cached update");
+                if (!temporary.renameTo(apk)) throw new java.io.IOException("Couldn't save downloaded update");
+                return apk;
+            }
+            throw new java.io.IOException("Too many update redirects");
+        } finally {
+            if (input != null) try { input.close(); } catch (Exception ignored) { }
+            if (output != null) try { output.close(); } catch (Exception ignored) { }
+            if (connection != null) connection.disconnect();
+            if (temporary != null && temporary.exists()) temporary.delete();
+        }
+    }
+
+    private void openUpdateInstaller(PluginCall call, File apk) {
+        try {
+            Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
+            Intent installer = new Intent(Intent.ACTION_VIEW);
+            installer.setDataAndType(uri, "application/vnd.android.package-archive");
+            installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(installer);
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Couldn't open Android's package installer", error);
+        }
+    }
+
     @ActivityCallback
     private void saveFileResult(PluginCall call, ActivityResult result) {
         if (call == null) return;
@@ -156,9 +298,12 @@ public class ThailiPlugin extends Plugin {
     @PluginMethod
     public void authenticate(PluginCall call) {
         // BIOMETRIC_STRONG | DEVICE_CREDENTIAL is unsupported on Android 9-10.
-        int auth = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+        boolean credentialOnly = call.getBoolean("deviceCredentialOnly", false);
+        int biometric = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
             ? BiometricManager.Authenticators.BIOMETRIC_STRONG
-            : BiometricManager.Authenticators.BIOMETRIC_WEAK) | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+            : BiometricManager.Authenticators.BIOMETRIC_WEAK;
+        int auth = credentialOnly ? BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            : biometric | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
         FragmentActivity activity = getActivity();
         if (activity == null) {
             authResult(call, false, "not-ready");
@@ -176,6 +321,19 @@ public class ThailiPlugin extends Plugin {
             KeyguardManager keyguard = (KeyguardManager) activity.getSystemService(Context.KEYGUARD_SERVICE);
             if (keyguard == null || !keyguard.isDeviceSecure()) {
                 authResult(call, false, "no-lock");
+                return;
+            }
+            if (credentialOnly && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                try {
+                    Intent intent = keyguard.createConfirmDeviceCredentialIntent(call.getString("title", "Unlock Thaili"), null);
+                    if (intent == null) {
+                        authResult(call, false, "unavailable");
+                        return;
+                    }
+                    startActivityForResult(call, intent, "credentialOnlyResult");
+                } catch (RuntimeException error) {
+                    authResult(call, false, "unavailable");
+                }
                 return;
             }
             if (BiometricManager.from(activity).canAuthenticate(auth) != BiometricManager.BIOMETRIC_SUCCESS) {
@@ -208,6 +366,13 @@ public class ThailiPlugin extends Plugin {
                 authResult(call, false, "unavailable");
             }
         });
+    }
+
+    @ActivityCallback
+    private void credentialOnlyResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        boolean ok = result.getResultCode() == Activity.RESULT_OK;
+        authResult(call, ok, ok ? null : "cancelled");
     }
 
     private void authResult(PluginCall call, boolean ok, String reason) {

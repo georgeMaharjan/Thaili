@@ -37,6 +37,7 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
     scanAccountAppsLabel: np ? "बैंक र वालेट एप खोज्नुहोस्" : "Scan for banking & wallet apps",
     srcNewTitle: np ? (s.srcNewFrom === "source" ? "खाताको विवरण" : s.editSrcKey ? "खाता सम्पादन" : "खाता थप्नुहोस्") : s.srcNewFrom === "source" ? "Account details" : s.editSrcKey ? "Edit account" : "Add an account",
     isEditSrc: !!s.editSrcKey,
+    simplifiedBalanceEdit: s.srcNewFrom === "source" && !!s.editSrcKey,
     newSrcAmountInput: s.newSrcAmt,
     newSrcAccountInput: s.newSrcAcct,
     newSrcInitialField: needAcct && s.newSrcField === "acct" ? "acct" : "amt",

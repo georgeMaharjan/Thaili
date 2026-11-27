@@ -33,6 +33,7 @@ export type AccountsScreenModel = Pick<AppViewModel,
   "goalNote" |
   "goalWidth" |
   "isEditSrc" |
+  "simplifiedBalanceEdit" |
   "newSrcCreate" |
   "newSrcCta" |
   "newSrcCtaBg" |

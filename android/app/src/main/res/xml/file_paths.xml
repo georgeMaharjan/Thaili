@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="apk_updates" path="updates/" />
     <!-- Capacitor's HTML photo picker creates images in getExternalFilesDir(Pictures). -->
     <external-files-path name="picker_images" path="Pictures/" />
 </paths>

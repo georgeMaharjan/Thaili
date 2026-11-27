@@ -8,9 +8,10 @@ import { TransactionCommands } from "../features/transactions/commands";
 import { createAppViewModel } from "../features/view-model";
 import { AuthenticationSession, authenticationMessage } from "../lib/authentication";
 import type { Sms } from "../lib/device";
-import { authenticate, installedApps, isDevice, permStatus, readNotifications, readSms, readSmsSenders, requestSms, openAppSettings, resetDeviceData, saveFile, setCapture } from "../lib/device";
+import { authenticate, installedApps, installUpdate as installUpdateApk, isDevice, permStatus, readNotifications, readSms, readSmsSenders, requestSms, openAppSettings, resetDeviceData, saveFile, setCapture } from "../lib/device";
 import { BackupError, backupName, decodeBackup, encodeBackup } from "../lib/backup";
 import { npDigits } from "../lib/bs";
+import { accountBalances } from "../lib/finance";
 import { hydrated, snapshot } from "../lib/pouch";
 import { importTransactions } from "../lib/import-transactions";
 import { rememberMoneyPackages } from "../lib/money-apps";
@@ -128,6 +129,22 @@ export class AppController extends React.Component<Record<string, never>, AppSta
       if (manual) this.flash(np ? "अपडेट जाँच्न सकिएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।" : "Couldn't check for updates. Check your connection and try again.");
     }
   };
+  installUpdate = async () => {
+    const np = this.state.lang === "NP";
+    const update = this.state.update;
+    if (!update || this.state.updateBusy) return;
+    this.patch({ updateBusy: true });
+    try {
+      await installUpdateApk(update.url);
+    } catch (error) {
+      console.warn("[thaili] update install handoff failed", error);
+      this.flash(np
+        ? "अपडेट डाउनलोड वा खोल्न सकिएन। अनुमति र इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।"
+        : "Couldn't download the update. Check install permission and your connection, then try again.");
+    } finally {
+      this.patch({ updateBusy: false });
+    }
+  };
   /** Saves everything to a file the user places outside the app, so it survives an uninstall. */
   exportData = async () => {
     const np = this.state.lang === "NP";
@@ -174,7 +191,6 @@ export class AppController extends React.Component<Record<string, never>, AppSta
       this.stack = [];
       this.applySavedPouch(hydrated(pouch), true, () => {
         this.flash(np ? npDigits(pouch.tx.length) + " कारोबार र " + npDigits(pouch.sources.length) + " खाता फिर्ता आए" : "Restored " + pouch.tx.length + " transactions and " + pouch.sources.length + " accounts");
-        if (this.state.locked) this.unlock();
       });
     } catch (e) {
       console.warn("[thaili] import rejected", e);
@@ -206,15 +222,17 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   authentication = new AuthenticationSession(authenticate, () => document.visibilityState === "visible",
     active => this.patch({ unlockBusy: active }));
   get authing() { return this.authentication.active; }
-  auth = (title: string) => this.authentication.run(title);
-  unlock = () => {
+  auth = (title: string, method?: "biometric" | "device-credential") => this.authentication.run(title, method);
+  private unlockWith = (method: "biometric" | "device-credential") => {
     if (this.authing || document.visibilityState !== "visible") return;
     this.patch({ unlockError: null });
-    this.auth("Unlock Thaili").then(r => {
+    this.auth("Unlock Thaili", method).then(r => {
       if (r.ok) this.patch({ locked: false, unlockError: null });
       else this.patch({ unlockError: authenticationMessage(r.reason) });
     });
   };
+  unlock = () => this.unlockWith("biometric");
+  unlockWithPin = () => this.unlockWith("device-credential");
   onVisible = () => {
     if (document.visibilityState === "hidden") {
       if (this.state.appLock && !this.authing) this.patch({ locked: true });
@@ -223,7 +241,6 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     this.refreshCalendar();
     this.refreshPerms();
     void this.discovery.refresh(true);
-    if (this.state.locked) this.unlock();
     this.catchUpSms();
   };
   calendar = new CalendarClock(() => this.state, (update, done) => this.patch(update, done));
@@ -276,7 +293,6 @@ export class AppController extends React.Component<Record<string, never>, AppSta
           this.flash("Unable to save on this phone. Check available storage and reopen Thaili.");
           return;
         }
-        if (this.state.locked) this.unlock();
         captureNotifications(this.state.notifMode !== "Off");
         if (this.pendingOpen) { this.openFromNotification(this.pendingOpen); this.pendingOpen = null; }
         else this.catchUpSms();
@@ -310,7 +326,6 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     this.patch(patch, () => {
       done?.();
       if (!opening) {
-        if (this.state.locked) this.unlock();
         this.catchUpSms();
       }
     });
@@ -366,9 +381,10 @@ export class AppController extends React.Component<Record<string, never>, AppSta
     const x = this.state.sources.filter(y => y.key === key)[0];
     if (!x) return;
     const kind = SRC_KINDS.filter(k => k.type === x.type)[0] || SRC_KINDS[2];
+    const currentBalance = accountBalances(this.state.sources, this.state.tx)[x.key] ?? x.opening;
     this.go("src-new", {
       editSrcKey: key, srcNewFrom: this.state.screen,
-      newSrcKind: kind.key, newSrcName: x.base || x.name, newSrcColor: x.dot, newSrcAmt: x.openedAt || x.opening ? String(x.opening) : "",
+      newSrcKind: kind.key, newSrcName: x.base || x.name, newSrcColor: x.dot, newSrcAmt: String(currentBalance),
       newSrcAcct: x.acct ? x.acct.slice(-4) : "", newSrcField: kind.key === "manual" ? "amt" : (x.acct ? "amt" : "acct"),
       newSrcRole: this.state.roles[key || ""] || "savings"
     });

@@ -29,8 +29,12 @@ export class ThailiApp extends AppController {
             </div>
             <div className="text-[15px] text-ink-2">Thaili is locked</div>
             {this.state.unlockError && <div role="alert" className="max-w-[320px] px-5 text-center text-[14px] text-action">{this.state.unlockError}</div>}
-            <button onClick={this.unlock} disabled={this.state.unlockBusy} aria-busy={this.state.unlockBusy}
-              className="rounded-[16px] bg-action px-10 py-4 text-[15px] font-semibold text-on-action disabled:opacity-60">{this.state.unlockBusy ? "Authenticating…" : "Unlock"}</button>
+            <div className="flex w-full max-w-[300px] flex-col gap-3 px-5">
+              <button onClick={this.unlock} disabled={this.state.unlockBusy} aria-busy={this.state.unlockBusy}
+                className="min-h-[52px] rounded-[16px] bg-action px-6 py-4 text-[15px] font-semibold text-on-action disabled:opacity-60">{this.state.unlockBusy ? "Authenticating…" : "Use fingerprint"}</button>
+              <button onClick={this.unlockWithPin} disabled={this.state.unlockBusy}
+                className="min-h-[48px] rounded-[16px] border border-line bg-surface px-6 py-3 text-[14px] font-semibold text-ink disabled:opacity-60">Use phone PIN, pattern, or password</button>
+            </div>
           </div>
         ) : <div key={scr} className={"scr " + this.anim}><Screens v={v} /></div>}
       </div>

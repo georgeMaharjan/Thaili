@@ -88,8 +88,9 @@ const finish = (app: AppController) => { app.patch({ picked: ["food", "transport
 {
   const app = fixture();
   try {
-    app.patch({ sources: app.state.sources.map(source => ({ ...source, opening: 0, openedAt: null })) });
-    app.editSource("nabil"); assert.equal(app.state.newSrcAmt, "");
+    app.patch({ sources: app.state.sources.map(source => ({ ...source, opening: 0, openedAt: null })), screen: "source" });
+    app.editSource("nabil"); assert.equal(app.state.newSrcAmt, "0");
+    assert.equal(app.renderVals().simplifiedBalanceEdit, true);
     app.patch({ newSrcAmt: "0", srcNewFrom: "source" }); app.renderVals().newSrcCreate();
     assert.equal(app.state.screen, "source"); assert.equal(app.state.sources[0].opening, 0);
     assert.ok(app.state.sources[0].openedAt); assert.equal(app.renderVals().setupSources[0].opening, "Rs 0");
@@ -103,7 +104,7 @@ const finish = (app: AppController) => { app.patch({ picked: ["food", "transport
 {
   const app = fixture();
   try {
-    app.patch({ sources: app.state.sources.map(source => ({ ...source, openedAt: null })) });
+    app.patch({ sources: app.state.sources.map(source => ({ ...source, openedAt: null })), screen: "source" });
     app.editSource("nabil"); app.renderVals().newSrcCreate();
     assert.ok(app.state.sources[0].openedAt); assert.equal(app.state.sources[0].opening, 10000);
     assert.equal(accountBalances(app.state.sources, importTransactions([{ ...oldSms, at: at - 86400000 }], {
