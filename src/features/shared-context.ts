@@ -69,7 +69,7 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
     return Object.assign(g, {
       sum: sum, total: balRs(sum, s.hideBal),
       rows: list.map(x => ({
-        name: x.name, dot: x.dot, icon: acctLook(x, [IC.bank]).icon, meta: !isManualSrc(x) && ((needsAcctNumber(x) && !x.acct) || !x.openedAt) ? (np ? "खाताको विवरण थप्नुहोस्" : "Add account details") : x.type.split(" · ")[0], balance: balRs(balance(x.key), s.hideBal),
+        key: x.key, name: x.name, dot: x.dot, icon: acctLook(x, [IC.bank]).icon, meta: !isManualSrc(x) && ((needsAcctNumber(x) && !x.acct) || !x.openedAt) ? (np ? "खाताको विवरण थप्नुहोस्" : "Add account details") : x.type.split(" · ")[0], balance: balRs(balance(x.key), s.hideBal),
         tap: () => app.go("source-detail", { srcKey: x.key, srcFrom: "accounts" })
       }))
     });
@@ -94,13 +94,12 @@ export function sharedContext(app: Pick<AppController, "state" | "go" | "patch" 
   const isEss = (k: string) => s.ess[k] !== undefined ? s.ess[k] : ESS_DEFAULT[k] !== false;
   const kindOf = (t: { dir: string; cat?: string | null; added?: string }) => t.dir === "transfer" ? "xfer" : t.dir === "credit" ? "in" : !t.cat ? (fresh(t) ? "uncat" : "unfiled") : isEss(t.cat) ? "ess" : "leak";
   const KIND = {
-    in: ["var(--pos)", "var(--tintG)", "Income"], ess: ["var(--navy)", "var(--tintN)", "Essential"], leak: ["var(--warnInk)", "var(--tintW)", "Optional"],
-    uncat: ["var(--uncat)", "var(--tintU)", "Needs category"], xfer: ["var(--ink3)", "var(--surface2)", "Transfer"],
-    unfiled: ["var(--ink3)", "var(--surface2)", "Uncategorised"] // past its review week: no longer asks
+    in: "Income", ess: "Essential", leak: "Optional", uncat: "Needs category", xfer: "Transfer",
+    unfiled: "Uncategorised" // past its review week: no longer asks
   };
   const catDot = (k: string) => isEss(k) ? "var(--navy)" : "var(--warn)";
   const txCard = (from: import("../application/routes").Screen, meta?: (t: DatedTransaction) => string) => (t: DatedTransaction) => {
-    const k = kindOf(t), [ifg, tint, word] = KIND[k], look = txLook(t), category = t.cat ? catLists.every.find(c => c.key === t.cat) : null;
+    const k = kindOf(t), word = KIND[k], look = txLook(t), category = t.cat ? catLists.every.find(c => c.key === t.cat) : null;
     return {
       title: t.m, icon: look.icon, amount: amtStr(t), fg: amtFg(t), isUncat: !t.cat, accent: category ? categoryColor(category) : !t.cat ? "var(--uncat)" : undefined, iconBg: !t.cat ? "var(--tintU)" : look.tint, iconFg: !t.cat ? "var(--uncat)" : look.ifg,
       chip: t.cat ? clabel(t.cat) : word, meta: meta ? meta(t) : srcOf(t.src).short,

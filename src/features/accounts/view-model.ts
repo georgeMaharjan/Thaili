@@ -9,6 +9,7 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
   // Everything that moved this account's money in the chosen dates — transfers into it included.
   const srcList = s.tx.filter(t => (t.src === s.srcKey || (t.dir === "transfer" && t.to === s.srcKey)) && inTxWin(t));
   const intoSrc = (t: { src: string; dir: string }) => t.dir === "credit" || (t.dir === "transfer" && t.src !== s.srcKey);
+  const orderedAcctGroups = [...acctGroups].sort((a, b) => Number(b.key === "savings") - Number(a.key === "savings"));
   const srcRows: ({ isHeader: true; label: string } | ReturnType<ReturnType<typeof txCard>>)[] = [];
   let lastHeader: string | null = null;
   srcList.forEach(t => {
@@ -21,8 +22,8 @@ export function accountsViewModel(app: Pick<AppController, "back" | "patch" | "g
   return {
     accountsBack: app.back,
     totalMeta: s.sources.length + (np ? " खाता · " : " accounts · ") + balRs(savingsPot, s.hideBal) + (np ? " बचतमा गनिएको" : " of it counted as savings"),
-    acctGroups: acctGroups,
-    acctSplit: acctGroups.map(g => {
+    acctGroups: orderedAcctGroups,
+    acctSplit: orderedAcctGroups.map(g => {
       const pct = Math.round(Math.max(0, g.sum) / acctGrand * 100) + "%";
       return { label: g.label, color: g.color, width: pct, pct: pct };
     }),

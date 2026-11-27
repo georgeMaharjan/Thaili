@@ -27,6 +27,17 @@ export function homeViewModel(app: Pick<AppController, "go" | "back" | "transact
       : "Income after your monthly savings target",
     toBudget: () => app.go("budget"),
     haveMeta: np ? s.sources.length + " खाताको जम्मा" : "Across " + s.sources.length + (s.sources.length === 1 ? " account" : " accounts"),
+    homeAccountsOpen: s.homeAccountsOpen,
+    homeAccountsHeading: np ? "खाताहरू" : "Accounts",
+    homeAccountsToggleLabel: s.homeAccountsOpen ? (np ? "खाता लुकाउनुहोस्" : "Hide accounts") : (np ? "खाता हेर्नुहोस्" : "Show accounts"),
+    homeAccountsEmpty: np ? "अहिलेसम्म कुनै खाता छैन" : "No accounts yet",
+    homeManageAccountsLabel: np ? "खाता व्यवस्थापन" : "Manage accounts",
+    homeAccountsGroups: [...acctGroups].sort((a, b) => Number(b.key === "savings") - Number(a.key === "savings")).map(group => ({
+      key: group.key, label: group.label,
+      rows: group.rows.map(account => ({ ...account, tap: () => app.go("source-detail", { srcKey: account.key, srcFrom: "home" }) }))
+    })),
+    toggleHomeAccounts: () => app.patch({ homeAccountsOpen: !s.homeAccountsOpen }),
+    manageHomeAccounts: () => app.go("accounts"),
     floorPending: floorShort > 0,
     floorLine: np ? "बचत आधार " + rs(s.savingsGoal) + " पुगेपछि लक्ष्य भरिन थाल्छन् · " + rs(floorShort) + " बाँकी"
       : "Goals start filling once savings clear the " + rs(s.savingsGoal) + " baseline · " + rs(floorShort) + " to go",

@@ -1,7 +1,7 @@
 import type { HomeScreenModel as V } from "../features/home/screen-model";
 // Balance-led Home and native manual-entry form.
 import { Picker } from "@/components/sheet";
-import { Bar,Btn,CARD,Chevron,Chips,HeadLink,Hero,Icon,IconBtn,P,Pull,Section,TopBar,TxCard,cx } from "@/components/ui";
+import { Bar,Btn,CARD,Chevron,Chips,HeadLink,Hero,Icon,IconBtn,P,Pull,Section,Tile,TopBar,TxCard,cx } from "@/components/ui";
 
 export function Home({ v }: { v: V }) {
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -12,11 +12,23 @@ export function Home({ v }: { v: V }) {
     <Pull onRefresh={v.refreshTransactions} className="min-h-0 flex-1">
       <div className="flex flex-col gap-6 px-5 pb-[48px]">
         <section className="balance-card rounded-[20px] px-5 py-3" aria-label="Account balances">
-          <div className="flex items-center justify-between"><span className="text-[15px] font-medium">{v.haveLabel}</span><div className="flex items-center"><button onClick={v.toggleBal} aria-label={v.balEyeLabel} className="press flex size-[44px] items-center justify-center"><Icon d={v.balEyeD} size={19} /></button><button onClick={v.toAccounts} aria-label="View accounts" title="View accounts" className="press flex size-[44px] items-center justify-center"><Chevron /></button></div></div>
+          <div className="flex items-center justify-between"><span className="text-[15px] font-medium">{v.haveLabel}</span><div className="flex items-center"><button onClick={v.toggleBal} aria-label={v.balEyeLabel} className="press flex size-[44px] items-center justify-center"><Icon d={v.balEyeD} size={19} /></button><button type="button" onClick={v.toggleHomeAccounts} aria-expanded={v.homeAccountsOpen} aria-controls="home-accounts-list" aria-label={v.homeAccountsToggleLabel} title={v.homeAccountsToggleLabel} className="press flex min-h-[44px] items-center gap-1 rounded-xl px-2 text-[12px] font-semibold"><span>{v.homeAccountsHeading}</span><Icon d={P.expand} size={18} className={cx("transition-transform motion-reduce:transition-none", v.homeAccountsOpen && "rotate-180")} /></button></div></div>
           <Hero value={v.totalBal} fs="32px" rs="text-[16px]" />
           <span className="mt-1 block text-[12px] text-ink-2">{v.haveMeta}</span>
           <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/15 pt-3">
-            {[{label:"Spent this month", total:v.homeSpentCompact},{label:"Savings balance", total:v.homeSavingsTotal}].map((g) => <button key={g.label} onClick={v.toAccounts} className="press min-h-[42px] text-left"><span className="block text-[12px] text-ink-2">{g.label}</span><span className="break-words font-display text-[20px] font-semibold tabular-nums">{g.total}</span></button>)}
+            {[{label:"Spent this month", total:v.homeSpentCompact, tap:v.toTxns},{label:"Savings balance", total:v.homeSavingsTotal, tap:v.toggleHomeAccounts}].map((g) => <button key={g.label} onClick={g.tap} className="press min-h-[42px] text-left"><span className="block text-[12px] text-ink-2">{g.label}</span><span className="break-words font-display text-[20px] font-semibold tabular-nums">{g.total}</span></button>)}
+          </div>
+          <div id="home-accounts-list" role="region" aria-label={v.homeAccountsHeading} hidden={!v.homeAccountsOpen} className="mt-3 border-t border-white/15 pt-3">
+            {v.homeAccountsGroups.map(group => <div key={group.key} className="mb-3 last:mb-0">
+              <h2 className="mb-1 px-1 text-[12px] font-semibold text-ink-2">{group.label}</h2>
+              {group.rows.map((account, i: number) => <button key={account.key} type="button" onClick={account.tap} className={cx("press flex min-h-[56px] w-full items-center gap-3 text-left", i > 0 && "border-t border-white/10")}>
+                <Tile d={account.icon} tint={account.dot + "30"} fg={account.dot} className="size-[34px] rounded-[11px]" size={17} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="truncate text-[14px] font-semibold">{account.name}</span><span className="truncate text-[12px] text-ink-2">{account.meta}</span></span>
+                <span className="flex-none font-display text-[15px] font-semibold tabular-nums">{account.balance}</span><Chevron />
+              </button>)}
+            </div>)}
+            {!v.homeAccountsGroups.length && <p className="px-1 py-3 text-[13px] text-ink-2">{v.homeAccountsEmpty}</p>}
+            <button type="button" onClick={v.manageHomeAccounts} className="press mt-2 flex min-h-[44px] w-full items-center justify-center border-t border-white/15 pt-2 text-[13px] font-semibold">{v.homeManageAccountsLabel}</button>
           </div>
         </section>
         {v.showReviewBanner && <div className="flex items-center rounded-2xl bg-tint-u"><button onClick={v.toReviewStack} className="press flex min-w-0 flex-1 items-center gap-3 p-4 pr-1 text-left"><span className="flex min-w-[32px] items-center justify-center rounded-lg bg-uncat px-2 py-1 text-[16px] font-semibold text-canvas">{v.reviewCount}</span><span className="flex-1"><strong className="block text-[15px]">Ready to sort</strong><span className="text-[13px] text-ink-2">Give new entries a category or note</span></span><Chevron /></button><IconBtn d={P.close} label="Dismiss" onClick={v.dismissReviewBanner} size={18} className="mr-1 text-ink-3" /></div>}

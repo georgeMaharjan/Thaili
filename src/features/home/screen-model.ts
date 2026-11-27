@@ -44,6 +44,14 @@ export type HomeScreenModel = Pick<AppViewModel,
   "homeBudgetRule" |
   "homeSpentCompact" |
   "homeSavingsTotal" |
+  "homeAccountsOpen" |
+  "homeAccountsHeading" |
+  "homeAccountsToggleLabel" |
+  "homeAccountsEmpty" |
+  "homeManageAccountsLabel" |
+  "homeAccountsGroups" |
+  "toggleHomeAccounts" |
+  "manageHomeAccounts" |
   "homeGoals" |
   "noGoals" |
   "recent" |
@@ -54,7 +62,6 @@ export type HomeScreenModel = Pick<AppViewModel,
   "stackProgress" |
   "refreshTransactions" |
   "t" |
-  "toAccounts" |
   "toBudget" |
   "toGoal" |
   "toGoalNew" |
