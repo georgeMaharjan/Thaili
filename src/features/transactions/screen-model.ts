@@ -32,6 +32,7 @@ export type TransactionsScreenModel = Pick<AppViewModel,
   "detailBack" |
   "detailCats" |
   "detailCatsTitle" |
+  "detailCategoryNew" |
   "detailDate" |
   "detailEditClose" |
   "detailFg" |

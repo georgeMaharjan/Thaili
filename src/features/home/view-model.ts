@@ -1,5 +1,5 @@
 import { P } from "@/components/ui";
-import { newId, now } from "../../application/config";
+import { categoryColor, categoryIcon, newId, now } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import { dated, npDigits } from "../../lib/bs";
 import { balHero, fmt, rs } from "../../lib/format";
@@ -54,9 +54,14 @@ export function homeViewModel(app: Pick<AppController, "go" | "back" | "transact
     addDirectionSet: (dir: "credit" | "debit") => app.patch({ addDir: dir, addCat: (dir === "credit" ? incomeCats : cats)[0]?.key || "", addError: "" }),
     addAmount: s.addEntry,
     addAmountType: (e: { target: { value: string } }) => { const value = e.target.value.replace(/,/g, ""); if (/^\d{0,9}(\.\d{0,2})?$/.test(value)) app.patch({ addEntry: value, addError: "" }); },
-    addCategory: s.addCat,
-    addCategoryOptions: addCategories,
-    addCategorySet: (e: { target: { value: string } }) => app.patch({ addCat: e.target.value, addError: "" }),
+    addCategoryOptions: addCategories.map(c => {
+      const color = categoryColor(c);
+      const selected = s.addCat === c.key;
+      return Object.assign(chip(c.label, selected, () => app.patch({ addCat: c.key, addError: "" })), {
+        key: c.key, icon: categoryIcon(c), color, selected,
+        bg: selected ? color + "20" : "var(--surface2)", fg: "var(--ink)", border: selected ? color : "var(--line)", iconFg: color
+      });
+    }),
     addCategoryNew: () => app.go("cats", { catsMode: "edit", catsFrom: "add", newCatIn: s.addDir === "credit" }),
     addAccount: s.addSrc,
     addAccounts: s.sources,

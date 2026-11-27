@@ -1,5 +1,5 @@
 import { CheckRow,Picker,Sheet } from "@/components/sheet";
-import { Btn,Chevron,Chip,Cta,Icon,IconBtn,P,Pull,Section,TopBar,TxCard,cx } from "@/components/ui";
+import { Btn,Chevron,Chip,Chips,Cta,Icon,IconBtn,P,Pull,Section,TopBar,TxCard,cx } from "@/components/ui";
 import type { TransactionsScreenModel as V } from "../features/transactions/screen-model";
 
 export function Txns({ v }: { v: V }) {
@@ -44,7 +44,7 @@ export function Detail({ v }: { v: V }) {
       <section className="border-y border-line"><button onClick={v.toggleRaw} aria-expanded={v.rawOpen} className="flex min-h-[56px] w-full items-center justify-between text-[14px] font-semibold">Original message<Icon d={P.expand} size={18} className={v.rawOpen ? "rotate-180" : ""} /></button>{v.rawOpen && <p className="whitespace-pre-wrap break-words pb-4 font-mono text-[13px] leading-relaxed text-ink-2">{v.detailRaw || "No original message. This entry was added manually."}</p>}</section>
       <button onClick={v.askDelete} className="press flex min-h-[48px] items-center justify-center gap-2 text-[14px] font-semibold text-action"><Icon d={P.trash} size={18} />Delete transaction</button>
     </div>
-    {v.detailShowCats && <Sheet title={v.detailCatsTitle} onClose={v.detailEditClose}><div className="flex flex-wrap gap-2">{v.detailCats.map((c,i: number) => <Chip key={i} c={c} className="min-h-[44px] px-4 py-2 text-[15px]" />)}</div><p className="text-[13px] text-ink-3">Your choice is saved when you select a category.</p></Sheet>}
+    {v.detailShowCats && <Sheet title={v.detailCatsTitle} onClose={v.detailEditClose}><Chips items={v.detailCats} className="gap-2" chipClass="min-h-[44px] px-3 py-2 text-[14px]" /><button type="button" onClick={v.detailCategoryNew} className="min-h-[44px] self-start text-[14px] font-semibold text-action">+ Add a category</button></Sheet>}
     {v.typeEditOpen && <Sheet title="Transaction type" onClose={v.typeEditClose}><div className="flex flex-col">{v.typeOptions.map(o => <button key={o.type} onClick={o.tap} className="flex min-h-[52px] items-center justify-between border-b border-line text-left text-[15px] last:border-0">{o.type}<span className="text-pos">{o.selected ? "✓" : ""}</span></button>)}</div><p className="text-[13px] text-ink-3">This label does not change the account balance movement.</p></Sheet>}
     {v.remarkOpen && <Sheet title={v.remarkTitle} onClose={v.remarkCancel}><label className="field">Note<textarea value={v.remarkDraft} onChange={v.remarkType} maxLength={80} rows={3} /></label><p className="text-[13px] text-ink-3">{v.remarkCount} · Original message stays unchanged.</p><Btn onClick={v.remarkSave}>Save note</Btn></Sheet>}
     {v.promptOpen && <Sheet title="Remember this merchant?" onClose={v.promptNo}><p className="text-[15px] leading-relaxed text-ink-2">{v.promptLine}</p><Btn onClick={v.promptYes}>Yes, file it for me</Btn><Btn kind="secondary" onClick={v.promptNo}>Just this time</Btn></Sheet>}

@@ -247,7 +247,9 @@ export function onboardingViewModel(app: Pick<AppController, "go" | "patch" | "s
       const category: Category = { key, label: name, createdAt: now(), ...(s.newCatIn ? { in: true } : {}) };
       app.patch({
         customCats: s.customCats.concat([category]),
-        picked: s.newCatIn ? s.picked : s.picked.concat([key]), newCatName: ""
+        picked: s.newCatIn ? s.picked : s.picked.concat([key]),
+        ...(s.catsFrom === "add" ? { addCat: key } : {}),
+        newCatName: ""
       });
       app.flash(name + (s.newCatIn ? " added" : " added and switched on"));
     },

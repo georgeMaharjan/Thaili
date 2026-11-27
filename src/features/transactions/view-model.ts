@@ -1,4 +1,4 @@
-import { SI, WD_FULL } from "../../application/config";
+import { SI, WD_FULL, categoryColor, categoryIcon } from "../../application/config";
 import type { AppController } from "../../application/controller";
 import { primaryOf } from "../../domain/models";
 import { adOf, monthName, npDigits } from "../../lib/bs";
@@ -117,8 +117,14 @@ export function transactionsViewModel(app: Pick<AppController, "patch" | "back" 
     detailMerchant: detail.m,
     detailFs: fit(rs(detail.amt).length + 1, 44, 10, 24),
     detailBack: app.back,
-    detailCats: (detail.dir === "credit" ? incomeCats : cats).map(c => Object.assign(chip(c.label, detail.cat === c.key, () => { app.transactions.setCat(detail.id, c.key, c.label); app.patch({ editing: false }); }),
-      { dot: detail.cat === c.key ? "var(--canvas)" : detail.dir === "credit" ? "var(--pos)" : catDot(c.key) })),
+    detailCats: (detail.dir === "credit" ? incomeCats : cats).map(c => {
+      const selected = detail.cat === c.key, color = categoryColor(c);
+      return Object.assign(chip(c.label, selected, () => { app.transactions.setCat(detail.id, c.key, c.label); app.patch({ editing: false }); }), {
+        icon: categoryIcon(c), iconFg: color, bg: selected ? color + "20" : "var(--surface2)",
+        fg: "var(--ink)", border: selected ? color : "var(--line)"
+      });
+    }),
+    detailCategoryNew: () => app.go("cats", { catsMode: "edit", catsFrom: "detail", newCatIn: detail.dir === "credit" }),
     detailShowCats: detail.dir !== "transfer" && s.editing,
     detailEditClose: () => app.patch({ editing: false }),
     detailDate: bsLabel(detail.off),

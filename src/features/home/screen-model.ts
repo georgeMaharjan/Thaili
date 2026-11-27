@@ -8,10 +8,8 @@ export type HomeScreenModel = Pick<AppViewModel,
   "addAmount" |
   "addAmountType" |
   "addCancel" |
-  "addCategory" |
   "addCategoryOptions" |
   "addCategoryNew" |
-  "addCategorySet" |
   "addCta" |
   "addDateLabel" |
   "addDirection" |

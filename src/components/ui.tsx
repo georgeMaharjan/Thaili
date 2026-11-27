@@ -7,8 +7,8 @@ import { useRef,useState,type CSSProperties,type ReactNode } from "react";
 export type V = import("../features/view-model").AppViewModel;
 
 export type ToggleModel = { justify: string; track: string };
-export type ChipModel = { label: string; tap: () => void; bg: string; fg: string; border: string; weight?: CSSProperties["fontWeight"]; check?: string; dot?: string };
-export type SegmentModel = { label: string; tap: () => void; bg: string; fg: string; shadow?: string };
+export type ChipModel = { label: string; tap: () => void; bg: string; fg: string; border: string; weight?: CSSProperties["fontWeight"]; check?: string; dot?: string; icon?: string; iconFg?: string; disabled?: boolean };
+export type SegmentModel = { label: string; tap: () => void; bg: string; fg: string; shadow?: string; disabled?: boolean };
 export type KeyModel = { label: string; tap: () => void; fg: string; isBack?: boolean };
 export type TransactionCardModel = { title: string; tap: () => void; icon: string; amount: string; fg: string; isUncat: boolean; chip: string; meta?: string; accent?: string; iconBg?: string; iconFg?: string };
 
@@ -148,17 +148,18 @@ export function Toggle({ t, small }: { t: ToggleModel; small?: boolean }) {
 /** A pick-one chip; `c` is a chip() from the view model. */
 export function Chip({ c, check = true, className = "px-4 py-3 text-[14px]" }: { c: ChipModel; check?: boolean; className?: string }) {
   return (
-    <button type="button" onClick={c.tap} aria-pressed={Boolean(c.check)} className={cx("press rounded-xl border leading-[1.3]", c.dot && "flex items-center gap-2", className)}
+    <button type="button" onClick={c.tap} disabled={c.disabled} aria-pressed={Boolean(c.check)} className={cx("press rounded-xl border leading-[1.3]", (c.dot || c.icon) && "flex items-center gap-2", c.disabled && "cursor-not-allowed opacity-60", className)}
       style={{ background: c.bg, color: c.fg, borderColor: c.border, fontWeight: c.weight }}>
       {c.dot && <span className="size-[8px] flex-none rounded-full" style={{ background: c.dot }} />}
+      {c.icon && <Icon d={c.icon} size={17} className="flex-none" style={{ color: c.iconFg || c.fg }} />}
       {check && c.check}{c.label}
     </button>
   );
 }
 
-export const Chips = ({ items, className = "px-5 pt-2" }: { items: ChipModel[]; className?: string }) => (
+export const Chips = ({ items, className = "px-5 pt-2", chipClass }: { items: ChipModel[]; className?: string; chipClass?: string }) => (
   <div className={cx("flex flex-wrap gap-2", className)}>
-    {items.map((c, i: number) => <Chip key={i} c={c} />)}
+    {items.map((c, i: number) => <Chip key={i} c={c} className={chipClass} />)}
   </div>
 );
 
@@ -167,7 +168,7 @@ export function Seg({ items, itemClass, className = "rounded-xl" }: { items: Seg
   return (
     <div className={cx("flex bg-surface-2 p-1", className)}>
       {items.map((x, i: number) => (
-        <button type="button" key={i} onClick={x.tap} aria-pressed={x.bg !== "transparent"} className={cx("font-semibold", itemClass)} style={{ background: x.bg, color: x.fg, boxShadow: x.shadow }}>{x.label}</button>
+        <button type="button" key={i} onClick={x.tap} disabled={x.disabled} aria-pressed={x.bg !== "transparent"} className={cx("font-semibold", x.disabled && "cursor-not-allowed opacity-60", itemClass)} style={{ background: x.bg, color: x.fg, boxShadow: x.shadow }}>{x.label}</button>
       ))}
     </div>
   );

@@ -45,8 +45,11 @@ export function Add({ v }: { v: V }) {
       <div className="native-segment" aria-label="Transaction type">{([["debit","Expense"],["credit","Income"]] as const).map(([key,label]) => <button type="button" key={key} aria-pressed={v.addDirection === key} onClick={() => v.addDirectionSet(key)}>{label}</button>)}</div>
       <label className="flex flex-col gap-2 rounded-[20px] bg-surface-2 p-5"><span className="text-[14px] text-ink-2">{v.addDirection === "credit" ? "Amount received" : "Amount paid"}</span><span className="flex min-w-0 items-baseline gap-2"><span className="font-display text-[22px] text-ink-3">Rs</span><input aria-label="Amount" inputMode="decimal" autoComplete="off" value={v.addAmount} onChange={v.addAmountType} className="min-w-0 w-full bg-transparent font-display text-[44px] font-bold tabular-nums outline-none" /></span></label>
       <Picker label={v.addDirection === "credit" ? "Received into" : "Paid from"} value={v.addAccount} onChange={v.addAccountSet} options={v.addAccounts.map((a) => ({ value: a.key, label: a.name }))} />
-      <Picker label="Category" value={v.addCategory} onChange={v.addCategorySet} options={v.addCategoryOptions.map((c) => ({ value: c.key, label: c.label }))} />
-      <button type="button" onClick={v.addCategoryNew} className="-mt-4 min-h-[40px] self-start text-[14px] font-semibold text-action">+ Add a category</button>
+      <section className="flex flex-col gap-3" aria-label="Category">
+        <h2 className="text-[14px] font-semibold">Category</h2>
+        <Chips items={v.addCategoryOptions} className="gap-2" chipClass="min-h-[44px] px-3 py-2 text-[14px]" />
+        <button type="button" onClick={v.addCategoryNew} className="min-h-[40px] self-start text-[14px] font-semibold text-action">+ Add a category</button>
+      </section>
       <label className="field">Note <span className="sr-only">optional</span><textarea rows={2} value={v.addNote} onChange={v.addNoteType} maxLength={80} /></label>
       <div className="flex items-center gap-2 text-[13px] text-ink-3"><Icon d={P.calendar} size={17} />Today · {v.addDateLabel}</div>
       {v.addError && <p role="alert" className="text-[14px] text-action">{v.addError}</p>}
