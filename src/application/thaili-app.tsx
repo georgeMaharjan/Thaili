@@ -22,13 +22,7 @@ export class ThailiApp extends AppController {
       <div ref={el => { this.root = el; }} data-theme={this.state.theme} style={{ "--sp": DENSITY[this.state.density] } as React.CSSProperties} onClickCapture={e => { if (e.target instanceof Element && e.target.closest(".press, .press-bg, button")) hapticTap(); }}
         className="relative mx-auto flex h-dvh max-w-[430px] flex-col overflow-hidden bg-canvas text-ink pt-[var(--safe-area-inset-top,env(safe-area-inset-top))] pb-[var(--safe-area-inset-bottom,env(safe-area-inset-bottom))]">
         {v && this.state.storageStatus.kind === "error" && !this.state.locked && <div role="alert" className="flex-none bg-tint-r px-5 py-2 text-[13px] text-action">Unable to save on this phone. Check available storage and reopen Thaili.</div>}
-        {this.state.appBackgrounded ? (
-          <div aria-label="Thaili" className="flex flex-1 items-center justify-center bg-canvas">
-            <div className="flex size-[72px] items-center justify-center rounded-[20px] bg-brand">
-              <img src="./thaili-mark-line.png" alt="" className="h-[50px] w-[36px] object-contain" />
-            </div>
-          </div>
-        ) : !v ? <Splash /> : this.state.locked ? (
+        {!v ? <Splash /> : this.state.locked ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-5">
             <div className="flex size-[72px] items-center justify-center rounded-[20px] bg-brand">
               <img src="./thaili-mark-line.png" alt="Thaili" className="h-[50px] w-[36px] object-contain" />

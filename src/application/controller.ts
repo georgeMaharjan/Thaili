@@ -253,10 +253,9 @@ export class AppController extends React.Component<Record<string, never>, AppSta
   };
   onVisible = () => {
     if (document.visibilityState === "hidden") {
-      this.patch({ appBackgrounded: true, ...(this.state.appLock && !this.authing ? { locked: true } : {}) });
+      if (this.state.appLock && !this.authing) this.patch({ locked: true });
       return;
     }
-    this.patch({ appBackgrounded: false });
     this.refreshCalendar();
     this.refreshPerms();
     void this.discovery.refresh(true);
